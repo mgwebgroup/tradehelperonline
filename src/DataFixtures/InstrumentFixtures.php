@@ -1,16 +1,24 @@
 <?php
+/**
+ * This file is part of the Trade Helper package.
+ *
+ * (c) Alex Kay <alex110504@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace App\DataFixtures;
 
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
-use Symfony\Component\Console\Helper\FormatterHelper;
 use App\Entity\Instrument;
-// use Symfony\Component\Console\Style\SymfonyStyle;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
+use App\PriceHistory\Exchange\AMEX;
+use App\PriceHistory\Exchange\NASDAQ;
+use App\PriceHistory\Exchange\NYSE;
 
 
 class InstrumentFixtures extends Fixture implements FixtureGroupInterface
@@ -20,10 +28,6 @@ class InstrumentFixtures extends Fixture implements FixtureGroupInterface
      * https://www.nasdaq.com/screening/company-list.aspx
      */
 	const FILE = 'data/source/y_universe.csv';
-    const NYSE_SYMBOLS = 'data/source/nyse_companylist.csv';
-    const NASDAQ_SYMBOLS = 'data/source/nasdaq_companylist.csv';
-    const AMEX_SYMBOLS = 'data/source/amex_companylist.csv';
-
 
     public static function getGroups(): array
     {
@@ -33,7 +37,7 @@ class InstrumentFixtures extends Fixture implements FixtureGroupInterface
     public function load(ObjectManager $manager)
     {
         $output = new ConsoleOutput();
-        // output verbosity is not readable from thie method.
+        // output verbosity is not readable from this method.
 
         // var_dump($output->getVerbosity()); exit();
         $output->getFormatter()->setStyle('info-init', new OutputFormatterStyle('white', 'blue'));
@@ -54,27 +58,27 @@ class InstrumentFixtures extends Fixture implements FixtureGroupInterface
         $output->writeln('is important, however you can skip columns that are beyond the required ones, i.e. Shares Held, etc.');
             
         $nyseSymbols = [];
-        foreach($this->getLines(self::NYSE_SYMBOLS) as $line) {
+        foreach($this->getLines(NYSE::SYMBOLS_LIST) as $line) {
             $fields = explode(',', $line);
             $nyseSymbols[] = trim($fields[0], '"');
         }
         $output->writeln(sprintf('Read in %d symbols for NYSE', count($nyseSymbols)));
 
         $nasdaqSymbols = [];
-        foreach($this->getLines(self::NASDAQ_SYMBOLS) as $line) {
+        foreach($this->getLines(NASDAQ::SYMBOLS_LIST) as $line) {
             $fields = explode(',', $line);
             $nasdaqSymbols[] = trim($fields[0], '"');
         }
         $output->writeln(sprintf('Read in %d symbols for NASDAQ', count($nasdaqSymbols)));
 
         $amexSymbols = [];
-        foreach($this->getLines(self::AMEX_SYMBOLS) as $line) {
+        foreach($this->getLines(AMEX::SYMBOLS_LIST) as $line) {
             $fields = explode(',', $line);
             $amexSymbols[] = trim($fields[0], '"');
         }
         $output->writeln(sprintf('Read in %d symbols for AMEX', count($amexSymbols)));
 
-        $numberOfLines = 0;
+        // TODO Replace generator with CSV Reader of some sort
         $symbols = $this->getLines(self::FILE);
     	foreach ($symbols as $line) {
             $fields = explode(',', $line);
@@ -83,11 +87,11 @@ class InstrumentFixtures extends Fixture implements FixtureGroupInterface
         	$instrument->setSymbol($symbol);
 
             if (in_array($symbol, $nyseSymbols)) {
-                $instrument->setExchange('NYSE');
+                $instrument->setExchange(NYSE::NAME);
             } elseif (in_array($symbol, $nasdaqSymbols)) {
-                $instrument->setExchange('NASDAQ');
+                $instrument->setExchange(NASDAQ::NAME);
             } elseif (in_array($symbol, $amexSymbols)) {
-                $instrument->setExchange('AMEX');
+                $instrument->setExchange(AMEX::NAME);
             }
 
         	$instrument->setName($fields[1]);

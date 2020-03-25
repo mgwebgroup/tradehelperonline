@@ -16,3 +16,8 @@ data/source/ohlcv
 .phpunit
 /phpunit.xml
 ###< symfony/phpunit-bridge ###
+
+/akay/*
+/.idea/*
+/.bash_history
+.~lock.*

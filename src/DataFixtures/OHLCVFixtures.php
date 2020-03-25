@@ -1,4 +1,12 @@
 <?php
+/**
+ * This file is part of the Trade Helper package.
+ *
+ * (c) Alex Kay <alex110504@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace App\DataFixtures;
 
@@ -13,13 +21,15 @@ use Symfony\Component\Finder\Finder;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 
 
-class OHLCVFixtures_AE extends Fixture implements FixtureGroupInterface
+class OHLCVFixtures extends Fixture implements FixtureGroupInterface
 {
 	const DIRECTORY = 'data/source/ohlcv';
     const SUFFIX_DAILY = '_d';
     const SUFFIX_WEEKLY = '_w';
 
     private $manager;
+
+    private $timeStart;
 
     public static function getGroups(): array
     {
@@ -28,6 +38,7 @@ class OHLCVFixtures_AE extends Fixture implements FixtureGroupInterface
 
     public function load(ObjectManager $manager)
     {
+        $this->timeStart = time();
         $this->manager = $manager;
         $output = new ConsoleOutput();
         $output->getFormatter()->setStyle('info-init', new OutputFormatterStyle('white', 'blue'));
@@ -52,8 +63,10 @@ class OHLCVFixtures_AE extends Fixture implements FixtureGroupInterface
 
         $importedFiles = $this->importFiles($suffix, $output);
 
-        $output->writeln(sprintf('<info-end>Imported %d weekly files</>', $importedFiles));
+        $output->writeln(sprintf('<info-end>Imported %d weekly files</info-end>', $importedFiles));
 
+        $minutes = (time() - $this->timeStart)/60;
+        $output->writeln(sprintf('<info-end>Execution time: %s s</info-end>', $minutes));
     }
 
     /**
@@ -69,62 +82,57 @@ class OHLCVFixtures_AE extends Fixture implements FixtureGroupInterface
     private function importFiles($suffix, $output)
     {
         $repository = $this->manager->getRepository(\App\Entity\Instrument::class);
-        // Build filemap by mask
+
         $finder = new Finder();
-        // debug: will display how many files of each letter found 
-//         foreach ($this->getLetter() as $letter) {
-//             $finder = new Finder();
-//             $pattern = sprintf('/^[%s][A-Z]*%s/', $letter, $suffix);
-//             // var_dump($pattern); exit();
-//             $count = $finder->in(self::DIRECTORY)->files()->name($pattern)->sortByName()->count();
-//             $output->writeln(sprintf('%s: %d', $letter, $count));
-//         }
-//         exit();
-        $finder->in(self::DIRECTORY)->files()->name('/^[A-E][A-Z]*'.$suffix.'/')->sortByName();
+        $finder->in(self::DIRECTORY)->files()->name('/^[A-Z]+'.$suffix.'/')->sortByName();
         $fileCount = $finder->count();
-        $output->writeln(sprintf('Found %d files for letters A-E ending in %s', $fileCount, $suffix));
+        $output->writeln(sprintf('Found %d files for letters A-Z ending in %s', $fileCount, $suffix));
 
         $importedFiles = 0;
         // foreach file select the symbol
         foreach ($finder as $file) {
-            if ($importedFiles >= 0) {
-                $symbol = strtoupper($file->getBasename($suffix));
-                $importedRecords = 0;
+            $symbol = strtoupper($file->getBasename($suffix));
+            $importedRecords = 0;
 
-                // look for instrument without the seeders reference
-                $instrument = $repository->findOneBy(['symbol' => $symbol]);
-                // var_dump($instrument); exit();
-                // if ($instrument = $this->getReference($symbol)) {
-                if ($instrument) {
-                    // if exists load
-                    $fileName = $file->getPath().'/'.$file->getBasename();
-                    $lines = $this->getLines($fileName);
-                    foreach ($lines as $line) {
-                        $fields = explode(',', $line);
-                        // var_dump($fileName, $fields);
-                        $OHLCVHistory = new OHLCVHistory();
-                        // $OHLCVHistory->setTimestamp(strtotime($fields[0]));
-                        $OHLCVHistory->setTimestamp(new \DateTime($fields[0]));
-                        $OHLCVHistory->setOpen($fields[1]);
-                        $OHLCVHistory->setHigh($fields[2]);
-                        $OHLCVHistory->setLow($fields[3]);
-                        $OHLCVHistory->setClose($fields[4]);
-                        $OHLCVHistory->setVolume((int)$fields[5]);
-                        $OHLCVHistory->setInstrument($instrument);
-                        $OHLCVHistory->setTimeinterval(new \DateInterval('P1D'));
-
-                        $this->manager->persist($OHLCVHistory);
-
-                        $importedRecords++;
+            $instrument = $repository->findOneBy(['symbol' => $symbol]);
+            if ($instrument) {
+                $fileName = $file->getPath().'/'.$file->getBasename();
+                // TODO Replace generator with CSV Reader of some sort
+                $lines = $this->getLines($fileName);
+                foreach ($lines as $line) {
+                    $fields = explode(',', $line);
+                    // var_dump($fileName, $fields);
+                    $OHLCVHistory = new OHLCVHistory();
+                    // $OHLCVHistory->setTimestamp(strtotime($fields[0]));
+                    $OHLCVHistory->setTimestamp(new \DateTime($fields[0]));
+                    $OHLCVHistory->setOpen($fields[1]);
+                    $OHLCVHistory->setHigh($fields[2]);
+                    $OHLCVHistory->setLow($fields[3]);
+                    $OHLCVHistory->setClose($fields[4]);
+                    $OHLCVHistory->setVolume((int)$fields[5]);
+                    $OHLCVHistory->setInstrument($instrument);
+                    switch ($suffix) {
+                        case self::SUFFIX_DAILY . '.csv':
+                            $OHLCVHistory->setTimeinterval(new \DateInterval('P1D'));
+                            break;
+                        case self::SUFFIX_WEEKLY . '.csv':
+                            $OHLCVHistory->setTimeinterval(new \DateInterval('P1W'));
+                            break;
+                        default:
+                            throw new \Exception('Unexpected value');
                     }
-                    $this->manager->flush();
-                    $importedFiles++;
-                    $message = sprintf('%3d %s: imported %d of %d price records', $importedFiles, $file->getBasename(), $importedRecords, $lines->getReturn());
-                } else {
-                    $message = sprintf('%s: instrument record was not imported, skipping file', $file->getBasename());
+
+                    $this->manager->persist($OHLCVHistory);
+
+                    $importedRecords++;
                 }
-                $output->writeln($message);
+                $this->manager->flush();
+                $importedFiles++;
+                $message = sprintf('%3d %s: imported %d of %d price records', $importedFiles, $file->getBasename(), $importedRecords, $lines->getReturn());
+            } else {
+                $message = sprintf('%s: instrument record was not imported, skipping file', $file->getBasename());
             }
+            $output->writeln($message);
         }
 
         return $importedFiles;
@@ -150,17 +158,4 @@ class OHLCVFixtures_AE extends Fixture implements FixtureGroupInterface
 
         return $counter-1;
 	}
-
-
-    /**
-     * Alphabet generator
-     */
-    private function getLetter()
-    {
-        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        for ($pos = 0; $pos <= 25; $pos++) {
-            yield substr($alphabet, $pos, 1);
-        }
-    }
-    
 }
