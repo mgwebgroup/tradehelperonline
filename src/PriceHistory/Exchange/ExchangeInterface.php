@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace App\PriceHistory;
+namespace App\PriceHistory\Exchange;
 
 /**
  * Defines functions relevant to each trading exchange
