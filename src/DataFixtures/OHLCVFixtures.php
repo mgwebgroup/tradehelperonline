@@ -66,7 +66,7 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
         $output->writeln(sprintf('<info-end>Imported %d weekly files</info-end>', $importedFiles));
 
         $minutes = (time() - $this->timeStart)/60;
-        $output->writeln(sprintf('<info-end>Execution time: %s s</info-end>', $minutes));
+        $output->writeln(sprintf('<info-end>Execution time: %s minutes</info-end>', $minutes));
     }
 
     /**
