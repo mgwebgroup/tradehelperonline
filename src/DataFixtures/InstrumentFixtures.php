@@ -47,7 +47,7 @@ class InstrumentFixtures extends Fixture implements FixtureGroupInterface
         $output->writeln(sprintf('<info-init>Will import list of instruments from %s file</>', self::FILE));
 
         $output->writeln('The seeder uses several files to load the stock symbols. The main file with list of all instruments on which');
-        $output->writeln('this app operates is called y_universe. Each instrument is traded on either NASDAQ, NYSE or AMEX. Three ');
+        $output->writeln('this app operates is called y_universe. Each instrument is traded on either NASDAQ or NYSE. Two ');
         $output->writeln('additional files are saved for each exchange individually in the same directory as y_universe. They will be ');
         $output->writeln('looked up to determine which exchange the instrument is listed in. If an instrument is listed on several ');
         $output->writeln('exchanges, last one loaded will prevail. It is rarely that stocks are dually listed. If you find a one that');
@@ -71,13 +71,6 @@ class InstrumentFixtures extends Fixture implements FixtureGroupInterface
         }
         $output->writeln(sprintf('Read in %d symbols for NASDAQ', count($nasdaqSymbols)));
 
-        $amexSymbols = [];
-        foreach($this->getLines(AMEX::SYMBOLS_LIST) as $line) {
-            $fields = explode(',', $line);
-            $amexSymbols[] = trim($fields[0], '"');
-        }
-        $output->writeln(sprintf('Read in %d symbols for AMEX', count($amexSymbols)));
-
         // TODO Replace generator with CSV Reader of some sort
         $symbols = $this->getLines(self::FILE);
     	foreach ($symbols as $line) {
@@ -90,14 +83,10 @@ class InstrumentFixtures extends Fixture implements FixtureGroupInterface
                 $instrument->setExchange(NYSE::NAME);
             } elseif (in_array($symbol, $nasdaqSymbols)) {
                 $instrument->setExchange(NASDAQ::NAME);
-            } elseif (in_array($symbol, $amexSymbols)) {
-                $instrument->setExchange(AMEX::NAME);
             }
 
         	$instrument->setName($fields[1]);
         	$manager->persist($instrument);
-
-            // $this->addReference($symbol, $instrument);
 
             $output->writeln(sprintf('Imported symbol=%s', $symbol));
     	}

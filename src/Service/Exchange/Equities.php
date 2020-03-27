@@ -11,14 +11,13 @@
 namespace App\Service\Exchange;
 
 use Yasumi\Yasumi;
-use App\Repository\InstrumentRepository;
 
 
 /**
  * Implements logic for all common equity exchanges based in NYC
  * @package App\Service\Exchange
  */
-class Equities implements \App\Service\Exchange\ExchangeInterface
+abstract class Equities implements \App\Service\Exchange\ExchangeInterface
 {
 	/**
 	 * @var Yasumi holidays object
@@ -27,8 +26,9 @@ class Equities implements \App\Service\Exchange\ExchangeInterface
 
 	protected $instrumentRepository;
 
-	public function __construct(InstrumentRepository $instrumentRepository)
-	{
+	public function __construct(
+        \App\Repository\InstrumentRepository $instrumentRepository
+    ) {
 		$this->instrumentRepository = $instrumentRepository;
 
 		$date = new \DateTime();
@@ -36,8 +36,6 @@ class Equities implements \App\Service\Exchange\ExchangeInterface
 		$this->holidaysProvider = Yasumi::create('USA', (int)$date->format('Y'));
 		
 		$this->matchHolidays((int)$date->format('Y'));
-
-		// $this->holidays = new OfficialHolidaysFilter($holidays->holidaysProvider->getIterator());
 	}
 
 	/**
@@ -118,16 +116,7 @@ class Equities implements \App\Service\Exchange\ExchangeInterface
 		return ($this->instrumentRepository->findOneBy(['symbol' => $symbol, 'exchange' => $exchange]))? true : false;
 	}
 
-    public function matchHolidays($year)
-    {
-        $this->holidaysProvider->addHoliday($this->holidaysProvider->goodFriday($year, self::TIMEZONE, 'en_US'));
-
-        // remove columbusDay
-        $this->holidaysProvider->removeHoliday('columbusDay');
-
-        // remove veteransDay
-        $this->holidaysProvider->removeHoliday('veteransDay');
-    }
+    abstract protected function matchHolidays($year);
 
 	/**
 	 * {@inheritDoc}

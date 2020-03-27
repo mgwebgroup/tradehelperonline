@@ -1,20 +1,11 @@
 <?php
 
-namespace App\Tests\Service;
+namespace App\Tests\Service\Exchange;
 
-// use PHPUnit\Framework\TestCase;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use App\Service\Exchange_Equities;
-// use App\Repository\InstrumentRepository;
-// use App\Service\Holidays;
-// use App\Service\Yasumi;
-// use Yasumi\Yasumi;
 
-class Exchange_EquitiesTest extends KernelTestCase
+class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
 {
     private $SUT;
-
-    // private $doctrine;
 
     /**
      * Details on how to access services in tests:
@@ -23,19 +14,12 @@ class Exchange_EquitiesTest extends KernelTestCase
 	protected function setUp(): void
     {
         self::bootKernel();
-        // $container = self::$container;
-        // $container = self::$kernel->getContainer();
-        $container = self::$container->get('test.service_container');
-        // var_dump($container->has('test.service_container')); exit();
-
-        // $this->SUT = $container->get('app.exchange.nyse');
-        $this->SUT = $container->get(Exchange_Equities::class);
-        // $this->doctrine = $container->get('doctrine');
+        $this->SUT = self::$container->get(\App\Service\Exchange\NASDAQ::class);
     }
 
     public function testIntro()
     {
-    	fwrite(STDOUT, 'Testing Exchange_Equities');
+    	fwrite(STDOUT, 'Testing NASDAQ symbols'.PHP_EOL);
     	$this->assertTrue(true);
     }
 
@@ -252,48 +236,53 @@ class Exchange_EquitiesTest extends KernelTestCase
      */
     public function test30()
     {
-        $this->assertTrue($this->SUT->isTraded('MCD', 'NYSE'));
+        $this->assertTrue($this->SUT->isTraded('FB', $this->SUT::NAME));
 
-        $this->assertFalse($this->SUT->isTraded('SPY1', 'NYSE'));
+        $this->assertFalse($this->SUT->isTraded('SPY1', $this->SUT::NAME));
     }
 
     /**
-     * Testing getTradedInsruments
+     * Testing getTradedInstruments
      */
     public function test40()
     {
-        $result = $this->SUT->getTradedInstruments('NYSE');
-        $nyse = file_get_contents('data/source/nyse_companylist.csv');
+        $result = $this->SUT->getTradedInstruments($this->SUT::NAME);
+        $nasdaq = file_get_contents($this->SUT::SYMBOLS_LIST);
         // var_dump($nyse); exit();
         foreach ($result as $instrument) {
-            $needle = sprintf('"%s"', $instrument->getSymbol());
-            $this->assertTrue(false != strpos($nyse, $needle), sprintf( 'symbol=%s was not found in list of NYSE symbols.', $instrument->getSymbol() ) );
+            $needle = sprintf('%s', $instrument->getSymbol());
+            $this->assertTrue(false != strpos($nasdaq, $needle), sprintf( 'symbol=%s was not found in list of NASDAQ symbols.', $instrument->getSymbol() ) );
         }
-
-        $result = $this->SUT->getTradedInstruments('NASDAQ');
-        $nyse = file_get_contents('data/source/nasdaq_companylist.csv');
-        // var_dump($nyse); exit();
-        foreach ($result as $instrument) {
-            $needle = sprintf('"%s"', $instrument->getSymbol());
-            $this->assertTrue(false != strpos($nyse, $needle), sprintf( 'symbol=%s was not found in list of NASDAQ symbols.', $instrument->getSymbol() ) );
-        }
-
     }
 
+    /**
+     * Test getPreviousTradingDay
+     */
+    public function test50()
+    {
+        $date = new \DateTime('26-March-2020');
+        // When day is a T on any weekday but Monday
+        $prevT = $this->SUT->calcPreviousTradingDay($date);
+        $this->assertSame('25-March-2020', $prevT->format('d-F-Y'));
+
+        // When day is a T on Monday
+        $date->modify('23-March-2020');
+        $prevT = $this->SUT->calcPreviousTradingDay($date);
+        $this->assertSame('20-March-2020', $prevT->format('d-F-Y'));
+
+        // When day is any weekend day
+        $date->modify('22-March-2020');
+        $prevT = $this->SUT->calcPreviousTradingDay($date);
+        $this->assertSame('20-March-2020', $prevT->format('d-F-Y'));
+
+        // When day is a holiday
+        $date->modify('1-January-2020');
+        $prevT = $this->SUT->calcPreviousTradingDay($date);
+        $this->assertSame('31-December-2019', $prevT->format('d-F-Y'));
+    }
 
     protected function tearDown(): void
     {
         // fwrite(STDOUT, __METHOD__ . "\n");
     }
-
-    // private function getLines($file) {
-    // $f = fopen($file, 'r');
-    //     try {
-    //         while ($line = fgets($f)) {
-    //             yield $line;
-    //         }
-    //     } finally {
-    //         fclose($f);
-    //     }
-    // }
 }

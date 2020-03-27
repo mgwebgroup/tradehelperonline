@@ -3,7 +3,7 @@
 namespace App\Tests\Service;
 
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use App\Service\OHLCV_Yahoo;
+use App\Service\_Yahoo;
 use Faker\Factory;
 use App\Service\Exchange_Equities;
 use App\Entity\OHLCVHistory;
@@ -34,7 +34,7 @@ class OHLCV_YahooTest extends KernelTestCase
         // $container = self::$kernel->getContainer();
         $container = self::$container->get('test.service_container');
 
-        $this->SUT = $container->get(OHLCV_Yahoo::class);
+        $this->SUT = $container->get(_Yahoo::class);
 
         $this->faker = Factory::create();
 

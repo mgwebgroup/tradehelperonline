@@ -1,0 +1,7 @@
+services:
+  App\Service\Exchange\NYSE:
+    public: true
+    autowire: true
+  App\Service\Exchange\NASDAQ:
+    public: true
+    autowire: true
