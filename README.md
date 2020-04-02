@@ -13,6 +13,8 @@ bin/console doctrine:migrations:migrate --no-interaction
 bin/console doctrine:fixtures:load --group=Instruments --no-interaction
 bin/console doctrine:fixtures:load --group=OHLCV --no-interaction --append
 
+bin/phpunit tests/Service/Exchange
+
 
 
 ### Useful Queries

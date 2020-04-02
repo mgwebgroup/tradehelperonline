@@ -26,6 +26,8 @@ abstract class Equities implements \App\Service\Exchange\ExchangeInterface
 
 	protected $instrumentRepository;
 
+	const NAME = null;
+
 	public function __construct(
         \App\Repository\InstrumentRepository $instrumentRepository
     ) {

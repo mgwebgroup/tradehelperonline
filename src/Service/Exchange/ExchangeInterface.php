@@ -30,7 +30,7 @@ interface ExchangeInterface
 	/**
 	 * Queries Instruments table for which Exchange they belong to
 	 * @param string $exchange name ('NYSE|NASDAQ|AMEX')
-	 * @return array of Instrument Entities
+	 * @return App\Entity\Instrument[]
 	 */
 	public function getTradedInstruments($exchange);
 
