@@ -16,7 +16,6 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use App\Entity\Instrument;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
-use App\Service\Exchange\AMEX;
 use App\Service\Exchange\NASDAQ;
 use App\Service\Exchange\NYSE;
 
@@ -80,9 +79,9 @@ class InstrumentFixtures extends Fixture implements FixtureGroupInterface
         	$instrument->setSymbol($symbol);
 
             if (in_array($symbol, $nyseSymbols)) {
-                $instrument->setExchange(NYSE::NAME);
+                $instrument->setExchange(NYSE::getExchangeName());
             } elseif (in_array($symbol, $nasdaqSymbols)) {
-                $instrument->setExchange(NASDAQ::NAME);
+                $instrument->setExchange(NASDAQ::getExchangeName());
             }
 
         	$instrument->setName($fields[1]);

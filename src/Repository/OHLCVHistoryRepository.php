@@ -56,7 +56,6 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
         $query->execute();
     }
 
-
     /**
      * Retrieves price history from storage for given dates. If both dates are null, all history for a given instrument
      *   and period will be retrieved.
@@ -65,8 +64,10 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
      * @param DateTime $toDate | null
      * @param DateInterval entries for which time period supposed to be retrieved
      * @param string $provider if no provider supplied price records for all providers will be retrieved
+     * @return App\Entity\OHLCVHistory[]
+     * @throws PriceHistoryException
      */
-    public function retrieveHistory($instrument, $fromDate = null, $toDate = null, $interval, $provider = null)
+    public function retrieveHistory($instrument, $interval, $fromDate = null, $toDate = null, $provider = null)
     {
         if (!$instrument || !($instrument instanceof Instrument)) throw new PriceHistoryException('Parameter $instrument must be instance of App\Entity\Instrument');
         if (!$interval || !($interval instanceof \DateInterval)) throw new PriceHistoryException('Parameter $interval must be instance of \DateInterval');
@@ -80,9 +81,12 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
         
         if ($provider) $qb->andWhere('o.provider = :provider')->setParameter('provider', $provider);
 
-        if ($fromDate) $qb->andWhere('o.timestamp >= :fromDate')->setParameter('fromDate', $fromDate);
+        if ($fromDate) {
+            $fromDate->setTime(0,0,0);
+            $qb->andWhere('o.timestamp >= :fromDate')->setParameter('fromDate', $fromDate);
+        }
 
-        if ($toDate) $qb->andWhere('o.timestamp <= :toDate')->setParameter('toDate', $toDate);
+        if ($toDate) $qb->andWhere('o.timestamp < :toDate')->setParameter('toDate', $toDate);
 
         $qb->orderBy('o.timestamp', 'ASC');
 
@@ -90,7 +94,6 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
 
         return $query->getResult();
     }
-    
 
     /*
     public function findOneBySomeField($value): ?OHLCVHistory

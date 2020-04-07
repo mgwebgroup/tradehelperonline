@@ -19,7 +19,7 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
 
     public function testIntro()
     {
-    	fwrite(STDOUT, 'Testing NASDAQ symbols'.PHP_EOL);
+//    	fwrite(STDOUT, 'Testing NASDAQ symbols'.PHP_EOL);
     	$this->assertTrue(true);
     }
 
@@ -236,9 +236,9 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
      */
     public function test30()
     {
-        $this->assertTrue($this->SUT->isTraded('FB', $this->SUT::NAME));
+        $this->assertTrue($this->SUT->isTraded('FB', $this->SUT::getExchangeName()));
 
-        $this->assertFalse($this->SUT->isTraded('SPY1', $this->SUT::NAME));
+        $this->assertFalse($this->SUT->isTraded('SPY1', $this->SUT::getExchangeName()));
     }
 
     /**
@@ -246,7 +246,7 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
      */
     public function test40()
     {
-        $result = $this->SUT->getTradedInstruments($this->SUT::NAME);
+        $result = $this->SUT->getTradedInstruments($this->SUT::getExchangeName());
         $nasdaq = file_get_contents($this->SUT::SYMBOLS_LIST);
         // var_dump($nyse); exit();
         foreach ($result as $instrument) {

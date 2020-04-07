@@ -1,26 +1,40 @@
 <?php
 
-namespace App\Tests\Service;
+namespace App\Tests\Service\PriceHistory\OHLCV;
 
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use App\Service\_Yahoo;
-use Faker\Factory;
-use App\Service\Exchange_Equities;
 use App\Entity\OHLCVHistory;
 use App\Entity\Instrument;
 use App\Entity\OHLCVQuote;
 use App\Exception\PriceHistoryException;
 
-class OHLCV_YahooTest extends KernelTestCase
+class YahooTest extends KernelTestCase
 {
+    const TEST_SYMBOL = 'TEST';
+
+    /**
+     * @var \App\Service\PriceHistory\OHLCV\Yahoo
+     */
     private $SUT;
 
+    /**
+     * @var \Faker\Generator
+     */
     private $faker;
 
-    private $equities;
+    /**
+     * @var App\Service\Exchange\ExchangeInterface
+     */
+    private $exchange;
 
+    /**
+     * @var App\Entity\Instrument
+     */
     private $instrument;
 
+    /**
+     * @var Doctrine\ORM\EntityManager
+     */
     private $em;
 
     /**
@@ -30,73 +44,78 @@ class OHLCV_YahooTest extends KernelTestCase
 	protected function setUp(): void
     {
         self::bootKernel();
-        // $container = self::$container;
-        // $container = self::$kernel->getContainer();
-        $container = self::$container->get('test.service_container');
+        $this->SUT = self::$container->get(\App\Service\PriceHistory\OHLCV\Yahoo::class);
 
-        $this->SUT = $container->get(_Yahoo::class);
-
-        $this->faker = Factory::create();
-
-        $this->equities = $container->get(Exchange_Equities::class);
-
-        // $this->em = $container->get('doctrine')->getManager();
-        // $this->em = $this->SUT->doctrine->getManager();
-        $this->em = $this->SUT->em;
-
+        $this->faker = \Faker\Factory::create();
         $exchanges = ['NYSE', 'NASDAQ'];
-        $exchange = $this->faker->randomElement($exchanges);
-        
-        $instruments = $this->equities->getTradedInstruments($exchange);
+        $exchangeName = $this->faker->randomElement($exchanges);
+        $className = $exchangeName;
+        $this->exchange = self::$container->get('App\Service\Exchange\\'.$className);
+        $instruments = $this->exchange->getTradedInstruments($className);
         $this->instrument = $this->faker->randomElement($instruments);
-        // $this->instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => 'BKS']);
-        // var_dump($this->instrument->getSymbol()); exit();
+
+        $this->em = self::$container->get('doctrine')->getManager();
     }
 
     public function testIntro()
     {
-    	fwrite(STDOUT, 'Testing OHLCV_Yahoo');
+        $reflection = new \ReflectionClass($this->SUT);
+//    	fwrite(STDOUT, sprintf('Testing %s\%s', $reflection->getNamespaceName(), $reflection->getName()) . PHP_EOL);
     	$this->assertTrue(true);
     }
 
     /**
-     * Test relation between entities
-     */
-    public function test5()
-    {
-        fwrite(STDOUT, $this->instrument->getSymbol());
-
-        $history = $this->instrument->getOHLCVHistories();
-
-        $this->assertGreaterThan(900, count($history));
-    }    
-
-    /**
      * test downloadHistory:
      * Check if downloads at least 4 historical records for an instrument
+     * Test for daily, weekly, monthly
      */
     public function test10()
     {
-        $fromDate = new \DateTime('1 week ago');
         $toDate = new \DateTime();
+        // daily
+        $fromDate = new \DateTime('1 week ago');
         $options = ['interval' => 'P1D'];
-
         $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
-
         $this->assertGreaterThanOrEqual(4, count($history));
-
         foreach ($history as $item) {
             $this->assertInstanceOf(OHLCVHistory::class, $item);
         }
-
-        // make sure $fromDate is older than $toDate
         $firstElement = array_shift($history);
         $lastElement = array_pop($history);
         $this->assertGreaterThan($firstElement->getTimestamp()->format('U'), $lastElement->getTimestamp()->format('U'));
+
+        // weekly
+        $fromDate = new \DateTime('5 weeks ago');
+        $options = ['interval' => 'P1W'];
+        $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
+        $this->assertGreaterThanOrEqual(4, count($history));
+        foreach ($history as $item) {
+            $this->assertInstanceOf(OHLCVHistory::class, $item);
+        }
+        $firstElement = array_shift($history);
+        $lastElement = array_pop($history);
+        $this->assertGreaterThan($firstElement->getTimestamp()->format('U'), $lastElement->getTimestamp()->format('U'));
+
+        // monthly
+        $fromDate = new \DateTime('5 months ago');
+        $options = ['interval' => 'P1M'];
+        $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
+        $this->assertGreaterThanOrEqual(4, count($history));
+        foreach ($history as $item) {
+            $this->assertInstanceOf(OHLCVHistory::class, $item);
+        }
+        $firstElement = array_shift($history);
+        $lastElement = array_pop($history);
+        $this->assertGreaterThan($firstElement->getTimestamp()->format('U'), $lastElement->getTimestamp()->format('U'));
+
+        // check for correct exception if wrong interval is specified
+        $this->expectException(PriceHistoryException::class);
+        $options = ['interval' => 'P1Y'];
+        $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
     }
 
     /**
-     * Today is a trading day, $toDate is set for today, 
+     * Today is a trading day Monday, 2019-05-20, $toDate is set for today,
      * Check if downloads history with the last date as last T from today
      */
     public function test20()
@@ -110,12 +129,12 @@ class OHLCV_YahooTest extends KernelTestCase
         $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
 
         $latestItem = array_pop($history);  // pop element off the end (last element) of array
-        // var_dump($latestItem); exit();
+
         $this->assertSame('2019-05-17', $latestItem->getTimestamp()->format('Y-m-d'));
     }
 
     /**
-     * today is not a trading day, $toDate is set for today, 
+     * today is not a trading day, it is Sunday, May 19, 2019, $toDate is set for today,
      * check if downloads history with the last date as last T from today
      */
     public function test30()
@@ -135,7 +154,8 @@ class OHLCV_YahooTest extends KernelTestCase
 
     /**
      * $toDate is set for some day in the past, and it is a T
-     *  check that history downloads including $toDate
+     *  check that history downloads excluding $toDate
+     * In this way we are asserting that toDate does not mean through Date
      */
     public function test40()
     {
@@ -148,17 +168,17 @@ class OHLCV_YahooTest extends KernelTestCase
 
         $latestItem = array_pop($history);  // pop element off the end (last element) of array
         // var_dump($latestItem); exit();
-        $this->assertSame('2019-05-15', $latestItem->getTimestamp()->format('Y-m-d'));
+        $this->assertSame('2019-05-14', $latestItem->getTimestamp()->format('Y-m-d'));
     }    
 
     /**
      * $toDate is set for some date in the past, and it is not a T
-     * check that history downloads including up to $toDate
+     * check that history downloads excluding up to $toDate
      */
     public function test50()
     {
         // $this->markTestSkipped();
-        $toDate = new \DateTime('2019-04-19'); // Friday, April 19, 2019 Good Friday
+        $toDate = new \DateTime('2019-04-19'); // Friday, April 19. Good Friday
         $fromDate = clone $toDate;
         $fromDate->sub(new \DateInterval('P1W'));
         $options = ['interval' => 'P1D'];
@@ -172,14 +192,14 @@ class OHLCV_YahooTest extends KernelTestCase
 
     /**
      * $toDate is set for future
-     * today is a trading day
-     * check if downloads history with the last date as last T from today
+     * today is a trading day (T)
+     * check if downloads history with the last date as last T-1
      */
     public function test60()
     {
+        $_SERVER['TODAY'] = '2019-05-20'; // Monday, May 20, 2019 is a T
         $toDate = new \DateTime('2019-05-20');
         $toDate->add(new \DateInterval('P1W'));
-        $_SERVER['TODAY'] = '2019-05-20'; // Monday, May 20, 2019 is a T
         $fromDate = clone $toDate;
         $fromDate->sub(new \DateInterval('P2W'));
         $options = ['interval' => 'P1D'];
@@ -193,14 +213,14 @@ class OHLCV_YahooTest extends KernelTestCase
 
     /**
      * $toDate is set for future
-     * today is not a trading day
+     * today is not a trading day (not T)
      * check if downloads history with the last date as last T from today
      */
     public function test70 ()
     {
+        $_SERVER['TODAY'] = '2019-05-19'; // Sunday, May 19, 2019
         $toDate = new \DateTime('2019-05-20');
         $toDate->add(new \DateInterval('P1W'));
-        $_SERVER['TODAY'] = '2019-05-19'; // Sunday, May 19, 2019
         $fromDate = clone $toDate;
         $fromDate->sub(new \DateInterval('P2W'));
         $options = ['interval' => 'P1D'];
@@ -248,8 +268,8 @@ class OHLCV_YahooTest extends KernelTestCase
      */
     public function test100()
     {
-        $toDate = new \DateTime('2019-05-25');
-        $fromDate = new \DateTime('2019-05-27');
+        $fromDate = new \DateTime('2019-05-25');
+        $toDate = new \DateTime('2019-05-27');
         $options = ['interval' => 'P1D'];
 
         $this->expectException(PriceHistoryException::class);
@@ -270,12 +290,11 @@ class OHLCV_YahooTest extends KernelTestCase
         // store 5 records for a week
         $startDate1 = new \DateTime('2018-05-14'); // Monday
         $interval = new \DateInterval('P1D');
-        $instrument = $this->createMockHistory(clone $startDate1, $numberOfRecords = 5, $interval);
+        list($instrument, $saved) = $this->createMockHistory(clone $startDate1, $numberOfRecords = 5, $interval);
 
         // simulate downloaded 3 records with different values
         $startDate2 = new \DateTime('2018-05-16'); // Wednesday
         $addedHistory = $this->createSimulatedDownload($instrument, clone $startDate2, $numberOfRecords = 3, $interval);
-
 
         // add to history
         $this->SUT->addHistory($instrument, $addedHistory);
@@ -294,9 +313,7 @@ class OHLCV_YahooTest extends KernelTestCase
             ->andWhere('o.provider = :provider')->setParameter('provider', $this->SUT::PROVIDER_NAME)
             ->orderBy('o.timestamp', 'ASC')
         ;
-
         $query = $qb->getQuery();
-
         $result = $query->getResult();
 
         $this->assertCount(5, $result);
@@ -304,6 +321,9 @@ class OHLCV_YahooTest extends KernelTestCase
         $this->assertSame($startDate1->format('Y-m-d'), $result[0]->getTimestamp()->format('Y-m-d'));
         $this->assertSame($startDate2->format('Y-m-d'), $result[2]->getTimestamp()->format('Y-m-d'));
 
+        for ($i = 0; $i < 2; $i++) {
+            $this->assertEquals($this->computeControlSum($saved[$i]), $this->computeControlSum($result[$i]));
+        }
 
         for ($i = 2; $i <= 4; $i++) {
             $this->assertEquals($this->computeControlSum($addedHistory[$i-2]), $this->computeControlSum($result[$i]));
@@ -324,12 +344,11 @@ class OHLCV_YahooTest extends KernelTestCase
         // store 5 records for a week
         $startDate1 = new \DateTime('2018-05-14'); // Monday
         $interval = new \DateInterval('P1D');
-        $instrument = $this->createMockHistory(clone $startDate1, $numberOfRecords = 5, $interval);
+        list($instrument, $saved) = $this->createMockHistory(clone $startDate1, $numberOfRecords = 5, $interval);
 
         // simulate downloaded 3 records with different values
         $startDate2 = new \DateTime('2018-05-28'); // Monday
         $addedHistory = $this->createSimulatedDownload($instrument, clone $startDate2, $numberOfRecords = 3, $interval);
-
 
         // add to history
         $this->SUT->addHistory($instrument, $addedHistory);
@@ -356,13 +375,17 @@ class OHLCV_YahooTest extends KernelTestCase
         $this->assertSame($startDate1->format('Y-m-d'), $result[0]->getTimestamp()->format('Y-m-d'));
         $this->assertSame($startDate2->format('Y-m-d'), $result[5]->getTimestamp()->format('Y-m-d'));
 
+        for ($i = 0; $i < 5; $i++) {
+            $this->assertEquals($this->computeControlSum($saved[$i]), $this->computeControlSum($result[$i]));
+        }
+
         for ($i = 5; $i <= 7; $i++) {
             $this->assertEquals($this->computeControlSum($addedHistory[$i-5]), $this->computeControlSum($result[$i]));
         }
     }
 
     /**
-     * Test retieveHistory
+     * Test retrieveHistory
      */
     public function test130()
     {
@@ -373,7 +396,7 @@ class OHLCV_YahooTest extends KernelTestCase
         $interval = 'P1D';
         $options = ['interval' => $interval];
         $interval = new \DateInterval($interval);
-        $instrument = $this->createMockHistory($endDate, $numberOfRecords = 5, $interval);
+        list($instrument, $saved) = $this->createMockHistory($endDate, $numberOfRecords = 5, $interval);
 
         // retrieve history
         $history = $this->SUT->retrieveHistory($instrument, $startDate, $endDate, $options);
@@ -462,11 +485,11 @@ class OHLCV_YahooTest extends KernelTestCase
 
         // $quote = [
         //     'timestamp' => $date,
-        //     'open' => 103, 
-        //     'high' => 203, 
-        //     'low' => 303, 
-        //     'close' => 403, 
-        //     'volume' => 503, 
+        //     'open' => 103,
+        //     'high' => 203,
+        //     'low' => 303,
+        //     'close' => 403,
+        //     'volume' => 503,
         //     'interval' => $interval
         // ];
         $quote = new OHLCVQuote();
@@ -494,7 +517,7 @@ class OHLCV_YahooTest extends KernelTestCase
 
     /**
      * Test saveQuote
-     * Quote is not already saved.  Only one quote supposed to remain in storage. Existing quote must be removed, and new one returned.
+     * Quote is not already saved.  Only one quote supposed to remain in storage. Existing quote must be removed and new one returned.
      */
     public function test155()
     {
@@ -513,14 +536,14 @@ class OHLCV_YahooTest extends KernelTestCase
 
         // $quote = [
         //     'timestamp' => $date,
-        //     'open' => 103, 
-        //     'high' => 203, 
-        //     'low' => 303, 
-        //     'close' => 403, 
-        //     'volume' => 503, 
+        //     'open' => 103,
+        //     'high' => 203,
+        //     'low' => 303,
+        //     'close' => 403,
+        //     'volume' => 503,
         //     'interval' => $interval
         // ];
-        
+
         $quote = new OHLCVQuote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
@@ -542,23 +565,24 @@ class OHLCV_YahooTest extends KernelTestCase
     }
 
     /**
-     * Daily interval
      * Test addQuoteToHistory
+     * Daily interval
      * History is passed as array
+     * Market is open
      */
     public function test160()
     {
+        $_SERVER['TODAY'] = '2018-05-18 15:59:00';
         $startDate = new \DateTime('2018-05-14'); // Monday;
         $interval = new \DateInterval('P1D');
         $history = $this->createSimulatedDownload($this->instrument, $startDate, $numberOfRecords = 5, $interval);
 
         // Quote is the same date as last date in history
-        $endDate = $startDate->sub($interval);
-
+        $today = new \DateTime($_SERVER['TODAY']);
         $quote = new OHLCVQuote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
-        $quote->setTimestamp($endDate); // will be 2018-05-18
+        $quote->setTimestamp($today);
         $quote->setTimeinterval($interval);
         $quote->setOpen(103);
         $quote->setHigh(203);
@@ -568,28 +592,369 @@ class OHLCV_YahooTest extends KernelTestCase
 
         $newHistory = $this->SUT->addQuoteToHistory($quote, $history);
 
+        $this->assertInternalType('array', $newHistory);
         $this->assertCount(5, $newHistory);
-
         $element = array_pop($newHistory);
-
         $this->assertSame($element->getTimestamp()->format('Y-m-d'), $quote->getTimestamp()->format('Y-m-d'));
+        $this->assertSame($element->getInstrument()->getSymbol(), $quote->getInstrument()->getSymbol());
+        $this->assertEquals($this->computeControlSum($element), $this->computeControlSum2($quote));
 
         // Quote is next T from last day in history
-        // ...
+        $_SERVER['TODAY'] = '2018-05-21 15:59:00';
+        $today = new \DateTime($_SERVER['TODAY']);
+        $quote->setTimestamp($today);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote, $history);
+        $this->assertInternalType('array', $newHistory);
+        $this->assertCount(6, $newHistory);
+        $element = array_pop($newHistory);
+        $this->assertSame($element->getTimestamp()->format('Y-m-d'), $quote->getTimestamp()->format('Y-m-d'));
+        $this->assertEquals($this->computeControlSum($element), $this->computeControlSum2($quote));
+        array_map(function ($h, $nh) {
+            $this->assertEquals($this->computeControlSum($h), $this->computeControlSum($nh));
+        }, $history, $newHistory);
 
         // Quote is a gap from history
-        // ...
+        $_SERVER['TODAY'] = '2018-05-22 15:59:00';
+        $today = new \DateTime($_SERVER['TODAY']);
+        $quote->setTimestamp($today);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote, $history);
+        $this->assertFalse($newHistory);
+
+        // Quote is inside history:
+        // This should not happen, as history must always have dates in past, and quote always newer than history.
+        //corresponding record in history will be overwritten with info from quote, if their dates match.
+    }
+
+    /**
+     * Test addQuoteToHistory
+     * Daily interval
+     * History is passed as array
+     * Market is closed
+     */
+    public function test170()
+    {
+        $_SERVER['TODAY'] = '2018-05-14 16:00:00';
+        $startDate = new \DateTime('2018-05-14'); // Monday;
+        $interval = new \DateInterval('P1D');
+        $history = $this->createSimulatedDownload($this->instrument, $startDate, $numberOfRecords = 5, $interval);
+
+        // Quote is the same date as last date in history
+        $endDate = $startDate->sub($interval); // will be 2018-05-18
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($this->instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($endDate);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(103);
+        $quote->setHigh(203);
+        $quote->setLow(303);
+        $quote->setClose(403);
+        $quote->setVolume(503);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote, $history);
+
+        $this->assertNull($newHistory);
+
+        // Quote is next T from last day in history
+        $endDate = new \DateTime('2018-05-21');
+        $quote->setTimestamp($endDate);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote, $history);
+
+        $this->assertNull($newHistory);
+
+        // Quote is a gap from history
+        $endDate = new \DateTime('2018-05-22');
+        $quote->setTimestamp($endDate);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote, $history);
+        $this->assertNull($newHistory);
 
         // Quote is inside history
-        // ...
-    } 
+        $endDate = new \DateTime('2018-05-14');
+        $quote->setTimestamp($endDate);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote, $history);
+        $this->assertNull($newHistory);
+    }
+
+    /**
+     * Test addQuoteToHistory
+     * Daily interval
+     * History is not passed and is in storage
+     * Market open
+     */
+    public function test180()
+    {
+        $startDate = new \DateTime('2018-05-14'); // Monday;
+        $interval = new \DateInterval('P1D');
+
+        list($instrument, $saved) = $this->createMockHistory($startDate, $numberOfRecords = 5, $interval);
+
+        // Quote is the same date as last date in history
+        $_SERVER['TODAY'] = '2018-05-18 09:30:01';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($today);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(103);
+        $quote->setHigh(203);
+        $quote->setLow(303);
+        $quote->setClose(403);
+        $quote->setVolume(503);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote);
+
+        $this->assertTrue($newHistory);
+
+        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $startDate = new \DateTime('2018-05-14');
+        $today = new \DateTime('2018-05-19');
+        $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
+        array_pop($saved);
+        $lastElement = array_pop($history);
+        $this->assertArraySubset($saved, $history);
+
+        $this->assertEquals($this->computeControlSum($lastElement), $this->computeControlSum2($quote));
+
+
+        // Quote is next T from last day in history
+        $_SERVER['TODAY'] = '2018-05-21 09:30:01';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($today);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(104);
+        $quote->setHigh(204);
+        $quote->setLow(304);
+        $quote->setClose(404);
+        $quote->setVolume(504);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote);
+
+        $this->assertTrue($newHistory);
+
+        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $startDate = new \DateTime('2018-05-14');
+        $today = new \DateTime('2018-05-21 23:59:59');
+        $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
+        $lastElement = array_pop($history);
+        $this->assertArraySubset($saved, $history);
+
+        $this->assertEquals($this->computeControlSum($lastElement), $this->computeControlSum2($quote));
+
+        // Quote is a gap from history
+        $_SERVER['TODAY'] = '2018-05-23 09:30:01';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($today);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(105);
+        $quote->setHigh(205);
+        $quote->setLow(305);
+        $quote->setClose(405);
+        $quote->setVolume(505);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote);
+
+        $this->assertFalse($newHistory);
+
+        // Quote is inside history:
+        // This should not happen, as history must always have dates in past, and quote always newer than history.
+        //corresponding record in history will be overwritten with info from quote, if their dates match.
+    }
+
+    /**
+     * Test addQuoteToHistory
+     * Daily interval
+     * History is not passed and is in storage
+     * Market closed
+     */
+    public function test190()
+    {
+        // Quote is the same date as last date in history
+        $startDate = new \DateTime('2018-05-14'); // T Monday;
+        $interval = new \DateInterval('P1D');
+
+        list($instrument, $saved) = $this->createMockHistory($startDate, $numberOfRecords = 5, $interval);
+
+        // Quote is the same date as last date in history
+        $_SERVER['TODAY'] = '2018-05-18 16:00:00';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($today);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(103);
+        $quote->setHigh(203);
+        $quote->setLow(303);
+        $quote->setClose(403);
+        $quote->setVolume(503);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote);
+
+        $this->assertNull($newHistory);
+
+        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $startDate = new \DateTime('2018-05-14');
+        $today = new \DateTime('2018-05-18 23:59:59');
+        $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
+
+        $this->assertArraySubset($saved, $history);
+
+        // Quote is next T from last day in history
+        $_SERVER['TODAY'] = '2018-05-21 16:00:00';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($today);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(103);
+        $quote->setHigh(203);
+        $quote->setLow(303);
+        $quote->setClose(403);
+        $quote->setVolume(503);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote);
+
+        $this->assertNull($newHistory);
+
+        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $startDate = new \DateTime('2018-05-14');
+        $today = new \DateTime('2018-05-18 23:59:59');
+        $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
+
+        $this->assertArraySubset($saved, $history);
+
+        // Quote is a gap from history
+        $_SERVER['TODAY'] = '2018-05-22 16:00:00';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($today);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(103);
+        $quote->setHigh(203);
+        $quote->setLow(303);
+        $quote->setClose(403);
+        $quote->setVolume(503);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote);
+
+        $this->assertNull($newHistory);
+
+        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $startDate = new \DateTime('2018-05-14');
+        $today = new \DateTime('2018-05-22 16:00:00');
+        $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
+
+        $this->assertArraySubset($saved, $history);
+
+        // Quote is inside history:
+        // This should not happen, as history must always have dates in past, and quote always newer than history.
+        //corresponding record in history will be overwritten with info from quote, if their dates match.
+    }
+
+    /**
+     * Test addQuoteToHistory
+     * Daily interval
+     * History is not passed and is not in storage
+     * Market open
+     */
+    public function test200()
+    {
+        $interval = new \DateInterval('P1D');
+
+        $instrument = new Instrument();
+        $instrument->setSymbol('TEST');
+        $instrument->setName('Instrument for testing purposes');
+        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+
+        $this->em->persist($instrument);
+        $this->em->flush();
+
+        // Quote is the same date as last date in history
+        $_SERVER['TODAY'] = '2018-05-18 09:30:01';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($today);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(103);
+        $quote->setHigh(203);
+        $quote->setLow(303);
+        $quote->setClose(403);
+        $quote->setVolume(503);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote);
+
+        $this->assertNull($newHistory);
+    }
+
+    /**
+     * Test addQuoteToHistory
+     * Daily interval
+     * History is not passed and is not in storage
+     * Market closed
+     */
+    public function test210()
+    {
+        $interval = new \DateInterval('P1D');
+
+        $instrument = new Instrument();
+        $instrument->setSymbol('TEST');
+        $instrument->setName('Instrument for testing purposes');
+        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+
+        $this->em->persist($instrument);
+        $this->em->flush();
+
+        // Quote is the same date as last date in history
+        $_SERVER['TODAY'] = '2018-05-18 16:00:00';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($today);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(103);
+        $quote->setHigh(203);
+        $quote->setLow(303);
+        $quote->setClose(403);
+        $quote->setVolume(503);
+
+        $newHistory = $this->SUT->addQuoteToHistory($quote);
+
+        $this->assertNull($newHistory);
+    }
 
     private function createMockHistory($startDate, $numberOfRecords, $interval)
     {
         $instrument = new Instrument();
         $instrument->setSymbol('TEST');
         $instrument->setName('Instrument for testing purposes');
-        $instrument->setExchange('NYSE');
+        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
 
         $this->em->persist($instrument);
 
@@ -607,11 +972,13 @@ class OHLCV_YahooTest extends KernelTestCase
             $record->setVolume(rand(0,100));
 
             $this->em->persist($record);
+
+            $saved[] = $record;
         }
 
         $this->em->flush();
 
-        return $instrument;
+        return [$instrument, $saved];
     }
 
     private function createSimulatedDownload($instrument, $startDate, $numberOfRecords, $interval)
@@ -654,18 +1021,10 @@ class OHLCV_YahooTest extends KernelTestCase
     {
         $instrumentRepository = $this->em->getRepository(Instrument::class);
         $qb = $instrumentRepository->createQueryBuilder('i');
-        $qb->delete()->where('i.symbol = :symbol')->setParameter('symbol', 'TEST');
+        $qb->delete()->where('i.symbol = :symbol')->setParameter('symbol', self::TEST_SYMBOL);
         $query = $qb->getQuery();
         $query->execute();
 
-        // $quoteRepository = $this->em->getRepository(OHLCVQuote::class);
-        // // $instrumentId = $this->instrument->getId();
-        // $qb = $quoteRepository->createQueryBuilder('q');
-        // $qb->delete()->where('q.instrument = :instrument')->setParameter('instrument', $this->instrument);
-        // $qb->getQuery()->execute();
-
         $this->em->close();
-        // $this->em = null;
     }
-
 }

@@ -29,25 +29,31 @@ interface ExchangeInterface
 
 	/**
 	 * Queries Instruments table for which Exchange they belong to
-	 * @param string $exchange name ('NYSE|NASDAQ|AMEX')
 	 * @return App\Entity\Instrument[]
 	 */
-	public function getTradedInstruments($exchange);
+	public function getTradedInstruments();
 
 	/**
 	 * Looks up given symbol
 	 * @param string $symbol
-	 * @param string $exchange
 	 * @return bool
 	 */
-	public function isTraded($symbol, $exchange);
+	public function isTraded($symbol);
 
 	/**
 	 * Iterates back one day until finds a trading day
 	 * @param \DateTime $date
-	 * @throws Exception if max number of iterations reached without finding a trading day
+	 * @throws \App\Exception\ExchangeException if max number of iterations reached without finding a trading day
 	 * @return \DateTime previous T from $date
 	 */
 	public function calcPreviousTradingDay($date);
+
+	/**
+     * Iterates forward one day until finds a trading day
+     * @param \DateTime $date
+     * @throws \App\Exception\ExchangeException if max number of iterations reached without finding a trading day
+     * @return \DateTime next T from $date
+     */
+	public function calcNextTradingDay($date);
 
 }

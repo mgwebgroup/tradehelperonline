@@ -11,6 +11,7 @@
 namespace App\Service\Exchange;
 
 use Yasumi\Yasumi;
+use App\Exception\ExchangeException;
 
 
 /**
@@ -26,7 +27,10 @@ abstract class Equities implements \App\Service\Exchange\ExchangeInterface
 
 	protected $instrumentRepository;
 
-	const NAME = null;
+    /**
+     * Used when looking for prevT or nextT
+     */
+	const MAX_ITERATIONS = 10;
 
 	public function __construct(
         \App\Repository\InstrumentRepository $instrumentRepository
@@ -40,15 +44,12 @@ abstract class Equities implements \App\Service\Exchange\ExchangeInterface
 		$this->matchHolidays((int)$date->format('Y'));
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	public function isTradingDay($date) 
 	{
 		if ( $this->holidaysProvider->getYear() != (int)$date->format('Y')) {
 			// save current year
 			$initYear = $this->holidaysProvider->getYear();
-			// instaniate Yasumi for a different year
+			// instantiate Yasumi for a different year
 			$this->holidaysProvider = Yasumi::create('USA', $date->format('Y'));
 			$this->matchHolidays((int)$date->format('Y'));
 			$out = $this->holidaysProvider->isWorkingDay($date);
@@ -63,7 +64,7 @@ abstract class Equities implements \App\Service\Exchange\ExchangeInterface
     /**
      * In this func, the trick to get seconds offset from midnight is to use this formula:
      * $datetime->format('U') % 86400 + $secondsOffsetFromUTC = $datetime->format('U') % 86400 + $datetime->format('Z')
-     * @param DateTime $datetime
+     * @param \DateTime $datetime
      * @return bool
      * @throws \Exception
      */
@@ -102,39 +103,41 @@ abstract class Equities implements \App\Service\Exchange\ExchangeInterface
 		return ($datetime->format('U') % 86400 + $secondsOffsetFromUTC > 9.5*3600 && $datetime->format('U') % 86400 + $secondsOffsetFromUTC < 16*3600 )? true : false;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public function getTradedInstruments($exchange)
-	{
-		return ($this->instrumentRepository->findBy(['exchange' => $exchange]));
-	}
+	abstract function getTradedInstruments();
 
-	/**
-	 * {@inheritDoc}
-	 */
-	public function isTraded($symbol, $exchange) 
-	{
-		return ($this->instrumentRepository->findOneBy(['symbol' => $symbol, 'exchange' => $exchange]))? true : false;
-	}
+	abstract function isTraded($symbol);
 
     abstract protected function matchHolidays($year);
 
-	/**
-	 * {@inheritDoc}
-	 */
+    // TO DO: Use internal generator inside this function. Something like trading_day($start, $interval, $direction = 1 | -1)
 	public function calcPreviousTradingDay($date)
 	{
 		$interval = new \DateInterval('P1D');
 		$prevT = clone $date;
-		$counter = 0;
+		$counter = 1;
 		do {
 			$prevT->sub($interval);
 			$counter++;
-		} while (!$this->isTradingDay($prevT) && $counter < 10);
+		} while (!$this->isTradingDay($prevT) && $counter <= self::MAX_ITERATIONS);
 
-		if (9 == $counter) throw new Exception('Too many iterations while looking for previous T.');
+		if (self::MAX_ITERATIONS == $counter) throw new ExchangeException('Too many iterations while looking for previous T.');
 
 		return $prevT;
 	}
+
+    // TO DO: Use internal generator inside this function. Something like trading_day($start, $interval, $direction = 1 | -1)
+    public function calcNextTradingDay($date)
+    {
+        $interval = new \DateInterval('P1D');
+        $nextT = clone $date;
+        $counter = 1;
+        do {
+            $nextT->add($interval);
+            $counter++;
+        } while (!$this->isTradingDay($nextT) && $counter <= self::MAX_ITERATIONS);
+
+        if (self::MAX_ITERATIONS == $counter) throw new ExchangeException('Too many iterations while looking for next T.');
+
+        return $nextT;
+    }
 }

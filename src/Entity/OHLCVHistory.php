@@ -1,4 +1,5 @@
 <?php
+// TO DO: Quote History should extend from a more generic interface
 
 namespace App\Entity;
 

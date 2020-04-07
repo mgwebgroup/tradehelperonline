@@ -12,6 +12,8 @@
 namespace App\Exception;
 
 /**
- * Exception when handling Price History
+ * Exception when handling Exchange
  */
-class PriceHistoryException extends \Exception {}
+class ExchangeException extends \Exception
+{
+}

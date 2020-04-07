@@ -5,12 +5,27 @@ namespace App\Service\Exchange;
 
 class NASDAQ extends Equities
 {
-    const NAME = 'NASDAQ';
     const SYMBOLS_LIST = 'data/source/nasdaqlisted.csv';
     const TIMEZONE = 'America/New_York';
 
+    public static function getExchangeName()
+    {
+        return str_replace(__NAMESPACE__ . '\\', '', __CLASS__);
+    }
+
+    public function getTradedInstruments()
+    {
+        return ($this->instrumentRepository->findBy(['exchange' => $this->getExchangeName()]));
+    }
+
+    public function isTraded($symbol)
+    {
+        return ($this->instrumentRepository->findOneBy(['symbol' => $symbol, 'exchange' => $this->getExchangeName()]))? true : false;
+    }
+
     protected function matchHolidays($year)
     {
+        // add Good Friday
         $this->holidaysProvider->addHoliday($this->holidaysProvider->goodFriday($year, self::TIMEZONE, 'en_US'));
 
         // remove columbusDay

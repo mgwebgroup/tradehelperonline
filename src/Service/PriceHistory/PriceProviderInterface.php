@@ -24,14 +24,15 @@ interface PriceProviderInterface
 	 * from a given date and including last trading day before today. If today is a
 	 * trading day, it will not be included. Use downloadQuote (for open trading hours),
 	 * and downloadClosingPrice(for past trading hours).
+     * Also, $toDate means not including, or up to <date>, not through <date>
 	 * Downloaded history will be sorted from earliest date (the first element) to the
 	 *  latest (the last element).
 	 * @param App\Entity\Instrument $instrument
 	 * @param DateTime $fromDate
 	 * @param DateTime $toDate
 	 * @param array $options (example: ['interval' => 'P1D'])
-	 * @throws PriceHistoryException 
-	 * @return array with elements of type App\Entity\<History Entity>
+     * @return \App\Entity\<History Entity>[]
+	 * @throws PriceHistoryException
 	 */
 	public function downloadHistory($instrument, $fromDate, $toDate, $options);
 
@@ -40,13 +41,13 @@ interface PriceProviderInterface
 	 * All records in old history which start from the earliest date in $history will be deleted, with the new
 	 *  records from $history written in.
 	 * @param App\Entity\Instrument $instrument
-	 * @param array with elements of type App\Entity\<History Entity>
+	 * @param \App\Entity\<History Entity>[]
 	 */
  	public function addHistory($instrument, $history);
-	
+
 	/**
 	  * Will export history from storage into file system. Options must specify format.
-	  * @param array with elements of type App\Entity\<History Entity>
+	  * @param \App\Entity\<History Entity>[]
 	  * @param string $path
 	  * @param array $options
 	  */
@@ -81,11 +82,18 @@ interface PriceProviderInterface
  	/**
  	 * Adds a quote object to array of history. No gaps allowed, i.e. if quote date would skip at least one trading day in history,
  	 *   no addition will be performed.
- 	 * @param App\Entity\<Quote Entity> $quote
+     * If quote date is not the same as today, nothing will be done (return null)
+ 	 * @param App\Entity\<Quote Entity> $quote.
+     * If date on the quote coincides with the last date in history:
+     *   Market open: last history element will be overwritten with the quote value.
+     *   Market closed: nothing will be done.
  	 * @param array $history with elements compatible with chosen storage format (Doctrine Entities, csv records, etc.)
- 	 *  OR null. If null then quote will be added directly to db history storage.
+ 	 *  OR optional. If not-passed (optional), then quote will be added directly to db history storage.
  	 *  If no stored history exists, nothing will be done.
- 	 * @return modified $history | true (history is in storage) on success, null if nothing was added, false if gap was determined
+ 	 * @return
+     *   on success: modified $history | true (history is in storage)
+     *   nothing was done: null
+     *   gap was determined: false
  	 */
  	public function addQuoteToHistory($quote, $history);
  
