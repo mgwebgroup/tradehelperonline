@@ -949,6 +949,82 @@ class YahooTest extends KernelTestCase
         $this->assertNull($newHistory);
     }
 
+    /**
+     * Test retrieveQuote
+     */
+    public function test220()
+    {
+        $interval = new \DateInterval('P1D');
+
+        $instrument = new Instrument();
+        $instrument->setSymbol('TEST');
+        $instrument->setName('Instrument for testing purposes');
+        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+
+        $this->em->persist($instrument);
+
+        // Quote is the same date as last date in history
+        $_SERVER['TODAY'] = '2018-05-18 09:30:01';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($today);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(103);
+        $quote->setHigh(203);
+        $quote->setLow(303);
+        $quote->setClose(403);
+        $quote->setVolume(503);
+
+        $instrument->setOHLCVQuote($quote);
+
+        $this->em->flush();
+
+        $retrievedQuote = $this->SUT->retrieveQuote($instrument);
+
+        $this->assertEquals($this->computeControlSum2($retrievedQuote), $this->computeControlSum2($quote));
+    }
+
+    /**
+     * Test downloadClosingPrice
+     * Today is T
+     */
+    public function test230()
+    {
+        // market open
+        $_SERVER['TODAY'] = '2018-05-14 09:30:01';
+
+        $closingPrice = $this->SUT->downloadClosingPrice($this->instrument);
+
+        $this->assertNull($closingPrice);
+
+        // market closed
+        $_SERVER['TODAY'] = '2018-05-14 16:00:00';
+        $today = new \DateTime($_SERVER['TODAY']);
+
+        $closingPrice = $this->SUT->downloadClosingPrice($this->instrument);
+
+        $this->assertInstanceOf(\App\Entity\OHLCVHistory::class, $closingPrice);
+        $this->assertSame($closingPrice->getTimeStamp()->format('Ymd'), $today->format('Ymd'));
+    }
+
+    /**
+     * Test downloadClosingPrice
+     * Today is not T
+     */
+    public function test240()
+    {
+        $_SERVER['TODAY'] = '2018-05-13 09:30:01'; // Sunday
+        $prevT = new \DateTime('2018-05-11');
+
+        $closingPrice = $this->SUT->downloadClosingPrice($this->instrument);
+
+        $this->assertInstanceOf(\App\Entity\OHLCVHistory::class, $closingPrice);
+        $this->assertSame($closingPrice->getTimeStamp()->format('Ymd'), $prevT->format('Ymd'));
+    }
+
     private function createMockHistory($startDate, $numberOfRecords, $interval)
     {
         $instrument = new Instrument();

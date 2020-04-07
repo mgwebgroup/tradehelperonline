@@ -108,7 +108,7 @@ interface PriceProviderInterface
 	 * Closing Prices are downloaded when market is closed and will return values for the closing price on last known trading day.
 	 * This function is intended to be used same way as downloadQuote, EXCEPT it returns values when market is closed.
 	 * @param App\Entity\Instrument $instrument
-	 * @return App\Entity\<History Entity> when market is closed or null if market is open.
+	 * @return App\Entity\<History Entity> when market is closed | null if market is open.
 	 */
 	public function downloadClosingPrice($instrument);
 

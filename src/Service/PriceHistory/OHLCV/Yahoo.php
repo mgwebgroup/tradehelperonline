@@ -409,59 +409,38 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 		return $instrument->getOHLCVQuote();
 	}
 
-	public function downloadClosingPrice($instrument) {
+	public function downloadClosingPrice($instrument)
+    {
  		if ('test' == $_SERVER['APP_ENV'] && isset($_SERVER['TODAY'])) {
-			$today = $_SERVER['TODAY'];
+			$today = new \DateTime($_SERVER['TODAY']);
 		} else {
-			$today = date('Y-m-d H:i:s');
+			$today = new \DateTime();
 		}
 
-		$dateTime = new \DateTime($today);
-		if ($this->exchangeEquities->isTradingDay($dateTime)) {
-			if (!$this->exchangeEquities->isOpen($dateTime)) {
-				// download closing price by getting quote from Yahoo
-				$providerQuote = $this->priceProvider->getQuote($instrument->getSymbol());
-				$interval = new \DateInterval('P1D');
+        $exchange = $this->getExchangeForInstrument($instrument);
+        $interval = new \DateInterval('P1D');
 
-				if (!($providerQuote instanceof Quote)) throw new PriceHistoryException('Returned provider quote is not instance of Scheb\YahooFinanceApi\Results\Quote');
+        if ($exchange->isOpen($today)) {
+            return null;
+        }
 
-				$historyItem = new OHLCVHistory();
+        if ($exchange->isTradingDay($today)) {
+            // Price provider API is always tied to real dates and times. Figure out if need to use getQuote or downloadHistory
+            // Get quote first, then see if date on it matches today
+            $providerQuote = $this->priceProvider->getQuote($instrument->getSymbol());
 
-		        $historyItem->setInstrument($instrument);
-		        $historyItem->setProvider(self::PROVIDER_NAME);
-		        $historyItem->setTimestamp($providerQuote->getRegularMarketTime());
-		        $historyItem->setTimeinterval($interval);
-		        $historyItem->setOpen($providerQuote->getRegularMarketOpen());
-		        $historyItem->setHigh($providerQuote->getRegularMarketDayHigh());
-		        $historyItem->setLow($providerQuote->getRegularMarketDayLow());
-		        $historyItem->setClose($providerQuote->getRegularMarketPrice());
-		        $historyItem->setVolume($providerQuote->getRegularMarketVolume());
+            if ($providerQuote->getRegularMarketTime()->format('Ymd') == $today->format('Ymd')) {
+                return convertQuote($providerQuote, $instrument, $interval);
+            }
+        }
 
-		        return $historyItem;
-			} else {
-				// it is trading day and market is open
-				return null;
-			}
-		} else {
-			$prevT = $this->exchangeEquities->calcPreviousTradingDay($dateTime);
-			// get 1 day history for prevT
-			$gapHistory = $this->downloadHistory($instrument, $prevT, $dateTime, ['interval' => 'P1D' ]);
-			$closingPrice = array_pop($gapHistory);
+        $prevT = $exchange->calcPreviousTradingDay($today);
+        $gapHistory = $this->downloadHistory($instrument, $prevT, $today, ['interval' => 'P1D' ]);
+        $lastElement = array_pop($gapHistory);
 
-			$historyItem = new OHLCVHistory();
-
-	        $historyItem->setInstrument($instrument);
-	        $historyItem->setProvider(self::PROVIDER_NAME);
-	        $historyItem->setTimestamp($providerQuote->getRegularMarketTime());
-	        $historyItem->setTimeinterval($interval);
-	        $historyItem->setOpen($providerQuote->getRegularMarketOpen());
-	        $historyItem->setHigh($providerQuote->getRegularMarketDayHigh());
-	        $historyItem->setLow($providerQuote->getRegularMarketDayLow());
-	        $historyItem->setClose($providerQuote->getRegularMarketPrice());
-	        $historyItem->setVolume($providerQuote->getRegularMarketVolume());
-
-			return $historyItem;			
-		}
+        if ($lastElement) {
+            return $lastElement;
+        }
 	}
 
 	public function retrieveClosingPrice($instrument) {}
@@ -516,5 +495,29 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         $element->setLow($quote->getLow());
         $element->setClose($quote->getClose());
         $element->setVolume($quote->getVolume());
+    }
+
+    /**
+     * Converts quote object received from the Price Provider API to OHLCVHistory object
+     * @param Quote $prorviderQuote
+     * @param Instrument $instrument
+     * @param \DateInterval $interval
+     * @return OHLCVHistory $closingPrice
+     */
+    private function convertQuote(Quote $providerQuote, Instrument $instrument, $interval)
+    {
+        $closingPrice = new OHLCVHistory();
+
+        $closingPrice->setInstrument($instrument);
+        $closingPrice->setProvider(self::PROVIDER_NAME);
+        $closingPrice->setTimestamp($providerQuote->getRegularMarketTime());
+        $closingPrice->setTimeinterval($interval);
+        $closingPrice->setOpen($providerQuote->getRegularMarketOpen());
+        $closingPrice->setHigh($providerQuote->getRegularMarketDayHigh());
+        $closingPrice->setLow($providerQuote->getRegularMarketDayLow());
+        $closingPrice->setClose($providerQuote->getRegularMarketPrice());
+        $closingPrice->setVolume($providerQuote->getRegularMarketVolume());
+
+        return $closingPrice;
     }
 }
