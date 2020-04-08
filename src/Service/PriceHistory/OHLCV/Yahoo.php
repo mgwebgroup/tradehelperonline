@@ -48,6 +48,11 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     private $priceProvider;
 
     /**
+     * @var App\Service\PriceHistory\PriceAdapter_Scheb
+     */
+    private $priceAdapter;
+
+    /**
      * @var Doctrine\ORM\EntityManager
      */
     public $em;
@@ -59,10 +64,12 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 
     public function __construct(
         \Symfony\Bridge\Doctrine\RegistryInterface $registry,
-        \Scheb\YahooFinanceApi\ApiClient $priceProvider
+        \Scheb\YahooFinanceApi\ApiClient $priceProvider,
+        \App\Service\PriceHistory\OHLCV\PriceAdapter_Scheb $priceAdapter
     ) {
         $this->em = $registry->getManager();
         $this->priceProvider = $priceProvider;
+        $this->priceAdapter = $priceAdapter;
         $this->instrumentRepository = $this->em->getRepository(Instrument::class);
     }
 
