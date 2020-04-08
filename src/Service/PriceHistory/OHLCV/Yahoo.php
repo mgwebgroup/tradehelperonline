@@ -290,9 +290,9 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
                     // check if quote date is the same as latest history date, then just overwrite and save in db, return true
                     $lastElement = array_pop($history);
                     if ($lastElement->getTimestamp()->format('Ymd') == $quote->getTimestamp()->format('Ymd')) {
-                        $this->setHistoryElementToQuote($lastElement, $quote);
-
-                        $this->em->persist($lastElement);
+                        $newElement = $this->castQuoteToHistory($quote);
+                        $this->em->remove($lastElement);
+                        $this->em->persist($newElement);
                         $this->em->flush();
 
                         return true;
@@ -301,12 +301,6 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
                         switch ($quoteInterval) {
                             case 1 == $quoteInterval->d :
                                 if ($lastElement->getTimestamp()->format('Ymd') == $prevT->format('Ymd')) {
-//                                    $newElement = new OHLCVHistory();
-//                                    $newElement->setInstrument($instrument);
-//                                    $newElement->setProvider(self::PROVIDER_NAME);
-//                                    $newElement->setTimeinterval($quoteInterval);
-//                                    $this->setHistoryElementToQuote($newElement, $quote);
-
                                     $newElement = $this->castQuoteToHistory($quote);
                                     $this->em->persist($newElement);
                                     $this->em->flush();
@@ -356,10 +350,10 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
                     throw new PriceHistoryException('Time intervals in history and quote don\'t match');
                 }
 
-                // check if quote date is the same as latest history date, then just overwrite, return $history modified
+                // check if quote date is the same as latest history date, then replace history object with new one,
+                // which has new price, return $history modified
                 if ($lastElement->getTimestamp()->format('Ymd') == $quote->getTimestamp()->format('Ymd')) {
-                    $this->setHistoryElementToQuote($lastElement, $quote);
-
+                    $lastElement = $this->castQuoteToHistory($quote);
                     $history[$indexOfLastElement] = $lastElement;
                     reset($history); // resets array pointer to first element
 
@@ -370,14 +364,6 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
                     switch ($quoteInterval) {
                         case 1 == $quoteInterval->d :
                             if ($lastElement->getTimestamp()->format('Ymd') == $prevT->format('Ymd')) {
-//                                $lastElement = new OHLCVHistory();
-//                                $lastElement->setInstrument($instrument);
-//                                $lastElement->setProvider(self::PROVIDER_NAME);
-//                                $lastElement->setTimeinterval($quoteInterval);
-//
-//                                $this->setHistoryElementToQuote($lastElement, $quote);
-//
-//                                $history[] = $lastElement;
                                 $history[] = $this->castQuoteToHistory($quote);
 
                                 reset($history); // resets array pointer to first element
@@ -415,7 +401,6 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         }
 
         $exchange = $this->getExchangeForInstrument($instrument);
-        $interval = new \DateInterval('P1D');
 
         if ($exchange->isOpen($today)) {
             return null;
@@ -429,9 +414,6 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
             if ($quote->getTimestamp()->format('Ymd') == $today->format('Ymd')) {
                 return $this->castQuoteToHistory($quote);
             }
-//            if ($providerQuote->getRegularMarketTime()->format('Ymd') == $today->format('Ymd')) {
-//                return convertQuote($providerQuote, $instrument, $interval);
-//            }
         }
 
         $prevT = $exchange->calcPreviousTradingDay($today);
@@ -602,48 +584,13 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         $element->setInstrument($quote->getInstrument());
         $element->setProvider(self::PROVIDER_NAME);
         $element->setTimeinterval($quote->getTimeinterval());
-
-        $this->setHistoryElementToQuote($element, $quote);
-
-        return $element;
-    }
-
-    /**
-     * @param App\Entity\OHLCVHistory $element
-     * @param App\Entity\OHLCVQuote $quote
-     */
-
-    private function setHistoryElementToQuote($element, $quote)
-    {
         $element->setTimestamp($quote->getTimestamp());
         $element->setOpen($quote->getOpen());
         $element->setHigh($quote->getHigh());
         $element->setLow($quote->getLow());
         $element->setClose($quote->getClose());
         $element->setVolume($quote->getVolume());
-    }
 
-    /**
-     * Converts quote object received from the Price Provider API to OHLCVHistory object
-     * @param Quote $prorviderQuote
-     * @param Instrument $instrument
-     * @param \DateInterval $interval
-     * @return OHLCVHistory $closingPrice
-     */
-//    private function convertQuote(Quote $providerQuote, Instrument $instrument, $interval)
-//    {
-//        $closingPrice = new OHLCVHistory();
-//
-//        $closingPrice->setInstrument($instrument);
-//        $closingPrice->setProvider(self::PROVIDER_NAME);
-//        $closingPrice->setTimestamp($providerQuote->getRegularMarketTime());
-//        $closingPrice->setTimeinterval($interval);
-//        $closingPrice->setOpen($providerQuote->getRegularMarketOpen());
-//        $closingPrice->setHigh($providerQuote->getRegularMarketDayHigh());
-//        $closingPrice->setLow($providerQuote->getRegularMarketDayLow());
-//        $closingPrice->setClose($providerQuote->getRegularMarketPrice());
-//        $closingPrice->setVolume($providerQuote->getRegularMarketVolume());
-//
-//        return $closingPrice;
-//    }
+        return $element;
+    }
 }
