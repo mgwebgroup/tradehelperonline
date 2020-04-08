@@ -28,14 +28,18 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 {
     const PROVIDER_NAME = 'YAHOO';
 
+    const INTERVAL_DAILY = 'P1D';
+    const INTERVAL_WEEKLY = 'P1W';
+    const INTERVAL_MONTHLY = 'P1M';
+
     /**
      * Currently supported intervals from the Price Provider
      * These follow interval spec for the \DateInterval class
      */
     public $intervals = [
-        'P1D',
-        'P1W',
-        'P1M',
+        self::INTERVAL_DAILY,
+        self::INTERVAL_WEEKLY,
+        self::INTERVAL_MONTHLY,
     ];
 
     /**
@@ -64,11 +68,11 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 
     public function __construct(
         \Symfony\Bridge\Doctrine\RegistryInterface $registry,
-        \Scheb\YahooFinanceApi\ApiClient $priceProvider,
+//        \Scheb\YahooFinanceApi\ApiClient $priceProvider,
         \App\Service\PriceHistory\OHLCV\PriceAdapter_Scheb $priceAdapter
     ) {
         $this->em = $registry->getManager();
-        $this->priceProvider = $priceProvider;
+//        $this->priceProvider = $priceProvider;
         $this->priceAdapter = $priceAdapter;
         $this->instrumentRepository = $this->em->getRepository(Instrument::class);
     }
@@ -131,49 +135,22 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
             );
         }
 
-
-        if (isset($options['interval']) && in_array($options['interval'], $this->intervals)) {
-            switch ($options['interval']) {
-                case 'P1M':
-                    $apiInterval = $this->priceProvider::INTERVAL_1_MONTH;
-                    $interval = new \DateInterval('P1M');
-                    break;
-                case 'P1W':
-                    $apiInterval = $this->priceProvider::INTERVAL_1_WEEK;
-                    $interval = new \DateInterval('P1W');
-                    break;
-                case 'P1D':
-                    $apiInterval = $this->priceProvider::INTERVAL_1_DAY;
-                    $interval = new \DateInterval('P1D');
-                    break;
-                default:
-                    throw new PriceHistoryException(sprintf('Interval %s is not serviced', $options['interval']));
+        if (isset($options['interval'])) {
+            if (in_array($options['interval'], $this->intervals)) {
+                $history = $this->priceAdapter->getHistoricalData($instrument, $fromDate, $toDate, $options);
+            } else {
+                throw new PriceHistoryException(sprintf('Interval %s is not serviced', $options['interval']));
             }
         } else {
-//			$apiInterval = $this->priceProvider::INTERVAL_1_DAY;
-            throw new PriceHistoryException(sprintf('Interval %s is not serviced', $options['interval']));
+            throw new PriceHistoryException(
+                sprintf(
+                    'Interval for the price history must be explicitly set in $options passed to %s',
+                    __METHOD__
+                )
+            );
         }
 
-        $history = $this->priceProvider->getHistoricalData($instrument->getSymbol(), $apiInterval, $fromDate, $toDate);
-        array_walk(
-            $history,
-            function (&$v, $k, $data) {
-                $OHLCVHistory = new OHLCVHistory();
-                $OHLCVHistory->setOpen($v->getOpen());
-                $OHLCVHistory->setHigh($v->getHigh());
-                $OHLCVHistory->setLow($v->getLow());
-                $OHLCVHistory->setClose($v->getClose());
-                $OHLCVHistory->setVolume($v->getVolume());
-                $OHLCVHistory->setTimestamp($v->getDate());
-                $OHLCVHistory->setInstrument($data[0]);
-                $OHLCVHistory->setTimeinterval($data[1]);
-                $OHLCVHistory->setProvider(self::PROVIDER_NAME);
-                $v = $OHLCVHistory;
-            },
-            [$instrument, $interval]
-        );
-
-        // make sure elements are ordered from oldest date to the latest
+        // order history items from oldest date to latest
         $this->sortHistory($history);
 
         return $history;
@@ -272,8 +249,6 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 
     public function saveQuote($instrument, $quote)
     {
-        // if (!in_array($quote['interval'], $this->intervals)) throw new PriceHistoryException(sprintf('Interval `%s` is not supported.'));
-
         if ($oldQuote = $instrument->getOHLCVQuote()) {
             // $oldQuote->setTimestamp($quote['timestamp']);
             //       $oldQuote->setOpen($quote['open']);

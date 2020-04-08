@@ -11,12 +11,61 @@
 namespace App\Service\PriceHistory\OHLCV;
 
 
+use App\Entity\OHLCVHistory;
+use App\Exception\PriceHistoryException;
+use App\Service\PriceHistory\OHLCV\Yahoo;
+
 class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterface
 {
+    /**
+     * @var \Scheb\YahooFinanceApi\ApiClient
+     */
+    protected $priceProvider;
+
+    public function __construct(\Scheb\YahooFinanceApi\ApiClient $priceProvider)
+    {
+        $this->priceProvider = $priceProvider;
+    }
 
     public function getHistoricalData($instrument, $fromDate, $toDate, $options)
     {
-        // TODO: Implement getHistoricalData() method.
+        switch ($options['interval']) {
+            case 'P1M':
+                $apiInterval = $this->priceProvider::INTERVAL_1_MONTH;
+                $interval = new \DateInterval(Yahoo::INTERVAL_MONTHLY);
+                break;
+            case 'P1W':
+                $apiInterval = $this->priceProvider::INTERVAL_1_WEEK;
+                $interval = new \DateInterval(Yahoo::INTERVAL_WEEKLY);
+                break;
+            case 'P1D':
+                $apiInterval = $this->priceProvider::INTERVAL_1_DAY;
+                $interval = new \DateInterval(Yahoo::INTERVAL_DAILY);
+                break;
+            default:
+                throw new PriceHistoryException(sprintf('Illegal name for interval: `%s`', $options['interval']));
+        }
+
+        $history = $this->priceProvider->getHistoricalData($instrument->getSymbol(), $apiInterval, $fromDate, $toDate);
+        array_walk(
+            $history,
+            function (&$v, $k, $data) {
+                $OHLCVHistory = new OHLCVHistory();
+                $OHLCVHistory->setOpen($v->getOpen());
+                $OHLCVHistory->setHigh($v->getHigh());
+                $OHLCVHistory->setLow($v->getLow());
+                $OHLCVHistory->setClose($v->getClose());
+                $OHLCVHistory->setVolume($v->getVolume());
+                $OHLCVHistory->setTimestamp($v->getDate());
+                $OHLCVHistory->setInstrument($data[0]);
+                $OHLCVHistory->setTimeinterval($data[1]);
+                $OHLCVHistory->setProvider(Yahoo::PROVIDER_NAME);
+                $v = $OHLCVHistory;
+            },
+            [$instrument, $interval]
+        );
+
+        return $history;
     }
 
     public function getQuote($instrument)

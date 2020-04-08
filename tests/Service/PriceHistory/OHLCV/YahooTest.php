@@ -59,7 +59,7 @@ class YahooTest extends KernelTestCase
 
     public function testIntro()
     {
-        $reflection = new \ReflectionClass($this->SUT);
+//        $reflection = new \ReflectionClass($this->SUT);
 //    	fwrite(STDOUT, sprintf('Testing %s\%s', $reflection->getNamespaceName(), $reflection->getName()) . PHP_EOL);
         $this->assertTrue(true);
     }
@@ -69,7 +69,7 @@ class YahooTest extends KernelTestCase
      * Check if downloads at least 4 historical records for an instrument
      * Test for daily, weekly, monthly
      */
-    public function test10()
+    public function testDownloadHistory10()
     {
         $toDate = new \DateTime();
         // daily
@@ -115,10 +115,11 @@ class YahooTest extends KernelTestCase
     }
 
     /**
+     * test downloadHistory:
      * Today is a trading day Monday, 2019-05-20, $toDate is set for today,
      * Check if downloads history with the last date as last T from today
      */
-    public function test20()
+    public function testDownloadHistory20()
     {
         $_SERVER['TODAY'] = '2019-05-20'; // Monday, May 20, 2019 is a T
         $toDate = new \DateTime($_SERVER['TODAY']);
@@ -134,10 +135,11 @@ class YahooTest extends KernelTestCase
     }
 
     /**
+     * test downloadHistory:
      * today is not a trading day, it is Sunday, May 19, 2019, $toDate is set for today,
      * check if downloads history with the last date as last T from today
      */
-    public function test30()
+    public function testDownloadHistory30()
     {
         $_SERVER['TODAY'] = '2019-05-19'; // Sunday, May 19, 2019
         $toDate = new \DateTime($_SERVER['TODAY']);
@@ -153,11 +155,12 @@ class YahooTest extends KernelTestCase
     }
 
     /**
+     * test downloadHistory:
      * $toDate is set for some day in the past, and it is a T
      *  check that history downloads excluding $toDate
      * In this way we are asserting that toDate does not mean through Date
      */
-    public function test40()
+    public function testDownloadHistory40()
     {
         $toDate = new \DateTime('2019-05-15'); // Wednesday, May 15, 2019
         $fromDate = clone $toDate;
@@ -172,10 +175,11 @@ class YahooTest extends KernelTestCase
     }
 
     /**
+     * test downloadHistory:
      * $toDate is set for some date in the past, and it is not a T
      * check that history downloads excluding up to $toDate
      */
-    public function test50()
+    public function testDownloadHistory50()
     {
         // $this->markTestSkipped();
         $toDate = new \DateTime('2019-04-19'); // Friday, April 19. Good Friday
@@ -191,11 +195,12 @@ class YahooTest extends KernelTestCase
     }
 
     /**
+     * test downloadHistory:
      * $toDate is set for future
      * today is a trading day (T)
      * check if downloads history with the last date as last T-1
      */
-    public function test60()
+    public function testDownloadHistory60()
     {
         $_SERVER['TODAY'] = '2019-05-20'; // Monday, May 20, 2019 is a T
         $toDate = new \DateTime('2019-05-20');
@@ -212,11 +217,12 @@ class YahooTest extends KernelTestCase
     }
 
     /**
+     * test downloadHistory:
      * $toDate is set for future
      * today is not a trading day (not T)
      * check if downloads history with the last date as last T from today
      */
-    public function test70()
+    public function testDownloadHistory70()
     {
         $_SERVER['TODAY'] = '2019-05-19'; // Sunday, May 19, 2019
         $toDate = new \DateTime('2019-05-20');
@@ -233,10 +239,11 @@ class YahooTest extends KernelTestCase
     }
 
     /**
+     * test downloadHistory:
      * $fromDate = $toDate
      * will throw PriceHistoryException
      */
-    public function test80()
+    public function testDownloadHistory80()
     {
         $toDate = new \DateTime('2019-05-20');
         $fromDate = new \DateTime('2019-05-20');
@@ -248,10 +255,11 @@ class YahooTest extends KernelTestCase
     }
 
     /**
+     * test downloadHistory:
      * When $fromDate is a Saturday, $toDate is a Sunday Yahoo API will return error
      * My code supposed to return PriceHistoryException
      */
-    public function test90()
+    public function testDownloadHistory90()
     {
         $toDate = new \DateTime('2019-05-19');
         $fromDate = new \DateTime('2019-05-18');
@@ -263,10 +271,11 @@ class YahooTest extends KernelTestCase
     }
 
     /**
+     * test downloadHistory:
      * Check for a long weekend
      * My code supposed to return PriceHistoryException
      */
-    public function test100()
+    public function testDownloadHistory100()
     {
         $fromDate = new \DateTime('2019-05-25');
         $toDate = new \DateTime('2019-05-27');
@@ -282,7 +291,7 @@ class YahooTest extends KernelTestCase
      * Simulated downloaded 3 records partially overlap original values
      * Check that only new values are overwritten
      */
-    public function test110()
+    public function testAddHistory110()
     {
         // will commit to db temporarily to perform the test
         // $this->em->getConnection()->beginTransaction();
@@ -338,7 +347,7 @@ class YahooTest extends KernelTestCase
      * Simulated downloaded 3 records do not overlap original values
      * Check that all original values are intact
      */
-    public function test120()
+    public function testAddHistory120()
     {
         // store 5 records for a week
         $startDate1 = new \DateTime('2018-05-14'); // Monday
@@ -385,7 +394,7 @@ class YahooTest extends KernelTestCase
     /**
      * Test retrieveHistory
      */
-    public function test130()
+    public function testRetrieveHistory130()
     {
         // fwrite(STDOUT, $this->instrument->getSymbol());
         // store 5 records for a week
@@ -429,7 +438,7 @@ class YahooTest extends KernelTestCase
     /**
      * Test downloadQuote
      */
-    public function test140()
+    public function testDownloadQuote140()
     {
         // market is open:
         // a quote is downloaded
@@ -450,7 +459,7 @@ class YahooTest extends KernelTestCase
      * Test saveQuote
      * Quote is already saved.  Only one quote supposed to remain in storage. Existing quote must be removed, and new one returned.
      */
-    public function test150()
+    public function testSaveQuote150()
     {
         $_SERVER['TODAY'] = '2019-05-20 09:30:01'; // Monday, May 20, 2019
         $date = new \DateTime($_SERVER['TODAY']);
@@ -516,7 +525,7 @@ class YahooTest extends KernelTestCase
      * Test saveQuote
      * Quote is not already saved.  Only one quote supposed to remain in storage. Existing quote must be removed and new one returned.
      */
-    public function test155()
+    public function testSaveQuote155()
     {
         $_SERVER['TODAY'] = '2019-05-20 09:30:01'; // Monday, May 20, 2019
         $date = new \DateTime($_SERVER['TODAY']);
@@ -567,7 +576,7 @@ class YahooTest extends KernelTestCase
      * History is passed as array
      * Market is open
      */
-    public function test160()
+    public function testAddQuoteToHistory160()
     {
         $_SERVER['TODAY'] = '2018-05-18 15:59:00';
         $startDate = new \DateTime('2018-05-14'); // Monday;
@@ -634,7 +643,7 @@ class YahooTest extends KernelTestCase
      * History is passed as array
      * Market is closed
      */
-    public function test170()
+    public function testAddQuoteToHistory170()
     {
         $_SERVER['TODAY'] = '2018-05-14 16:00:00';
         $startDate = new \DateTime('2018-05-14'); // Monday;
@@ -688,7 +697,7 @@ class YahooTest extends KernelTestCase
      * History is not passed and is in storage
      * Market open
      */
-    public function test180()
+    public function testAddQuoteToHistory180()
     {
         $startDate = new \DateTime('2018-05-14'); // Monday;
         $interval = new \DateInterval('P1D');
@@ -783,7 +792,7 @@ class YahooTest extends KernelTestCase
      * History is not passed and is in storage
      * Market closed
      */
-    public function test190()
+    public function testAddQuoteToHistory190()
     {
         // Quote is the same date as last date in history
         $startDate = new \DateTime('2018-05-14'); // T Monday;
@@ -880,7 +889,7 @@ class YahooTest extends KernelTestCase
      * History is not passed and is not in storage
      * Market open
      */
-    public function test200()
+    public function testAddQuoteToHistory200()
     {
         $interval = new \DateInterval('P1D');
 
@@ -918,7 +927,7 @@ class YahooTest extends KernelTestCase
      * History is not passed and is not in storage
      * Market closed
      */
-    public function test210()
+    public function testAddQuoteToHistory210()
     {
         $interval = new \DateInterval('P1D');
 
@@ -953,7 +962,7 @@ class YahooTest extends KernelTestCase
     /**
      * Test retrieveQuote
      */
-    public function test220()
+    public function testRetrieveQuote220()
     {
         $interval = new \DateInterval('P1D');
 
@@ -992,7 +1001,7 @@ class YahooTest extends KernelTestCase
      * Test downloadClosingPrice
      * Today is T
      */
-    public function test230()
+    public function testDownloadClosingPrice230()
     {
         // market open
         $_SERVER['TODAY'] = '2018-05-14 09:30:01';
@@ -1015,7 +1024,7 @@ class YahooTest extends KernelTestCase
      * Test downloadClosingPrice
      * Today is not T
      */
-    public function test240()
+    public function testDownloadClosingPrice240()
     {
         $_SERVER['TODAY'] = '2018-05-13 09:30:01'; // Sunday
         $prevT = new \DateTime('2018-05-11');
@@ -1030,7 +1039,7 @@ class YahooTest extends KernelTestCase
      * Test retrieveClosingPrice
      * History exists for an instrument
      */
-    public function test250()
+    public function testRetrieveClosingPrice250()
     {
         $startDate = new \DateTime('2018-05-14'); // T Monday;
         $interval = new \DateInterval('P1D');
@@ -1047,7 +1056,7 @@ class YahooTest extends KernelTestCase
      * Test retrieveClosingPrice
      * History does not exist for an instrument
      */
-    public function test260()
+    public function testRetrieveClosingPrice260()
     {
         $instrument = new Instrument();
         $instrument->setSymbol('TEST');
@@ -1066,7 +1075,7 @@ class YahooTest extends KernelTestCase
      * Test addClosingPriceToHistory
      * History is passed as non-empty array
      */
-    public function test270()
+    public function testAddClosingPriceToHistory270()
     {
         // closingPrice coincides with last date in $history
         $startDate = new \DateTime('2018-05-14'); // Monday;
@@ -1129,7 +1138,7 @@ class YahooTest extends KernelTestCase
      * Test addClosingPriceToHistory
      * History is not passed, or passed as empty array and is in storage
      */
-    public function test280()
+    public function testAddClosingPriceToHistory280()
     {
         // closingPrice coincides with last date in $history
         $startDate = new \DateTime('2018-05-14'); // Monday;
@@ -1238,7 +1247,7 @@ class YahooTest extends KernelTestCase
      * Test addClosingPriceToHistory
      * History is not passed, or passed as empty array and is not in storage
      */
-    public function test290()
+    public function testAddClosingPriceToHistory290()
     {
         $instrument = new Instrument();
         $instrument->setSymbol('TEST');
