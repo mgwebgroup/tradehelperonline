@@ -12,8 +12,8 @@ namespace App\Service\PriceHistory\OHLCV;
 
 
 use App\Entity\OHLCVHistory;
+use App\Entity\OHLCVQuote;
 use App\Exception\PriceHistoryException;
-use App\Service\PriceHistory\OHLCV\Yahoo;
 
 class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterface
 {
@@ -70,7 +70,22 @@ class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterf
 
     public function getQuote($instrument)
     {
-        // TODO: Implement getQuote() method.
+        $providerQuote = $this->priceProvider->getQuote($instrument->getSymbol());
+        $interval = new \DateInterval('P1D');
+
+        $quote = new OHLCVQuote();
+
+        $quote->setInstrument($instrument);
+        $quote->setProvider(Yahoo::PROVIDER_NAME);
+        $quote->setTimestamp($providerQuote->getRegularMarketTime());
+        $quote->setTimeinterval($interval);
+        $quote->setOpen($providerQuote->getRegularMarketOpen());
+        $quote->setHigh($providerQuote->getRegularMarketDayHigh());
+        $quote->setLow($providerQuote->getRegularMarketDayLow());
+        $quote->setClose($providerQuote->getRegularMarketPrice());
+        $quote->setVolume($providerQuote->getRegularMarketVolume());
+
+        return $quote;
     }
 
     public function getQuotes($list)

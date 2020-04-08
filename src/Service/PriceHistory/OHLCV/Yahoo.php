@@ -43,15 +43,8 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     ];
 
     /**
-     * To do: priceProvider should be priceAdapter which will use dedicated adapter which would convert its entities
-     * into your entities: quotes and OHLCVhistory. In your constructor you should instantiate this adapter instead of
-     * the direct third-party class. Price adapter is hardly coupled with Scheb's API provider, but could be replaced in
-     * this class.
-     * @var \Scheb\YahooFinanceApi\ApiClient
-     */
-    private $priceProvider;
-
-    /**
+     * Dedicated adapter which converts its entities into app entities: quotes and OHLCVhistory.
+     * Price adapter is written to adapt data from Scheb's API provider, into our format.
      * @var App\Service\PriceHistory\PriceAdapter_Scheb
      */
     private $priceAdapter;
@@ -68,11 +61,9 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 
     public function __construct(
         \Symfony\Bridge\Doctrine\RegistryInterface $registry,
-//        \Scheb\YahooFinanceApi\ApiClient $priceProvider,
         \App\Service\PriceHistory\OHLCV\PriceAdapter_Scheb $priceAdapter
     ) {
         $this->em = $registry->getManager();
-//        $this->priceProvider = $priceProvider;
         $this->priceAdapter = $priceAdapter;
         $this->instrumentRepository = $this->em->getRepository(Instrument::class);
     }
@@ -210,41 +201,18 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     public function downloadQuote($instrument)
     {
         if ('test' == $_SERVER['APP_ENV'] && isset($_SERVER['TODAY'])) {
-            $today = $_SERVER['TODAY'];
+            $today = new \DateTime($_SERVER['TODAY']);
         } else {
-            $today = date('Y-m-d H:i:s');
+            $today = new \DateTime();
         }
-
-        $dateTime = new \DateTime($today);
-        // var_dump($dateTime); exit();
 
         $exchange = $this->getExchangeForInstrument($instrument);
-        if (!$exchange->isOpen($dateTime)) {
+
+        if ($exchange->isOpen($today)) {
+            return $this->priceAdapter->getQuote($instrument);
+        } else {
             return null;
         }
-
-        $providerQuote = $this->priceProvider->getQuote($instrument->getSymbol());
-        $interval = new \DateInterval('P1D');
-
-        if (!($providerQuote instanceof Quote)) {
-            throw new PriceHistoryException(
-                'Returned provider quote is not instance of Scheb\YahooFinanceApi\Results\Quote'
-            );
-        }
-
-        $quote = new OHLCVQuote();
-
-        $quote->setInstrument($instrument);
-        $quote->setProvider(self::PROVIDER_NAME);
-        $quote->setTimestamp($providerQuote->getRegularMarketTime());
-        $quote->setTimeinterval($interval);
-        $quote->setOpen($providerQuote->getRegularMarketOpen());
-        $quote->setHigh($providerQuote->getRegularMarketDayHigh());
-        $quote->setLow($providerQuote->getRegularMarketDayLow());
-        $quote->setClose($providerQuote->getRegularMarketPrice());
-        $quote->setVolume($providerQuote->getRegularMarketVolume());
-
-        return $quote;
     }
 
     public function saveQuote($instrument, $quote)
@@ -333,12 +301,13 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
                         switch ($quoteInterval) {
                             case 1 == $quoteInterval->d :
                                 if ($lastElement->getTimestamp()->format('Ymd') == $prevT->format('Ymd')) {
-                                    $newElement = new OHLCVHistory();
-                                    $newElement->setInstrument($instrument);
-                                    $newElement->setProvider(self::PROVIDER_NAME);
-                                    $newElement->setTimeinterval($quoteInterval);
-                                    $this->setHistoryElementToQuote($newElement, $quote);
+//                                    $newElement = new OHLCVHistory();
+//                                    $newElement->setInstrument($instrument);
+//                                    $newElement->setProvider(self::PROVIDER_NAME);
+//                                    $newElement->setTimeinterval($quoteInterval);
+//                                    $this->setHistoryElementToQuote($newElement, $quote);
 
+                                    $newElement = $this->castQuoteToHistory($quote);
                                     $this->em->persist($newElement);
                                     $this->em->flush();
 
@@ -401,14 +370,15 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
                     switch ($quoteInterval) {
                         case 1 == $quoteInterval->d :
                             if ($lastElement->getTimestamp()->format('Ymd') == $prevT->format('Ymd')) {
-                                $lastElement = new OHLCVHistory();
-                                $lastElement->setInstrument($instrument);
-                                $lastElement->setProvider(self::PROVIDER_NAME);
-                                $lastElement->setTimeinterval($quoteInterval);
-
-                                $this->setHistoryElementToQuote($lastElement, $quote);
-
-                                $history[] = $lastElement;
+//                                $lastElement = new OHLCVHistory();
+//                                $lastElement->setInstrument($instrument);
+//                                $lastElement->setProvider(self::PROVIDER_NAME);
+//                                $lastElement->setTimeinterval($quoteInterval);
+//
+//                                $this->setHistoryElementToQuote($lastElement, $quote);
+//
+//                                $history[] = $lastElement;
+                                $history[] = $this->castQuoteToHistory($quote);
 
                                 reset($history); // resets array pointer to first element
 
@@ -454,11 +424,14 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         if ($exchange->isTradingDay($today)) {
             // Price provider API is always tied to real dates and times. Figure out if need to use getQuote or downloadHistory
             // Get quote first, then see if date on it matches today
-            $providerQuote = $this->priceProvider->getQuote($instrument->getSymbol());
+            $quote = $this->priceAdapter->getQuote($instrument);
 
-            if ($providerQuote->getRegularMarketTime()->format('Ymd') == $today->format('Ymd')) {
-                return convertQuote($providerQuote, $instrument, $interval);
+            if ($quote->getTimestamp()->format('Ymd') == $today->format('Ymd')) {
+                return $this->castQuoteToHistory($quote);
             }
+//            if ($providerQuote->getRegularMarketTime()->format('Ymd') == $today->format('Ymd')) {
+//                return convertQuote($providerQuote, $instrument, $interval);
+//            }
         }
 
         $prevT = $exchange->calcPreviousTradingDay($today);
@@ -618,6 +591,28 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         return new $exchangeClassName($this->instrumentRepository);
     }
 
+    /**
+     * Converts OHLCVQuote object to OHLCVHistory Object
+     * @param OHLCVQuote $quote
+     * @return OHLCVHistory $element
+     */
+    private function castQuoteToHistory($quote)
+    {
+        $element = new OHLCVHistory();
+        $element->setInstrument($quote->getInstrument());
+        $element->setProvider(self::PROVIDER_NAME);
+        $element->setTimeinterval($quote->getTimeinterval());
+
+        $this->setHistoryElementToQuote($element, $quote);
+
+        return $element;
+    }
+
+    /**
+     * @param App\Entity\OHLCVHistory $element
+     * @param App\Entity\OHLCVQuote $quote
+     */
+
     private function setHistoryElementToQuote($element, $quote)
     {
         $element->setTimestamp($quote->getTimestamp());
@@ -635,20 +630,20 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
      * @param \DateInterval $interval
      * @return OHLCVHistory $closingPrice
      */
-    private function convertQuote(Quote $providerQuote, Instrument $instrument, $interval)
-    {
-        $closingPrice = new OHLCVHistory();
-
-        $closingPrice->setInstrument($instrument);
-        $closingPrice->setProvider(self::PROVIDER_NAME);
-        $closingPrice->setTimestamp($providerQuote->getRegularMarketTime());
-        $closingPrice->setTimeinterval($interval);
-        $closingPrice->setOpen($providerQuote->getRegularMarketOpen());
-        $closingPrice->setHigh($providerQuote->getRegularMarketDayHigh());
-        $closingPrice->setLow($providerQuote->getRegularMarketDayLow());
-        $closingPrice->setClose($providerQuote->getRegularMarketPrice());
-        $closingPrice->setVolume($providerQuote->getRegularMarketVolume());
-
-        return $closingPrice;
-    }
+//    private function convertQuote(Quote $providerQuote, Instrument $instrument, $interval)
+//    {
+//        $closingPrice = new OHLCVHistory();
+//
+//        $closingPrice->setInstrument($instrument);
+//        $closingPrice->setProvider(self::PROVIDER_NAME);
+//        $closingPrice->setTimestamp($providerQuote->getRegularMarketTime());
+//        $closingPrice->setTimeinterval($interval);
+//        $closingPrice->setOpen($providerQuote->getRegularMarketOpen());
+//        $closingPrice->setHigh($providerQuote->getRegularMarketDayHigh());
+//        $closingPrice->setLow($providerQuote->getRegularMarketDayLow());
+//        $closingPrice->setClose($providerQuote->getRegularMarketPrice());
+//        $closingPrice->setVolume($providerQuote->getRegularMarketVolume());
+//
+//        return $closingPrice;
+//    }
 }
