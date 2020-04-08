@@ -33,26 +33,28 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 	* These follow interval spec for the \DateInterval class
 	*/
 	public $intervals = [
-		// 'PT1M',
-		// 'PT2M',
-		// 'PT3M',
-		// 'PT3M',
-		// 'PT6M',
-		// 'PT10M',
-		// 'PT15M',
-		// 'PT30M',
-		// 'PT60M',
-		// 'PT120M',
 		'P1D',
 		'P1W',
 		'P1M',
-		// 'P1Y',
-	]; 
+	];
 
+    /**
+     * To do: priceProvider should be priceAdapter which will use dedicated adapter which would convert its entities
+     * into your entities: quotes and OHLCVhistory. In your constructor you should instantiate this adapter instead of
+     * the direct third-party class. Price adapter is hardly coupled with Scheb's API provider, but could be replaced in
+     * this class.
+     * @var \Scheb\YahooFinanceApi\ApiClient
+     */
 	private $priceProvider;
 
+    /**
+     * @var Doctrine\ORM\EntityManager
+     */
 	public $em;
 
+    /**
+     * @var App\Repository\InstrumentRepository
+     */
 	private $instrumentRepository;
 
 	public function __construct(
@@ -443,10 +445,104 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         }
 	}
 
-	public function retrieveClosingPrice($instrument) {}
+    /**
+     * {@inheritDoc}
+     * @param Instrument $instrument
+     * @return App\Entity\OHLCVHistory | null
+     */
+	public function retrieveClosingPrice($instrument)
+    {
+        /** @var App\Repository\OHLCVHistoryRepository $repository */
+ 	    $repository = $this->em->getRepository(OHLCVHistory::class);
 
-	public function addClosingPriceToHistory($closingPrice, $history) {}
+ 	    $closingPrice = $repository->findOneBy(
+            ['instrument' => $instrument, 'provider' => self::PROVIDER_NAME],
+            ['timestamp' => 'desc']
+        );
 
+ 	    return $closingPrice;
+    }
+
+    /**
+     * @param App\Entity\OHLCVHistory $closingPrice
+     * @param array $history | null
+     * @return array $history | false | null
+     * @throws PriceHistoryException
+     */
+	public function addClosingPriceToHistory($closingPrice, $history = [])
+    {
+        $instrument = $closingPrice->getInstrument();
+        $exchange = $this->getExchangeForInstrument($instrument);
+        $closingPriceInterval = $closingPrice->getTimeinterval();
+        $prevT = $exchange->calcPreviousTradingDay($closingPrice->getTimestamp());
+
+        if (empty($history)) {
+            if ($storedClosingPrice = $this->retrieveClosingPrice($instrument)) {
+                if ($storedClosingPrice->getTimestamp()->format('Ymd') == $closingPrice->getTimestamp()->format('Ymd')) {
+                    $this->em->remove($storedClosingPrice);
+                    $this->em->persist($closingPrice);
+                    $this->em->flush();
+
+                    return true;
+                }
+                if ($storedClosingPrice->getTimestamp()->format('Ymd') == $prevT->format('Ymd')) {
+                    $this->em->persist($closingPrice);
+                    $this->em->flush();
+
+                    return true;
+                }
+                // either gap or inside history
+                return false;
+            } else {
+                $this->em->persist($closingPrice);
+                $this->em->flush();
+
+                return true;
+            }
+
+        } else {
+            end($history);
+            $lastElement = current($history);
+            $indexOfLastElement = key($history);
+            $historyInterval = $lastElement->getTimeinterval();
+
+            // check if instruments match
+            if ($lastElement->getInstrument()->getSymbol() != $closingPrice->getInstrument()->getSymbol()) {
+                throw new PriceHistoryException('Instruments in History and Closing Price don\'t match');
+            }
+            // check if intervals match
+            if ($historyInterval->format('ymdhis') != $closingPriceInterval->format('ymdhis')) {
+                throw new PriceHistoryException('Time intervals in History and Closing Price don\'t match');
+            }
+
+            // check if quote date is the same as latest history date, then just overwrite, return $history modified
+            if ($lastElement->getTimestamp()->format('Ymd') == $closingPrice->getTimestamp()->format('Ymd')) {
+
+                $history[$indexOfLastElement] = $closingPrice;
+                reset($history); // resets array pointer to first element
+
+                return $history;
+            }
+
+            // check for no gap:
+            if ($lastElement->getTimestamp()->format('Ymd') == $prevT->format('Ymd')) {
+                $history[] = $closingPrice;
+
+                reset($history);
+
+                return $history;
+            }
+            // either gap or is inside history:
+            return false;
+        }
+
+        return null;
+    }
+
+    /**
+     * Orders history elements from oldest date to the latest
+     * @param App\Entity\OHLCVHistory[] $history
+     */
 	private function sortHistory(&$history)
 	{
 		uasort($history, function($a, $b) {

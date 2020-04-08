@@ -115,16 +115,33 @@ interface PriceProviderInterface
 	/**
 	 * Retrieves latest closing price from price history
 	 * @param App\Entity\Instrument
-	 * @return App\Entity\<History Entity> compatible with chosen storage format (Doctrine Entities, csv records, etc. I.e. App\Entity\OHLCVHistory)
+	 * @return App\Entity\<History Entity> compatible with chosen storage format (Doctrine Entities, csv records, etc.
+     * I.e. App\Entity\OHLCVHistory) | null if history for an instrument does not exist in database
 	 */
 	public function retrieveClosingPrice($instrument);
 
 	/**
-	 * Adds item of price history on top of existing history. General idea is the same as one for addQuoteToHistory
+	 * Adds item of price history on top of existing history. Similar to addQuoteToHistory gaps are not allowed, however
+     * does not account for market being open or closed. Will return false if gap is determined. Or if closing price is
+     * within history but earlier than the last record.
 	 * @param App\Enitity\<History Entity> $closingPrice
 	 * @param array $history with elements compatible with chosen storage format (Doctrine Entities, csv records, etc.)
  	 *  OR null. If null then quote will be added directly to db history storage.
- 	 *  If no stored history exists, the closing price will be added as a first history record.
+     * @return
+     *  history passed as non-empty array and closing price:
+     *   coincides with last date in $history: $history with last record updated to the closing price
+     *   nextT, no gap: array $history with added price
+     *   nextT, with gap: bool false
+     *   earlier than history or within the history but the last record: false
+     *
+     *  history was not passed, or passed as empty array and is in storage and closing price:
+     *   coincides with last date in $history: bool true (history in storage gets updated with last record updated to the closing price)
+     *   nextT, no gap: bool true (history in storage gets added the new record of closing price)
+     *   nextT, with gap: bool false
+     *   earlier than history or within the history but the last record: false
+     *
+     *  history was not passed, or passed as empty array and is not in storage
+     *   bool true (history in storage gets added the new record of closing price)
 	 */
 	public function addClosingPriceToHistory($closingPrice, $history);
 

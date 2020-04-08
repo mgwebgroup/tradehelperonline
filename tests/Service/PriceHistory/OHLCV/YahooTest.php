@@ -1025,6 +1025,243 @@ class YahooTest extends KernelTestCase
         $this->assertSame($closingPrice->getTimeStamp()->format('Ymd'), $prevT->format('Ymd'));
     }
 
+    /**
+     * Test retrieveClosingPrice
+     * History exists for an instrument
+     */
+    public function test250()
+    {
+        $startDate = new \DateTime('2018-05-14'); // T Monday;
+        $interval = new \DateInterval('P1D');
+        list($instrument, $saved) = $this->createMockHistory($startDate, $numberOfRecords = 5, $interval);
+
+        /** @var App\Entity\OHLCVHistory $closingPrice */
+        $closingPrice = $this->SUT->retrieveClosingPrice($instrument);
+        $lastSaved = array_pop($saved);
+
+        $this->assertEquals($this->computeControlSum($closingPrice), $this->computeControlSum($lastSaved));
+    }
+
+    /**
+     * Test retrieveClosingPrice
+     * History does not exist for an instrument
+     */
+    public function test260()
+    {
+        $instrument = new Instrument();
+        $instrument->setSymbol('TEST');
+        $instrument->setName('Instrument for testing purposes');
+        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+        $this->em->persist($instrument);
+        $this->em->flush($instrument);
+
+        /** @var App\Entity\OHLCVHistory $closingPrice */
+        $closingPrice = $this->SUT->retrieveClosingPrice($instrument);
+
+        $this->assertNull($closingPrice);
+    }
+
+    /**
+     * Test addClosingPriceToHistory
+     * History is passed as non-empty array
+     */
+    public function test270()
+    {
+        // closingPrice coincides with last date in $history
+        $startDate = new \DateTime('2018-05-14'); // Monday;
+        $interval = new \DateInterval('P1D');
+        $history = $this->createSimulatedDownload($this->instrument, $startDate, $numberOfRecords = 5, $interval);
+
+        $endDate = (clone $startDate)->sub($interval);
+        $closingPrice = new OHLCVHistory();
+        $closingPrice->setInstrument($this->instrument);
+        $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
+        $closingPrice->setTimestamp($endDate);
+        $closingPrice->setTimeinterval($interval);
+        $closingPrice->setOpen(rand(0,100));
+        $closingPrice->setHigh(rand(0,100));
+        $closingPrice->setLow(rand(0,100));
+        $closingPrice->setClose(rand(0,100));
+        $closingPrice->setVolume(rand(0,100));
+
+        $expected = $history;
+        array_pop($expected);
+
+        $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice, $history);
+
+        $this->assertArraySubset($expected, $newHistory);
+
+        $lastElement = array_pop($newHistory);
+
+        $this->assertSame($lastElement->getTimestamp()->format('Ymd'), $closingPrice->getTimestamp()->format('Ymd'));
+        $this->assertEquals($this->computeControlSum($lastElement), $this->computeControlSum($closingPrice));
+
+        // closingPrice is on nextT, no gap
+        $endDate->setDate(2018, 5, 21); // Monday
+
+        $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice, $history);
+
+        $this->assertCount(6, $newHistory);
+        $this->assertArraySubset($history, $newHistory);
+
+        $lastElement = array_pop($newHistory);
+
+        $this->assertSame($lastElement->getTimestamp()->format('Ymd'), $closingPrice->getTimestamp()->format('Ymd'));
+        $this->assertEquals($this->computeControlSum($lastElement), $this->computeControlSum($closingPrice));
+
+        // closingPrice is on nextT with gap
+        $endDate->setDate(2018, 5, 22); // Tuesday
+
+        $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice, $history);
+
+        $this->assertFalse($newHistory);
+
+        // closingPrice earlier than history or within the history but the last record
+        $endDate->setDate(2018, 5, 14);
+
+        $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice, $history);
+
+        $this->assertFalse($newHistory);
+    }
+
+    /**
+     * Test addClosingPriceToHistory
+     * History is not passed, or passed as empty array and is in storage
+     */
+    public function test280()
+    {
+        // closingPrice coincides with last date in $history
+        $startDate = new \DateTime('2018-05-14'); // Monday;
+        $interval = new \DateInterval('P1D');
+
+        list($instrument, $saved) = $this->createMockHistory($startDate, $numberOfRecords = 5, $interval);
+
+        $date = (clone $startDate)->sub($interval);
+        $closingPrice = new OHLCVHistory();
+        $closingPrice->setInstrument($instrument);
+        $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
+        $closingPrice->setTimestamp($date);
+        $closingPrice->setTimeinterval($interval);
+        $closingPrice->setOpen(rand(0,100));
+        $closingPrice->setHigh(rand(0,100));
+        $closingPrice->setLow(rand(0,100));
+        $closingPrice->setClose(rand(0,100));
+        $closingPrice->setVolume(rand(0,100));
+
+        $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
+
+        $this->assertTrue($newHistory);
+
+        $expected = $saved;
+        array_pop($expected);
+
+        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $history = $repository->retrieveHistory($instrument, $interval, new \DateTime('2018-05-14'), null, $this->SUT::PROVIDER_NAME);
+
+        $lastElement = array_pop($history);
+        $this->assertArraySubset($expected, $history);
+        $this->assertEquals($this->computeControlSum($lastElement), $this->computeControlSum($closingPrice));
+
+        // closingPrice is on nextT no gap
+        $date = new \DateTime('2018-05-21');
+        $closingPrice = new OHLCVHistory();
+        $closingPrice->setInstrument($instrument);
+        $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
+        $closingPrice->setTimestamp($date);
+        $closingPrice->setTimeinterval($interval);
+        $closingPrice->setOpen(rand(0,100));
+        $closingPrice->setHigh(rand(0,100));
+        $closingPrice->setLow(rand(0,100));
+        $closingPrice->setClose(rand(0,100));
+        $closingPrice->setVolume(rand(0,100));
+
+        $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
+
+        $this->assertTrue($newHistory);
+
+        $history = $repository->retrieveHistory($instrument, $interval, new \DateTime('2018-05-14'), null, $this->SUT::PROVIDER_NAME);
+
+        $this->assertCount(6, $history);
+
+        $lastElement = array_pop($history);
+        $this->assertEquals($this->computeControlSum($lastElement), $this->computeControlSum($closingPrice));
+
+        // closingPrice is on nextT with gap
+        $date = new \DateTime('2018-05-23');
+        $closingPrice = new OHLCVHistory();
+        $closingPrice->setInstrument($instrument);
+        $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
+        $closingPrice->setTimestamp($date);
+        $closingPrice->setTimeinterval($interval);
+        $closingPrice->setOpen(rand(0,100));
+        $closingPrice->setHigh(rand(0,100));
+        $closingPrice->setLow(rand(0,100));
+        $closingPrice->setClose(rand(0,100));
+        $closingPrice->setVolume(rand(0,100));
+
+        $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
+
+        $this->assertFalse($newHistory);
+
+        // closingPrice earlier than history or within the history but the last record
+        $date = new \DateTime('2018-05-14');
+        $closingPrice = new OHLCVHistory();
+        $closingPrice->setInstrument($instrument);
+        $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
+        $closingPrice->setTimestamp($date);
+        $closingPrice->setTimeinterval($interval);
+        $closingPrice->setOpen(rand(0,100));
+        $closingPrice->setHigh(rand(0,100));
+        $closingPrice->setLow(rand(0,100));
+        $closingPrice->setClose(rand(0,100));
+        $closingPrice->setVolume(rand(0,100));
+
+        $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
+
+        $this->assertFalse($newHistory);
+    }
+
+    /**
+     * Test addClosingPriceToHistory
+     * History is not passed, or passed as empty array and is not in storage
+     */
+    public function test290()
+    {
+        $instrument = new Instrument();
+        $instrument->setSymbol('TEST');
+        $instrument->setName('Instrument for testing purposes');
+        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+        $this->em->persist($instrument);
+        $this->em->flush($instrument);
+
+        $interval = new \DateInterval('P1D');
+
+        $date = new \DateTime('2018-05-14');
+        $closingPrice = new OHLCVHistory();
+        $closingPrice->setInstrument($instrument);
+        $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
+        $closingPrice->setTimestamp($date);
+        $closingPrice->setTimeinterval($interval);
+        $closingPrice->setOpen(rand(0,100));
+        $closingPrice->setHigh(rand(0,100));
+        $closingPrice->setLow(rand(0,100));
+        $closingPrice->setClose(rand(0,100));
+        $closingPrice->setVolume(rand(0,100));
+
+        $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
+
+        $this->assertTrue($newHistory);
+
+        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $history = $repository->retrieveHistory($instrument, $interval, new \DateTime('2018-05-14'), null, $this->SUT::PROVIDER_NAME);
+
+        $this->assertCount(1, $history);
+
+        $lastElement = array_pop($history);
+        $this->assertSame($lastElement->getTimestamp()->format('Ymd'), $closingPrice->getTimestamp()->format('Ymd'));
+        $this->assertEquals($this->computeControlSum($lastElement), $this->computeControlSum($closingPrice));
+    }
+
     private function createMockHistory($startDate, $numberOfRecords, $interval)
     {
         $instrument = new Instrument();
@@ -1034,7 +1271,6 @@ class YahooTest extends KernelTestCase
 
         $this->em->persist($instrument);
 
-        // $interval = new \DateInterval('P1D');
         for ($i = 0; $i < $numberOfRecords; $i++, $startDate->add($interval)) {
             $record = new OHLCVHistory();
             $record->setInstrument($instrument);

@@ -94,16 +94,4 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
 
         return $query->getResult();
     }
-
-    /*
-    public function findOneBySomeField($value): ?OHLCVHistory
-    {
-        return $this->createQueryBuilder('o')
-            ->andWhere('o.exampleField = :val')
-            ->setParameter('val', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
-    }
-    */
 }
