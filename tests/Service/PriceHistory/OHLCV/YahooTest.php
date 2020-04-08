@@ -41,7 +41,7 @@ class YahooTest extends KernelTestCase
      * Details on how to access services in tests:
      * https://symfony.com/blog/new-in-symfony-4-1-simpler-service-testing
      */
-	protected function setUp(): void
+    protected function setUp(): void
     {
         self::bootKernel();
         $this->SUT = self::$container->get(\App\Service\PriceHistory\OHLCV\Yahoo::class);
@@ -61,7 +61,7 @@ class YahooTest extends KernelTestCase
     {
         $reflection = new \ReflectionClass($this->SUT);
 //    	fwrite(STDOUT, sprintf('Testing %s\%s', $reflection->getNamespaceName(), $reflection->getName()) . PHP_EOL);
-    	$this->assertTrue(true);
+        $this->assertTrue(true);
     }
 
     /**
@@ -149,7 +149,7 @@ class YahooTest extends KernelTestCase
 
         $latestItem = array_pop($history);  // pop element off the end (last element) of array
         // var_dump($latestItem); exit();
-        $this->assertSame('2019-05-17', $latestItem->getTimestamp()->format('Y-m-d'));        
+        $this->assertSame('2019-05-17', $latestItem->getTimestamp()->format('Y-m-d'));
     }
 
     /**
@@ -169,7 +169,7 @@ class YahooTest extends KernelTestCase
         $latestItem = array_pop($history);  // pop element off the end (last element) of array
         // var_dump($latestItem); exit();
         $this->assertSame('2019-05-14', $latestItem->getTimestamp()->format('Y-m-d'));
-    }    
+    }
 
     /**
      * $toDate is set for some date in the past, and it is not a T
@@ -188,7 +188,7 @@ class YahooTest extends KernelTestCase
         $latestItem = array_pop($history);  // pop element off the end (last element) of array
         // var_dump($latestItem); exit();
         $this->assertSame('2019-04-18', $latestItem->getTimestamp()->format('Y-m-d'));
-    }    
+    }
 
     /**
      * $toDate is set for future
@@ -207,16 +207,16 @@ class YahooTest extends KernelTestCase
         $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
 
         $latestItem = array_pop($history);  // pop element off the end (last element) of array
-        
+
         $this->assertSame('2019-05-17', $latestItem->getTimestamp()->format('Y-m-d'));
-    }    
+    }
 
     /**
      * $toDate is set for future
      * today is not a trading day (not T)
      * check if downloads history with the last date as last T from today
      */
-    public function test70 ()
+    public function test70()
     {
         $_SERVER['TODAY'] = '2019-05-19'; // Sunday, May 19, 2019
         $toDate = new \DateTime('2019-05-20');
@@ -228,8 +228,8 @@ class YahooTest extends KernelTestCase
         $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
 
         $latestItem = array_pop($history);  // pop element off the end (last element) of array
-        
-        $this->assertSame('2019-05-17', $latestItem->getTimestamp()->format('Y-m-d'));    
+
+        $this->assertSame('2019-05-17', $latestItem->getTimestamp()->format('Y-m-d'));
     }
 
     /**
@@ -298,7 +298,7 @@ class YahooTest extends KernelTestCase
 
         // add to history
         $this->SUT->addHistory($instrument, $addedHistory);
-        
+
         // $this->em->getConnection()->commit();
 
         // check
@@ -311,8 +311,7 @@ class YahooTest extends KernelTestCase
             ->andWhere('o.timestamp >= :fromDate')->setParameter('fromDate', $startDate1)
             // ->andWhere('o.timestamp <= :toDate')->setParameter('toDate', $endDate)
             ->andWhere('o.provider = :provider')->setParameter('provider', $this->SUT::PROVIDER_NAME)
-            ->orderBy('o.timestamp', 'ASC')
-        ;
+            ->orderBy('o.timestamp', 'ASC');
         $query = $qb->getQuery();
         $result = $query->getResult();
 
@@ -326,7 +325,7 @@ class YahooTest extends KernelTestCase
         }
 
         for ($i = 2; $i <= 4; $i++) {
-            $this->assertEquals($this->computeControlSum($addedHistory[$i-2]), $this->computeControlSum($result[$i]));
+            $this->assertEquals($this->computeControlSum($addedHistory[$i - 2]), $this->computeControlSum($result[$i]));
         }
 
         // rollback db storage
@@ -352,7 +351,7 @@ class YahooTest extends KernelTestCase
 
         // add to history
         $this->SUT->addHistory($instrument, $addedHistory);
-        
+
         // check
         $OHLCVRepository = $this->em->getRepository(OHLCVHistory::class);
 
@@ -363,8 +362,7 @@ class YahooTest extends KernelTestCase
             ->andWhere('o.timestamp >= :fromDate')->setParameter('fromDate', $startDate1)
             // ->andWhere('o.timestamp <= :toDate')->setParameter('toDate', $endDate)
             ->andWhere('o.provider = :provider')->setParameter('provider', $this->SUT::PROVIDER_NAME)
-            ->orderBy('o.timestamp', 'ASC')
-        ;
+            ->orderBy('o.timestamp', 'ASC');
 
         $query = $qb->getQuery();
 
@@ -380,7 +378,7 @@ class YahooTest extends KernelTestCase
         }
 
         for ($i = 5; $i <= 7; $i++) {
-            $this->assertEquals($this->computeControlSum($addedHistory[$i-5]), $this->computeControlSum($result[$i]));
+            $this->assertEquals($this->computeControlSum($addedHistory[$i - 5]), $this->computeControlSum($result[$i]));
         }
     }
 
@@ -411,8 +409,7 @@ class YahooTest extends KernelTestCase
             ->andWhere('o.timestamp >= :fromDate')->setParameter('fromDate', $startDate)
             ->andWhere('o.timestamp <= :endDate')->setParameter('endDate', $endDate)
             ->andWhere('o.provider = :provider')->setParameter('provider', $this->SUT::PROVIDER_NAME)
-            ->orderBy('o.timestamp', 'ASC')
-        ;
+            ->orderBy('o.timestamp', 'ASC');
 
         $query = $qb->getQuery();
 
@@ -610,9 +607,13 @@ class YahooTest extends KernelTestCase
         $element = array_pop($newHistory);
         $this->assertSame($element->getTimestamp()->format('Y-m-d'), $quote->getTimestamp()->format('Y-m-d'));
         $this->assertEquals($this->computeControlSum($element), $this->computeControlSum2($quote));
-        array_map(function ($h, $nh) {
-            $this->assertEquals($this->computeControlSum($h), $this->computeControlSum($nh));
-        }, $history, $newHistory);
+        array_map(
+            function ($h, $nh) {
+                $this->assertEquals($this->computeControlSum($h), $this->computeControlSum($nh));
+            },
+            $history,
+            $newHistory
+        );
 
         // Quote is a gap from history
         $_SERVER['TODAY'] = '2018-05-22 15:59:00';
@@ -1078,11 +1079,11 @@ class YahooTest extends KernelTestCase
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($endDate);
         $closingPrice->setTimeinterval($interval);
-        $closingPrice->setOpen(rand(0,100));
-        $closingPrice->setHigh(rand(0,100));
-        $closingPrice->setLow(rand(0,100));
-        $closingPrice->setClose(rand(0,100));
-        $closingPrice->setVolume(rand(0,100));
+        $closingPrice->setOpen(rand(0, 100));
+        $closingPrice->setHigh(rand(0, 100));
+        $closingPrice->setLow(rand(0, 100));
+        $closingPrice->setClose(rand(0, 100));
+        $closingPrice->setVolume(rand(0, 100));
 
         $expected = $history;
         array_pop($expected);
@@ -1142,11 +1143,11 @@ class YahooTest extends KernelTestCase
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
         $closingPrice->setTimeinterval($interval);
-        $closingPrice->setOpen(rand(0,100));
-        $closingPrice->setHigh(rand(0,100));
-        $closingPrice->setLow(rand(0,100));
-        $closingPrice->setClose(rand(0,100));
-        $closingPrice->setVolume(rand(0,100));
+        $closingPrice->setOpen(rand(0, 100));
+        $closingPrice->setHigh(rand(0, 100));
+        $closingPrice->setLow(rand(0, 100));
+        $closingPrice->setClose(rand(0, 100));
+        $closingPrice->setVolume(rand(0, 100));
 
         $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
 
@@ -1156,7 +1157,13 @@ class YahooTest extends KernelTestCase
         array_pop($expected);
 
         $repository = $this->em->getRepository(OHLCVHistory::class);
-        $history = $repository->retrieveHistory($instrument, $interval, new \DateTime('2018-05-14'), null, $this->SUT::PROVIDER_NAME);
+        $history = $repository->retrieveHistory(
+            $instrument,
+            $interval,
+            new \DateTime('2018-05-14'),
+            null,
+            $this->SUT::PROVIDER_NAME
+        );
 
         $lastElement = array_pop($history);
         $this->assertArraySubset($expected, $history);
@@ -1169,17 +1176,23 @@ class YahooTest extends KernelTestCase
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
         $closingPrice->setTimeinterval($interval);
-        $closingPrice->setOpen(rand(0,100));
-        $closingPrice->setHigh(rand(0,100));
-        $closingPrice->setLow(rand(0,100));
-        $closingPrice->setClose(rand(0,100));
-        $closingPrice->setVolume(rand(0,100));
+        $closingPrice->setOpen(rand(0, 100));
+        $closingPrice->setHigh(rand(0, 100));
+        $closingPrice->setLow(rand(0, 100));
+        $closingPrice->setClose(rand(0, 100));
+        $closingPrice->setVolume(rand(0, 100));
 
         $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
 
         $this->assertTrue($newHistory);
 
-        $history = $repository->retrieveHistory($instrument, $interval, new \DateTime('2018-05-14'), null, $this->SUT::PROVIDER_NAME);
+        $history = $repository->retrieveHistory(
+            $instrument,
+            $interval,
+            new \DateTime('2018-05-14'),
+            null,
+            $this->SUT::PROVIDER_NAME
+        );
 
         $this->assertCount(6, $history);
 
@@ -1193,11 +1206,11 @@ class YahooTest extends KernelTestCase
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
         $closingPrice->setTimeinterval($interval);
-        $closingPrice->setOpen(rand(0,100));
-        $closingPrice->setHigh(rand(0,100));
-        $closingPrice->setLow(rand(0,100));
-        $closingPrice->setClose(rand(0,100));
-        $closingPrice->setVolume(rand(0,100));
+        $closingPrice->setOpen(rand(0, 100));
+        $closingPrice->setHigh(rand(0, 100));
+        $closingPrice->setLow(rand(0, 100));
+        $closingPrice->setClose(rand(0, 100));
+        $closingPrice->setVolume(rand(0, 100));
 
         $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
 
@@ -1210,11 +1223,11 @@ class YahooTest extends KernelTestCase
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
         $closingPrice->setTimeinterval($interval);
-        $closingPrice->setOpen(rand(0,100));
-        $closingPrice->setHigh(rand(0,100));
-        $closingPrice->setLow(rand(0,100));
-        $closingPrice->setClose(rand(0,100));
-        $closingPrice->setVolume(rand(0,100));
+        $closingPrice->setOpen(rand(0, 100));
+        $closingPrice->setHigh(rand(0, 100));
+        $closingPrice->setLow(rand(0, 100));
+        $closingPrice->setClose(rand(0, 100));
+        $closingPrice->setVolume(rand(0, 100));
 
         $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
 
@@ -1242,18 +1255,24 @@ class YahooTest extends KernelTestCase
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
         $closingPrice->setTimeinterval($interval);
-        $closingPrice->setOpen(rand(0,100));
-        $closingPrice->setHigh(rand(0,100));
-        $closingPrice->setLow(rand(0,100));
-        $closingPrice->setClose(rand(0,100));
-        $closingPrice->setVolume(rand(0,100));
+        $closingPrice->setOpen(rand(0, 100));
+        $closingPrice->setHigh(rand(0, 100));
+        $closingPrice->setLow(rand(0, 100));
+        $closingPrice->setClose(rand(0, 100));
+        $closingPrice->setVolume(rand(0, 100));
 
         $newHistory = $this->SUT->addClosingPriceToHistory($closingPrice);
 
         $this->assertTrue($newHistory);
 
         $repository = $this->em->getRepository(OHLCVHistory::class);
-        $history = $repository->retrieveHistory($instrument, $interval, new \DateTime('2018-05-14'), null, $this->SUT::PROVIDER_NAME);
+        $history = $repository->retrieveHistory(
+            $instrument,
+            $interval,
+            new \DateTime('2018-05-14'),
+            null,
+            $this->SUT::PROVIDER_NAME
+        );
 
         $this->assertCount(1, $history);
 
@@ -1277,11 +1296,11 @@ class YahooTest extends KernelTestCase
             $record->setProvider($this->SUT::PROVIDER_NAME);
             $record->setTimestamp(clone $startDate);
             $record->setTimeinterval($interval);
-            $record->setOpen(rand(0,100));
-            $record->setHigh(rand(0,100));
-            $record->setLow(rand(0,100));
-            $record->setClose(rand(0,100));
-            $record->setVolume(rand(0,100));
+            $record->setOpen(rand(0, 100));
+            $record->setHigh(rand(0, 100));
+            $record->setLow(rand(0, 100));
+            $record->setClose(rand(0, 100));
+            $record->setVolume(rand(0, 100));
 
             $this->em->persist($record);
 
@@ -1308,11 +1327,11 @@ class YahooTest extends KernelTestCase
             $record->setProvider($this->SUT::PROVIDER_NAME);
             $record->setTimestamp(clone $startDate);
             $record->setTimeinterval($interval);
-            $record->setOpen(rand(100,1000));
-            $record->setHigh(rand(100,1000));
-            $record->setLow(rand(100,1000));
-            $record->setClose(rand(100,1000));
-            $record->setVolume(rand(100,10000));
+            $record->setOpen(rand(100, 1000));
+            $record->setHigh(rand(100, 1000));
+            $record->setLow(rand(100, 1000));
+            $record->setClose(rand(100, 1000));
+            $record->setVolume(rand(100, 10000));
             $out[] = $record;
         }
 
@@ -1321,7 +1340,8 @@ class YahooTest extends KernelTestCase
 
     private function computeControlSum(OHLCVHistory $ohlcvHistory)
     {
-        return $ohlcvHistory->getOpen() + $ohlcvHistory->getHigh() + $ohlcvHistory->getLow() + $ohlcvHistory->getClose() + $ohlcvHistory->getVolume();
+        return $ohlcvHistory->getOpen() + $ohlcvHistory->getHigh() + $ohlcvHistory->getLow() + $ohlcvHistory->getClose(
+            ) + $ohlcvHistory->getVolume();
     }
 
     private function computeControlSum2(OHLCVQuote $quote)
