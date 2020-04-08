@@ -32,6 +32,9 @@ class YahooTest extends KernelTestCase
      */
     private $instrument;
 
+    /** @var App\Entity\Instrument[] */
+    private $instruments;
+
     /**
      * @var Doctrine\ORM\EntityManager
      */
@@ -51,8 +54,8 @@ class YahooTest extends KernelTestCase
         $exchangeName = $this->faker->randomElement($exchanges);
         $className = $exchangeName;
         $this->exchange = self::$container->get('App\Service\Exchange\\'.$className);
-        $instruments = $this->exchange->getTradedInstruments($className);
-        $this->instrument = $this->faker->randomElement($instruments);
+        $this->instruments = $this->exchange->getTradedInstruments($className);
+        $this->instrument = $this->faker->randomElement($this->instruments);
 
         $this->em = self::$container->get('doctrine')->getManager();
     }
@@ -1288,6 +1291,27 @@ class YahooTest extends KernelTestCase
         $lastElement = array_pop($history);
         $this->assertSame($lastElement->getTimestamp()->format('Ymd'), $closingPrice->getTimestamp()->format('Ymd'));
         $this->assertEquals($this->computeControlSum($lastElement), $this->computeControlSum($closingPrice));
+    }
+
+    public function testGetQuotes10()
+    {
+        // prepare array of instrument objects
+        $instrumentList = [];
+        for ($i=0; $i < 3; $i++) {
+            $instrumentList[] = $this->faker->randomElement($this->instruments);
+        }
+
+        // retrieve quotes
+        $quotes = $this->SUT->getQuotes($instrumentList);
+
+        // check that each has a date and values for the price as well as the volume
+        foreach ($quotes as $quote) {
+            $this->assertInstanceOf(OHLCVQuote::class, $quote);
+            $this->assertTrue(in_array($quote->getInstrument(), $instrumentList));
+            $this->assertInternalType('float', $quote->getClose());
+            $this->assertInternalType('float', $quote->getVolume());
+            $this->assertInstanceOf(\DateTime::class, $quote->getTimestamp());
+        }
     }
 
     private function createMockHistory($startDate, $numberOfRecords, $interval)

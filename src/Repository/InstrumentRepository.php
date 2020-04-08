@@ -19,25 +19,6 @@ class InstrumentRepository extends ServiceEntityRepository
         parent::__construct($registry, Instrument::class);
     }
 
-    /**
-     * Deletes price history between dates
-     * @param DateTime $fromDate
-     * @param DateTime $toDate
-     * @param DateInterval entries for which time period supposed to be deleted
-     * @param string $provider if no provider supplied price records for all providers will be removed
-     */
-    // public function deleteHistory($fromDate, $toDate, $interval, $provider = null)
-    // {
-        // $qb = $this->createQueryBuilder();
-        // $expr = $this->getExpressionBuilder();
-        // $qb->select()->from('instruments', 'i')->where($expr->eq('i.symbol', $this->getSymbol()));
-        // $query = $qb->getQuery();
-
-        // $result = $query->getResult();
-        // var_dump($result); 
-        // ;
-    // }
-
     // /**
     //  * @return Instrument[] Returns an array of Instrument objects
     //  */

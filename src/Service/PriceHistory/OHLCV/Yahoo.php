@@ -524,6 +524,17 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     }
 
     /**
+     * Retrieve several quotes from Price Provider in one request
+     * Does not check if market is open or closed.
+     * @param App\Entity\Instrument[] $list
+     * @return \App\Service\PriceHistory\App\Entity\OHLCVQuote[] | null
+     */
+    public function getQuotes($list)
+    {
+        return $this->priceAdapter->getQuotes($list);
+    }
+
+    /**
      * Orders history elements from oldest date to the latest
      * @param App\Entity\OHLCVHistory[] $history
      */

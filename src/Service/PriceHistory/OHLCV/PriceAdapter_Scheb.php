@@ -14,6 +14,8 @@ namespace App\Service\PriceHistory\OHLCV;
 use App\Entity\OHLCVHistory;
 use App\Entity\OHLCVQuote;
 use App\Exception\PriceHistoryException;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Criteria;
 
 class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterface
 {
@@ -22,9 +24,18 @@ class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterf
      */
     protected $priceProvider;
 
-    public function __construct(\Scheb\YahooFinanceApi\ApiClient $priceProvider)
+    /**
+     * @var \App\Repository\InstrumentRepository
+     */
+    protected $instrumentRepository;
+
+    public function __construct(
+        \Scheb\YahooFinanceApi\ApiClient $priceProvider,
+        \App\Repository\InstrumentRepository $instrumentRepository
+    )
     {
         $this->priceProvider = $priceProvider;
+        $this->instrumentRepository = $instrumentRepository;
     }
 
     public function getHistoricalData($instrument, $fromDate, $toDate, $options)
@@ -71,25 +82,52 @@ class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterf
     public function getQuote($instrument)
     {
         $providerQuote = $this->priceProvider->getQuote($instrument->getSymbol());
-        $interval = new \DateInterval('P1D');
 
-        $quote = new OHLCVQuote();
-
-        $quote->setInstrument($instrument);
-        $quote->setProvider(Yahoo::PROVIDER_NAME);
-        $quote->setTimestamp($providerQuote->getRegularMarketTime());
-        $quote->setTimeinterval($interval);
-        $quote->setOpen($providerQuote->getRegularMarketOpen());
-        $quote->setHigh($providerQuote->getRegularMarketDayHigh());
-        $quote->setLow($providerQuote->getRegularMarketDayLow());
-        $quote->setClose($providerQuote->getRegularMarketPrice());
-        $quote->setVolume($providerQuote->getRegularMarketVolume());
-
-        return $quote;
+        return $this->castProviderQuoteToAppQuote($providerQuote);
     }
 
     public function getQuotes($list)
     {
-        // TODO: Implement getQuotes() method.
+        $symbolsList = [];
+        foreach ($list as $instrument) {
+            $symbolsList[] = $instrument->getSymbol();
+        }
+
+        $providerQuotes = $this->priceProvider->getQuotes($symbolsList);
+
+        $quotesList = [];
+        foreach ($providerQuotes as $providerQuote) {
+            $quotesList[] = $this->castProviderQuoteToAppQuote($providerQuote);
+        }
+
+        return $quotesList;
+    }
+
+    /**
+     * Extracts values from Scheb API Quote object into this App's Quote object
+     * @param Scheb\YahooFinanceApi\Results\Quote $providerQuote
+     * @return OHLCVQuote $quote
+     * @throws \Exception
+     */
+    private function castProviderQuoteToAppQuote($providerQuote)
+    {
+        $interval = new \DateInterval('P1D');
+
+        $instrument = $this->instrumentRepository->findOneBySymbol($providerQuote->getSymbol());
+
+        if ($instrument) {
+            $quote = new OHLCVQuote();
+            $quote->setInstrument($instrument);
+            $quote->setProvider(Yahoo::PROVIDER_NAME);
+            $quote->setTimestamp($providerQuote->getRegularMarketTime());
+            $quote->setTimeinterval($interval);
+            $quote->setOpen($providerQuote->getRegularMarketOpen());
+            $quote->setHigh($providerQuote->getRegularMarketDayHigh());
+            $quote->setLow($providerQuote->getRegularMarketDayLow());
+            $quote->setClose($providerQuote->getRegularMarketPrice());
+            $quote->setVolume($providerQuote->getRegularMarketVolume());
+
+            return $quote;
+        }
     }
 }
