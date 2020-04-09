@@ -111,6 +111,9 @@
     "jdorn/sql-formatter": {
         "version": "v1.2.17"
     },
+    "league/csv": {
+        "version": "9.6.0"
+    },
     "nikic/php-parser": {
         "version": "v4.2.1"
     },

@@ -1347,12 +1347,6 @@ class YahooTest extends KernelTestCase
 
     private function createSimulatedDownload($instrument, $startDate, $numberOfRecords, $interval)
     {
-        // $instrument = new Instrument();
-        // $instrument->setSymbol('TEST');
-        // $instrument->setName('Instrument for testing purposes');
-        // $instrument->setExchange('NYSE');
-
-        // $interval = new \DateInterval('P1D');
         $out = [];
         for ($i = 0; $i < $numberOfRecords; $i++, $startDate->add($interval)) {
             $record = new OHLCVHistory();
