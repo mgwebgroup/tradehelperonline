@@ -1,0 +1,101 @@
+Symbol,Name,Weight,Industry,Shares Held,SPDR Fund
+LIN,Linde plc,18.148008,Chemicals,2755975,XHB
+APD,Air Products and Chemicals Inc.,8.774636,Chemicals,1130984,XHB
+SHW,Sherwin-Williams Company,7.339606,Chemicals,421452,XHB
+NEM,Newmont Corporation,7.108922,Metals & Mining,3887067,XHB
+ECL,Ecolab Inc.,7.072379,Chemicals,1286558,XHB
+DD,DuPont de Nemours Inc.,4.74856,Chemicals,3800709,XHB
+DOW,Dow Inc.,4.439025,Chemicals,3804260,XHB
+PPG,PPG Industries Inc.,3.892405,Chemicals,1222975,XHB
+BLL,Ball Corporation,3.85797,Containers & Packaging,1691977,XHB
+CTVA,Corteva Inc,3.724843,Chemicals,3870838,XHB
+VMC,Vulcan Materials Company,2.464699,Construction Materials,684513,XHB
+AMCR,Amcor PLC,2.435228,Containers & Packaging,8379521,XHB
+LYB,LyondellBasell Industries NV,2.360273,Chemicals,1327859,XHB
+IP,International Paper Company,2.356659,Containers & Packaging,2028058,XHB
+IFF,International Flavors & Fragrances Inc.,2.285543,Chemicals,552214,XHB
+MLM,Martin Marietta Materials Inc.,2.045289,Construction Materials,323272,XHB
+NUE,Nucor Corporation,1.956558,Metals & Mining,1568217,XHB
+FMC,FMC Corporation,1.888824,Chemicals,670393,XHB
+FCX,Freeport-McMoRan Inc.,1.775661,Metals & Mining,7504278,XHB
+CE,Celanese Corporation,1.706959,Chemicals,625130,XHB
+PKG,Packaging Corporation of America,1.638339,Containers & Packaging,489635,XHB
+AVY,Avery Dennison Corporation,1.492949,Containers & Packaging,431849,XHB
+WRK,WestRock Company,1.452758,Containers & Packaging,1333841,XHB
+ALB,Albemarle Corporation,1.225542,Chemicals,548464,XHB
+EMN,Eastman Chemical Company,1.185211,Chemicals,703259,XHB
+CF,CF Industries Holdings Inc.,1.088093,Chemicals,1124584,XHB
+SEE,Sealed Air Corporation,0.7764,Containers & Packaging,799175,XHB
+MOS,Mosaic Company,0.731939,Chemicals,1808346,XHB
+FB,Facebook Inc. Class A,18.482459,Interactive Media & Services,7478114,XLC
+GOOGL,Alphabet Inc. Class A,11.658186,Interactive Media & Services,662711,XLC
+GOOG,Alphabet Inc. Class C,11.657211,Interactive Media & Services,661094,XLC
+NFLX,Netflix Inc.,7.027658,Entertainment,1168880,XLC
+ATVI,Activision Blizzard Inc.,5.605978,Entertainment,5948685,XLC
+VZ,Verizon Communications Inc.,4.816995,Diversified Telecommunication Services,5737323,XLC
+CHTR,Charter Communications Inc. Class A,4.677077,Media,734089,XLC
+EA,Electronic Arts Inc.,4.571528,Entertainment,2869339,XLC
+CMCSA,Comcast Corporation Class A,4.564955,Media,8005323,XLC
+T,AT&T Inc.,4.073634,Diversified Telecommunication Services,9118450,XLC
+TMUS,T-Mobile US Inc.,3.929902,Wireless Telecommunication Services,3110808,XLC
+DIS,Walt Disney Company,3.416154,Entertainment,2386932,XLC
+TWTR,Twitter Inc.,3.143523,Interactive Media & Services,7629270,XLC
+TTWO,Take-Two Interactive Software Inc.,2.038283,Entertainment,1112168,XLC
+OMC,Omnicom Group Inc,1.724576,Media,2139551,XLC
+CTL,CenturyLink Inc.,1.398849,Diversified Telecommunication Services,9645806,XLC
+FOXA,Fox Corporation Class A,1.174083,Media,3482850,XLC
+VIAC,ViacomCBS Inc. Class B,0.999672,Media,5310507,XLC
+DISCK,Discovery Inc. Class C,0.905427,Media,3296182,XLC
+LYV,Live Nation Entertainment Inc.,0.8627,Entertainment,1384806,XLC
+IPG,Interpublic Group of Companies Inc.,0.817985,Media,3805545,XLC
+DISH,DISH Network Corporation Class A,0.759445,Media,2507303,XLC
+FOX,Fox Corporation Class B,0.527448,Media,1595448,XLC
+NWSA,News Corporation Class A,0.524433,Media,3818366,XLC
+DISCA,Discovery Inc. Class A,0.479267,Media,1553203,XLC
+NWS,News Corporation Class B,0.16257,Media,1196750,XLC
+XOM,Exxon Mobil Corporation,25.684628,Oil Gas & Consumable Fuels,44422240,XLE
+CVX,Chevron Corporation,23.333227,Oil Gas & Consumable Fuels,23407934,XLE
+KMI,Kinder Morgan Inc Class P,5.194875,Oil Gas & Consumable Fuels,25618128,XLE
+EOG,EOG Resources Inc.,4.858585,Oil Gas & Consumable Fuels,7651300,XLE
+COP,ConocoPhillips,4.331235,Oil Gas & Consumable Fuels,9596395,XLE
+PSX,Phillips 66,4.120638,Oil Gas & Consumable Fuels,5325168,XLE
+SLB,Schlumberger NV,3.639082,Energy Equipment & Services,15428119,XLE
+WMB,Williams Companies Inc.,3.267666,Oil Gas & Consumable Fuels,15940816,XLE
+VLO,Valero Energy Corporation,3.238917,Oil Gas & Consumable Fuels,5400869,XLE
+MPC,Marathon Petroleum Corporation,2.609317,Oil Gas & Consumable Fuels,8539720,XLE
+PXD,Pioneer Natural Resources Company,2.454875,Oil Gas & Consumable Fuels,2178650,XLE
+OXY,Occidental Petroleum Corporation,2.093012,Oil Gas & Consumable Fuels,11748863,XLE
+OKE,ONEOK Inc.,1.95763,Oil Gas & Consumable Fuels,5432783,XLE
+CXO,Concho Resources Inc.,1.848596,Oil Gas & Consumable Fuels,2644012,XLE
+HES,Hess Corporation,1.81048,Oil Gas & Consumable Fuels,3406382,XLE
+BKR,Baker Hughes Company Class A,1.466054,Energy Equipment & Services,8547049,XLE
+COG,Cabot Oil & Gas Corporation,1.394651,Oil Gas & Consumable Fuels,5364930,XLE
+HAL,Halliburton Company,1.112166,Energy Equipment & Services,11544789,XLE
+NOV,National Oilwell Varco Inc.,0.909599,Energy Equipment & Services,5074497,XLE
+FANG,Diamondback Energy Inc.,0.793676,Oil Gas & Consumable Fuels,2119336,XLE
+HFC,HollyFrontier Corporation,0.669929,Oil Gas & Consumable Fuels,1952833,XLE
+MRO,Marathon Oil Corporation,0.647947,Oil Gas & Consumable Fuels,10520644,XLE
+FTI,TechnipFMC Plc,0.640139,Energy Equipment & Services,5526896,XLE
+DVN,Devon Energy Corporation,0.578267,Oil Gas & Consumable Fuels,5089649,XLE
+NBL,Noble Energy Inc.,0.516949,Oil Gas & Consumable Fuels,6290537,XLE
+APA,Apache Corporation,0.391869,Oil Gas & Consumable Fuels,4945511,XLE
+HP,Helmerich & Payne Inc.,0.370501,Energy Equipment & Services,1426249,XLE
+BRKB,Berkshire Hathaway Inc. Class B,15.945241,Diversified Financial Services,12238934,XLF
+JPM,JPMorgan Chase & Co.,12.463251,Banks,19625252,XLF
+BAC,Bank of America Corp,7.359386,Banks,50654616,XLF
+WFC,Wells Fargo & Company,4.886223,Banks,24081736,XLF
+C,Citigroup Inc.,3.884781,Banks,13660351,XLF
+CME,CME Group Inc. Class A,2.514308,Capital Markets,2242310,XLF
+SPGI,S&P Global Inc.,2.359883,Capital Markets,1529157,XLF
+AXP,American Express Company,2.326557,Consumer Finance,4198482,XLF
+GS,Goldman Sachs Group Inc.,2.162554,Capital Markets,1993910,XLF
+CB,Chubb Limited,2.146531,Insurance,2835712,XLF
+USB,U.S. Bancorp,2.067388,Banks,8893023,XLF
+PGR,Progressive Corporation,1.9562,Insurance,3657978,XLF
+MMC,Marsh & McLennan Companies Inc.,1.946018,Insurance,3157796,XLF
+BLK,BlackRock Inc.,1.941313,Capital Markets,737847,XLF
+ICE,Intercontinental Exchange Inc.,1.871675,Capital Markets,3484214,XLF
+PNC,PNC Financial Services Group Inc.,1.776524,Banks,2741552,XLF
+TFC,Truist Financial Corporation,1.732267,Banks,8391246,XLF
+MS,Morgan Stanley,1.72005,Capital Markets,7696904,XLF
+AON,Aon plc,1.712666,Insurance,1465026,XLF

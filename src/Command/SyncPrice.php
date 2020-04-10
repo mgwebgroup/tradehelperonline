@@ -125,26 +125,6 @@ EOT
             }
 
             if($lastPrice->getTimestamp()->format('Ymd') == $prevT->format('Ymd')) {
-                // add quote to instrument if market open
-                // code below will query price provider API once for each instrument
-//                if ($exchange->isOpen($today)) {
-//                    $quote = $this->priceProvider->downloadQuote($instrument);
-//                    if ($quote) {
-//                        $this->priceProvider->saveQuote($instrument);
-//                        $this->priceProvider->addQuoteToHistory($instrument);
-//                        $logMsg .= sprintf('Added quote to history quoteDate=%s ', $quote->getTimestamp()->format('Y-m-d H:i:s'));
-//                    } else {
-//                        $logMsg .= sprintf('Quote could not be downloaded ');
-//                    }
-//                }
-//                // add closing price to history if market closed
-//                else {
-//                    $closingPrice = $this->priceProvider->downloadClosingPrice($instrument);
-//                    $this->priceProvider->removeQuote($instrument);
-//                    $this->priceProvider->addClosingPriceToHistory($closingPrice);
-//                    $logMsg .= sprintf('Added closing P to history closing P date=%s ', $closingPrice->getTimestamp()->format('Y-m-d H:i:s'));
-//                }
-
                 // this will put instruments into queue and download quotes in one shot later
                 if ($queue->matching($criterion)->isEmpty()) {
                     $queue->add($instrument);
@@ -159,7 +139,7 @@ EOT
             }
 
 //            $this->logger->info($logMsg);
-//            $output->writeln(sprintf('%3d %5.5s %-30.40s', $key, $record['Symbol'], $record['Name']));
+            $output->writeln(sprintf('%3d %5.5s %-30.40s', $key, $record['Symbol'], $record['Name']));
         }
 
         // check for one shot download and updated latest prices anyway:

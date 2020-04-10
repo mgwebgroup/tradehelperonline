@@ -80,7 +80,7 @@ DVN,Devon Energy Corporation,0.578267,Oil Gas & Consumable Fuels,5089649,XLE
 NBL,Noble Energy Inc.,0.516949,Oil Gas & Consumable Fuels,6290537,XLE
 APA,Apache Corporation,0.391869,Oil Gas & Consumable Fuels,4945511,XLE
 HP,Helmerich & Payne Inc.,0.370501,Energy Equipment & Services,1426249,XLE
-BRK.B,Berkshire Hathaway Inc. Class B,15.945241,Diversified Financial Services,12238934,XLF
+BRKB,Berkshire Hathaway Inc. Class B,15.945241,Diversified Financial Services,12238934,XLF
 JPM,JPMorgan Chase & Co.,12.463251,Banks,19625252,XLF
 BAC,Bank of America Corp,7.359386,Banks,50654616,XLF
 WFC,Wells Fargo & Company,4.886223,Banks,24081736,XLF
@@ -316,7 +316,7 @@ KHC,Kraft Heinz Company,0.994577,Food Products,5777875,XLP
 CAG,Conagra Brands Inc.,0.963879,Food Products,4514847,XLP
 HRL,Hormel Foods Corporation,0.904557,Food Products,2579641,XLP
 SJM,J.M. Smucker Company,0.840033,Food Products,1058138,XLP
-BF.B,Brown-Forman Corporation Class B,0.651131,Beverages,1690318,XLP
+BFB,Brown-Forman Corporation Class B,0.651131,Beverages,1690318,XLP
 CPB,Campbell Soup Company,0.557582,Food Products,1567163,XLP
 LW,Lamb Weston Holdings Inc.,0.535796,Food Products,1355052,XLP
 TAP,Molson Coors Beverage Company Class B,0.499194,Beverages,1742856,XLP

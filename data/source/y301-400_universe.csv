@@ -1,0 +1,101 @@
+Symbol,Name,Weight,Industry,Shares Held,SPDR Fund
+EL,Estee Lauder Companies Inc. Class A,2.47057,Personal Products,2064697,XLP
+GIS,General Mills Inc.,2.197132,Food Products,5607186,XLP
+KR,Kroger Co.,1.916511,Food & Staples Retailing,7440404,XLP
+CLX,Clorox Company,1.641738,Household Products,1164297,XLP
+MNST,Monster Beverage Corporation,1.496072,Beverages,3541637,XLP
+SYY,Sysco Corporation,1.422879,Food & Staples Retailing,4733547,XLP
+STZ,Constellation Brands Inc. Class A,1.360476,Beverages,1553921,XLP
+TSN,Tyson Foods Inc. Class A,1.307288,Food Products,2738514,XLP
+HSY,Hershey Company,1.270604,Food Products,1375860,XLP
+ADM,Archer-Daniels-Midland Company,1.254538,Food Products,5164573,XLP
+CHD,Church & Dwight Co. Inc.,1.148505,Household Products,2276649,XLP
+MKC,McCormick & Company Incorporated,1.081477,Food Products,1146375,XLP
+K,Kellogg Company,1.025386,Food Products,2310005,XLP
+KHC,Kraft Heinz Company,0.994577,Food Products,5777875,XLP
+CAG,Conagra Brands Inc.,0.963879,Food Products,4514847,XLP
+HRL,Hormel Foods Corporation,0.904557,Food Products,2579641,XLP
+SJM,J.M. Smucker Company,0.840033,Food Products,1058138,XLP
+BFB,Brown-Forman Corporation Class B,0.651131,Beverages,1690318,XLP
+CPB,Campbell Soup Company,0.557582,Food Products,1567163,XLP
+LW,Lamb Weston Holdings Inc.,0.535796,Food Products,1355052,XLP
+TAP,Molson Coors Beverage Company Class B,0.499194,Beverages,1742856,XLP
+COTY,Coty Inc. Class A,0.117042,Personal Products,2742204,XLP
+AMT,American Tower Corporation,14.982434,Equity Real Estate Investment Trusts (Reits),2075629,XLRE
+CCI,Crown Castle International Corp,9.184969,Equity Real Estate Investment Trusts (Reits),1948071,XLRE
+PLD,Prologis Inc.,8.834726,Equity Real Estate Investment Trusts (Reits),3458980,XLRE
+EQIX,Equinix Inc.,7.877008,Equity Real Estate Investment Trusts (Reits),399546,XLRE
+DLR,Digital Realty Trust Inc.,5.355494,Equity Real Estate Investment Trusts (Reits),1231450,XLRE
+SBAC,SBA Communications Corp. Class A,4.580219,Equity Real Estate Investment Trusts (Reits),527422,XLRE
+PSA,Public Storage,4.555748,Equity Real Estate Investment Trusts (Reits),703762,XLRE
+EQR,Equity Residential,3.386375,Equity Real Estate Investment Trusts (Reits),1634915,XLRE
+WELL,Welltower Inc.,3.330506,Equity Real Estate Investment Trusts (Reits),1900026,XLRE
+AVB,AvalonBay Communities Inc.,3.192091,Equity Real Estate Investment Trusts (Reits),654096,XLRE
+SPG,Simon Property Group Inc.,2.905197,Equity Real Estate Investment Trusts (Reits),1437000,XLRE
+O,Realty Income Corporation,2.665931,Equity Real Estate Investment Trusts (Reits),1526155,XLRE
+ARE,Alexandria Real Estate Equities Inc.,2.659355,Equity Real Estate Investment Trusts (Reits),574142,XLRE
+ESS,Essex Property Trust Inc.,2.272025,Equity Real Estate Investment Trusts (Reits),309337,XLRE
+BXP,Boston Properties Inc.,2.114524,Equity Real Estate Investment Trusts (Reits),673204,XLRE
+WY,Weyerhaeuser Company,1.893752,Equity Real Estate Investment Trusts (Reits),3488143,XLRE
+CBRE,CBRE Group Inc. Class A,1.884327,Real Estate Management & Development,1567262,XLRE
+PEAK,Healthpeak Properties Inc.,1.862604,Equity Real Estate Investment Trusts (Reits),2316415,XLRE
+EXR,Extra Space Storage Inc.,1.822888,Equity Real Estate Investment Trusts (Reits),606180,XLRE
+MAA,Mid-America Apartment Communities Inc.,1.822201,Equity Real Estate Investment Trusts (Reits),533956,XLRE
+DRE,Duke Realty Corporation,1.820121,Equity Real Estate Investment Trusts (Reits),1720322,XLRE
+UDR,UDR Inc.,1.660513,Equity Real Estate Investment Trusts (Reits),1371453,XLRE
+VTR,Ventas Inc.,1.630918,Equity Real Estate Investment Trusts (Reits),1759312,XLRE
+HST,Host Hotels & Resorts Inc.,1.444117,Equity Real Estate Investment Trusts (Reits),3354824,XLRE
+IRM,Iron Mountain Inc.,1.223698,Equity Real Estate Investment Trusts (Reits),1355392,XLRE
+REG,Regency Centers Corporation,1.11196,Equity Real Estate Investment Trusts (Reits),790954,XLRE
+VNO,Vornado Realty Trust,0.922688,Equity Real Estate Investment Trusts (Reits),747877,XLRE
+FRT,Federal Realty Investment Trust,0.890887,Equity Real Estate Investment Trusts (Reits),331536,XLRE
+KIM,Kimco Realty Corporation,0.754559,Equity Real Estate Investment Trusts (Reits),1989493,XLRE
+AIV,Apartment Investment & Management Co Class A,0.715119,Equity Real Estate Investment Trusts (Reits),701565,XLRE
+SLG,SL Green Realty Corp.,0.63689,Equity Real Estate Investment Trusts (Reits),384095,XLRE
+NEE,NextEra Energy Inc.,14.361249,Electric Utilities,6522929,XLU
+D,Dominion Energy Inc,7.906486,Multi-Utilities,10984491,XLU
+DUK,Duke Energy Corporation,7.5642,Electric Utilities,9729176,XLU
+SO,Southern Company,7.332825,Electric Utilities,13995739,XLU
+AEP,American Electric Power Company Inc.,5.592494,Electric Utilities,6592000,XLU
+EXC,Exelon Corporation,4.713756,Electric Utilities,12973143,XLU
+XEL,Xcel Energy Inc.,4.270819,Electric Utilities,7047757,XLU
+SRE,Sempra Energy,3.954698,Multi-Utilities,3492876,XLU
+WEC,WEC Energy Group Inc,3.642321,Multi-Utilities,4239386,XLU
+ED,Consolidated Edison Inc.,3.538609,Multi-Utilities,4467831,XLU
+ES,Eversource Energy,3.281764,Electric Utilities,4351282,XLU
+PEG,Public Service Enterprise Group Inc,3.036397,Multi-Utilities,6796931,XLU
+FE,FirstEnergy Corp.,2.921051,Electric Utilities,7261756,XLU
+AWK,American Water Works Company Inc.,2.858333,Water Utilities,2429615,XLU
+EIX,Edison International,2.597564,Electric Utilities,4819575,XLU
+ETR,Entergy Corporation,2.535465,Electric Utilities,2675911,XLU
+AEE,Ameren Corporation,2.459391,Multi-Utilities,3306596,XLU
+DTE,DTE Energy Company,2.403461,Multi-Utilities,2581838,XLU
+PPL,PPL Corporation,2.324981,Electric Utilities,10319288,XLU
+CMS,CMS Energy Corporation,2.242823,Multi-Utilities,3814815,XLU
+EVRG,Evergy Inc.,1.667543,Electric Utilities,3063001,XLU
+LNT,Alliant Energy Corp,1.565934,Electric Utilities,3230962,XLU
+ATO,Atmos Energy Corporation,1.564908,Gas Utilities,1603994,XLU
+AES,AES Corporation,1.28391,Independent Power and Renewable Electricity Producers,8924701,XLU
+NI,NiSource Inc,1.26951,Multi-Utilities,5021477,XLU
+PNW,Pinnacle West Capital Corporation,1.152143,Electric Utilities,1511111,XLU
+CNP,CenterPoint Energy Inc.,0.990108,Multi-Utilities,6751604,XLU
+NRG,NRG Energy Inc.,0.908347,Electric Utilities,3382140,XLU
+JNJ,Johnson & Johnson,10.513412,Pharmaceuticals,14726832,XLV
+UNH,UnitedHealth Group Incorporated,6.63552,Health Care Providers & Services,5301372,XLV
+MRK,Merck & Co. Inc.,6.076195,Pharmaceuticals,14246220,XLV
+PFE,Pfizer Inc.,5.66696,Pharmaceuticals,30966612,XLV
+ABT,Abbott Laboratories,3.990626,Health Care Equipment & Supplies,9889609,XLV
+AMGN,Amgen Inc.,3.970806,Biotechnology,3324798,XLV
+BMY,Bristol-Myers Squibb Company,3.909465,Pharmaceuticals,13117024,XLV
+TMO,Thermo Fisher Scientific Inc.,3.67952,Life Sciences Tools & Services,2243760,XLV
+LLY,Eli Lilly and Company,3.615323,Pharmaceuticals,4727741,XLV
+MDT,Medtronic Plc,3.513048,Health Care Equipment & Supplies,7500211,XLV
+ABBV,AbbVie Inc.,3.428362,Biotechnology,8274904,XLV
+GILD,Gilead Sciences Inc.,3.301766,Biotechnology,7079229,XLV
+DHR,Danaher Corporation,2.78924,Health Care Equipment & Supplies,3577165,XLV
+CVS,CVS Health Corporation,2.482502,Health Care Providers & Services,7279690,XLV
+AGN,Allergan plc,1.978695,Pharmaceuticals,1836884,XLV
+BDX,Becton Dickinson and Company,1.949833,Health Care Equipment & Supplies,1513372,XLV
+VRTX,Vertex Pharmaceuticals Incorporated,1.868962,Biotechnology,1438911,XLV
+BIIB,Biogen Inc.,1.745833,Biotechnology,1009671,XLV
+CI,Cigna Corporation,1.745622,Health Care Providers & Services,2089501,XLV

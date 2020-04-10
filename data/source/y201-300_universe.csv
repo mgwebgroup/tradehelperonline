@@ -1,0 +1,101 @@
+Symbol,Name,Weight,Industry,Shares Held,SPDR Fund
+IR,Ingersoll Rand Inc.,0.463878,Machinery,1442431,XLI
+JBHT,J.B. Hunt Transport Services Inc.,0.463189,Road & Rail,355334,XLI
+HII,Huntington Ingalls Industries Inc.,0.432853,Aerospace & Defense,170463,XLI
+UAL,United Airlines Holdings Inc.,0.392629,Airlines,906939,XLI
+URI,United Rentals Inc.,0.366224,Trading Companies & Distributors,313247,XLI
+SNA,Snap-on Incorporated,0.360215,Machinery,228542,XLI
+TXT,Textron Inc.,0.339862,Aerospace & Defense,951415,XLI
+AOS,A. O. Smith Corporation,0.335373,Building Products,571221,XLI
+FBHS,Fortune Brands Home & Security Inc.,0.333177,Building Products,580025,XLI
+ARNC,Arconic Inc.,0.319265,Aerospace & Defense,1614572,XLI
+ROL,Rollins Inc.,0.305535,Commercial Services & Supplies,586829,XLI
+NLSN,Nielsen Holdings Plc,0.292027,Professional Services,1483013,XLI
+RHI,Robert Half International Inc.,0.276114,Professional Services,489969,XLI
+AAL,American Airlines Group Inc.,0.2747,Airlines,1625028,XLI
+PNR,Pentair plc,0.264014,Machinery,700594,XLI
+PWR,Quanta Services Inc.,0.232794,Construction & Engineering,593090,XLI
+ALK,Alaska Air Group Inc.,0.203478,Airlines,513439,XLI
+FLS,Flowserve Corporation,0.173069,Machinery,545432,XLI
+MSFT,Microsoft Corporation,21.661482,Software,32540048,XLK
+AAPL,Apple Inc.,19.568188,Technology Hardware Storage & Peripherals,17815208,XLK
+V,Visa Inc. Class A,4.852073,IT Services,7301709,XLK
+INTC,Intel Corporation,4.50353,Semiconductors & Semiconductor Equipment,18554598,XLK
+MA,Mastercard Incorporated Class A,3.768589,IT Services,3786574,XLK
+ADBE,Adobe Inc.,3.105898,Software,2064772,XLK
+CSCO,Cisco Systems Inc.,3.065001,Communications Equipment,18095044,XLK
+NVDA,NVIDIA Corporation,2.718059,Semiconductors & Semiconductor Equipment,2610459,XLK
+CRM,salesforce.com inc.,2.602691,Software,3783463,XLK
+PYPL,PayPal Holdings Inc,2.090465,IT Services,5008441,XLK
+ORCL,Oracle Corporation,1.999097,Software,9240916,XLK
+TXN,Texas Instruments Incorporated,1.921469,Semiconductors & Semiconductor Equipment,3987189,XLK
+ACN,Accenture Plc Class A,1.905428,IT Services,2708763,XLK
+IBM,International Business Machines Corporation,1.752614,IT Services,3777638,XLK
+AVGO,Broadcom Inc.,1.602473,Semiconductors & Semiconductor Equipment,1691929,XLK
+QCOM,QUALCOMM Incorporated,1.490926,Semiconductors & Semiconductor Equipment,4870492,XLK
+FIS,Fidelity National Information Services Inc.,1.314798,IT Services,2621513,XLK
+INTU,Intuit Inc.,1.058391,Software,1110301,XLK
+AMD,Advanced Micro Devices Inc.,1.017022,Semiconductors & Semiconductor Equipment,4989128,XLK
+NOW,ServiceNow Inc.,1.005511,Software,804465,XLK
+ADP,Automatic Data Processing Inc.,0.985459,IT Services,1845603,XLK
+FISV,Fiserv Inc.,0.918249,IT Services,2435986,XLK
+MU,Micron Technology Inc.,0.884216,Semiconductors & Semiconductor Equipment,4722065,XLK
+AMAT,Applied Materials Inc.,0.774843,Semiconductors & Semiconductor Equipment,3940188,XLK
+GPN,Global Payments Inc.,0.72846,IT Services,1282009,XLK
+ADSK,Autodesk Inc.,0.66223,Software,938490,XLK
+ADI,Analog Devices Inc.,0.654933,Semiconductors & Semiconductor Equipment,1570964,XLK
+LRCX,Lam Research Corporation,0.584239,Semiconductors & Semiconductor Equipment,618837,XLK
+CTSH,Cognizant Technology Solutions Corporation Class A,0.475757,IT Services,2335569,XLK
+MSI,Motorola Solutions Inc.,0.445634,Communications Equipment,730811,XLK
+APH,Amphenol Corporation Class A,0.427179,Electronic Equipment Instruments & Components,1264637,XLK
+HPQ,HP Inc.,0.423938,Technology Hardware Storage & Peripherals,6321017,XLK
+KLAC,KLA Corporation,0.383396,Semiconductors & Semiconductor Equipment,673052,XLK
+TEL,TE Connectivity Ltd.,0.381823,Electronic Equipment Instruments & Components,1426652,XLK
+XLNX,Xilinx Inc.,0.378078,Semiconductors & Semiconductor Equipment,1072640,XLK
+ANSS,ANSYS Inc.,0.372302,Software,365012,XLK
+SNPS,Synopsys Inc.,0.340542,Software,641248,XLK
+PAYX,Paychex Inc.,0.335199,IT Services,1358826,XLK
+CDNS,Cadence Design Systems Inc.,0.327277,Software,1196795,XLK
+MCHP,Microchip Technology Incorporated,0.326908,Semiconductors & Semiconductor Equipment,1019349,XLK
+VRSN,VeriSign Inc.,0.326141,IT Services,440702,XLK
+KEYS,Keysight Technologies Inc,0.317913,Electronic Equipment Instruments & Components,800051,XLK
+FLT,FleetCor Technologies Inc.,0.311159,IT Services,370141,XLK
+CTXS,Citrix Systems Inc.,0.292037,Software,490579,XLK
+AKAM,Akamai Technologies Inc.,0.288647,IT Services,689292,XLK
+GLW,Corning Inc,0.285063,Electronic Equipment Instruments & Components,3280559,XLK
+SWKS,Skyworks Solutions Inc.,0.26664,Semiconductors & Semiconductor Equipment,726706,XLK
+MXIM,Maxim Integrated Products Inc.,0.25898,Semiconductors & Semiconductor Equipment,1154308,XLK
+CDW,CDW Corp.,0.256821,Electronic Equipment Instruments & Components,612861,XLK
+FTNT,Fortinet Inc.,0.254611,Software,605464,XLK
+WDC,Western Digital Corporation,0.213441,Technology Hardware Storage & Peripherals,1268540,XLK
+HPE,Hewlett Packard Enterprise Co.,0.211568,Technology Hardware Storage & Peripherals,5519420,XLK
+JKHY,Jack Henry & Associates Inc.,0.208205,IT Services,328139,XLK
+BR,Broadridge Financial Solutions Inc.,0.201711,IT Services,489006,XLK
+NLOK,NortonLifeLock Inc.,0.198517,Software,2445790,XLK
+STX,Seagate Technology PLC,0.196855,Technology Hardware Storage & Peripherals,986061,XLK
+LDOS,Leidos Holdings Inc.,0.196816,IT Services,567608,XLK
+ZBRA,Zebra Technologies Corporation Class A,0.192257,Electronic Equipment Instruments & Components,230040,XLK
+ANET,Arista Networks Inc.,0.183396,Communications Equipment,231420,XLK
+PAYC,Paycom Software Inc.,0.183276,Software,209220,XLK
+NTAP,NetApp Inc.,0.168466,Technology Hardware Storage & Peripherals,973481,XLK
+QRVO,Qorvo Inc.,0.168258,Semiconductors & Semiconductor Equipment,495533,XLK
+WU,Western Union Company,0.162399,IT Services,1788321,XLK
+IT,Gartner Inc.,0.158808,IT Services,381555,XLK
+FFIV,F5 Networks Inc.,0.125228,Communications Equipment,259305,XLK
+JNPR,Juniper Networks Inc.,0.120772,Communications Equipment,1427673,XLK
+IPGP,IPG Photonics Corporation,0.081705,Electronic Equipment Instruments & Components,151699,XLK
+FLIR,FLIR Systems Inc.,0.08116,Electronic Equipment Instruments & Components,572268,XLK
+XRX,Xerox Holdings Corporation,0.062542,Technology Hardware Storage & Peripherals,793016,XLK
+DXC,DXC Technology Co.,0.057948,IT Services,1091978,XLK
+ADS,Alliance Data Systems Corporation,0.026559,IT Services,174896,XLK
+PG,Procter & Gamble Company,16.374813,Household Products,20223116,XLP
+WMT,Walmart Inc.,10.895497,Food & Staples Retailing,11503847,XLP
+PEP,PepsiCo Inc.,9.857151,Beverages,11307966,XLP
+KO,Coca-Cola Company,9.733894,Beverages,31269960,XLP
+COST,Costco Wholesale Corporation,5.651594,Food & Staples Retailing,2388281,XLP
+MDLZ,Mondelez International Inc. Class A,4.641839,Food Products,13357693,XLP
+PM,Philip Morris International Inc.,4.092456,Tobacco,8232729,XLP
+CL,Colgate-Palmolive Company,3.984743,Household Products,7951088,XLP
+MO,Altria Group Inc,3.61412,Tobacco,13896836,XLP
+KMB,Kimberly-Clark Corporation,2.960954,Household Products,3180267,XLP
+WBA,Walgreens Boots Alliance Inc,2.513896,Food & Staples Retailing,6955487,XLP

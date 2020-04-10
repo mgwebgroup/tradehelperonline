@@ -12,7 +12,6 @@ namespace App\Command;
 
 use App\Entity\Instrument;
 use League\Csv\Reader;
-use League\Csv\Writer;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -72,9 +71,19 @@ EOT
 
         $this->addUsage('data/source/y_universe.csv data/source/ohlcv P1D 2019-05-01');
 
-        $this->addArgument('input_path', InputArgument::OPTIONAL, 'Path/to/file.csv with list of symbols to work on', self::LIST_PATH);
+        $this->addArgument(
+            'input_path',
+            InputArgument::OPTIONAL,
+            'Path/to/file.csv with list of symbols to work on',
+            self::LIST_PATH
+        );
         $this->addArgument('export_path', InputArgument::OPTIONAL, 'Path/to csv files to export', self::EXPORT_PATH);
-        $this->addArgument('interval', InputArgument::OPTIONAL, 'Time interval to export OHLCV data for', self::INTERVAL_DAILY);
+        $this->addArgument(
+            'interval',
+            InputArgument::OPTIONAL,
+            'Time interval to export OHLCV data for',
+            self::INTERVAL_DAILY
+        );
         $this->addArgument('from_date', InputArgument::OPTIONAL, 'Start date of stored history', self::START_DATE);
     }
 
@@ -120,18 +129,6 @@ EOT
                     }
 
                     $this->priceProvider->exportHistory($history, $exportFile);
-//                    $csvWriter = Writer::createFromPath($exportFile, 'w');
-//                    $csvWriter->insertOne(['Date', 'Open', 'High', 'Low', 'Close', 'Volume']);
-//                    $csvWriter->insertAll(array_map(function($v) {
-//                        return [
-//                            $v->getTimestamp()->format('Y-m-d'),
-//                            $v->getOpen(),
-//                            $v->getHigh(),
-//                            $v->getLow(),
-//                            $v->getClose(),
-//                            $v->getVolume()
-//                            ];
-//                    }, $history));
                 }
             } else {
                 throw new \Exception(sprintf('Could not find instrument=%s', $record['Symbol']));
