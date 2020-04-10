@@ -2,11 +2,14 @@
 
 namespace App\Tests\Service\PriceHistory\OHLCV;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Criteria;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\OHLCVHistory;
 use App\Entity\Instrument;
 use App\Entity\OHLCVQuote;
 use App\Exception\PriceHistoryException;
+use function Symfony\Component\DependencyInjection\Loader\Configurator\expr;
 
 class YahooTest extends KernelTestCase
 {
@@ -492,15 +495,6 @@ class YahooTest extends KernelTestCase
         $this->em->persist($this->instrument);
         $this->em->flush();
 
-        // $quote = [
-        //     'timestamp' => $date,
-        //     'open' => 103,
-        //     'high' => 203,
-        //     'low' => 303,
-        //     'close' => 403,
-        //     'volume' => 503,
-        //     'interval' => $interval
-        // ];
         $quote = new OHLCVQuote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
@@ -517,11 +511,7 @@ class YahooTest extends KernelTestCase
         $results = $OHLCVQuoteRepository->findBy(['instrument' => $this->instrument]);
 
         $this->assertCount(1, $results);
-        // // $this->assertSame($quote->getTimestamp()->format('Y-m-d'), $results[0]->getTimestamp()->format('Y-m-d'));
-        // unset($quote['timestamp'], $quote['interval']);
-        // $this->assertEquals(array_sum($quote), $this->computeControlSum2($results[0]));
         $this->assertEquals($this->computeControlSum2($quote), $this->computeControlSum2($results[0]));
-        // // $this->assertSame($this->instrument->getOHLCVQuote()->getId(), $results[0]->getId());
     }
 
     /**
@@ -543,16 +533,6 @@ class YahooTest extends KernelTestCase
         $query->execute();
         $this->instrument->unsetOHLCVQuote();
 
-        // $quote = [
-        //     'timestamp' => $date,
-        //     'open' => 103,
-        //     'high' => 203,
-        //     'low' => 303,
-        //     'close' => 403,
-        //     'volume' => 503,
-        //     'interval' => $interval
-        // ];
-
         $quote = new OHLCVQuote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
@@ -571,6 +551,35 @@ class YahooTest extends KernelTestCase
         $this->assertCount(1, $results);
         // $this->assertEquals(array_sum($quote), $this->computeControlSum2($results[0]));
         $this->assertEquals($this->computeControlSum2($quote), $this->computeControlSum2($results[0]));
+    }
+
+    public function testRemoveQuote10()
+    {
+        $_SERVER['TODAY'] = '2019-05-20 09:30:01'; // Monday, May 20, 2019
+        $date = new \DateTime($_SERVER['TODAY']);
+        $interval = new \DateInterval('P1D');
+
+        $quote = new OHLCVQuote();
+        $quote->setInstrument($this->instrument);
+        $quote->setProvider($this->SUT::PROVIDER_NAME);
+        $quote->setTimestamp($date);
+        $quote->setTimeinterval($interval);
+        $quote->setOpen(rand(0, 100));
+        $quote->setHigh(rand(0, 100));
+        $quote->setLow(rand(0, 100));
+        $quote->setClose(rand(0, 100));
+        $quote->setVolume(rand(0, 100));
+
+        $this->SUT->saveQuote($this->instrument, $quote);
+
+        $OHLCVQuoteRepository = $this->em->getRepository(OHLCVQuote::class);
+        $results = $OHLCVQuoteRepository->findBy(['instrument' => $this->instrument]);
+        $this->assertCount(1, $results);
+
+        $this->SUT->removeQuote($this->instrument);
+
+        $results = $OHLCVQuoteRepository->findBy(['instrument' => $this->instrument]);
+        $this->assertCount(0, $results);
     }
 
     /**
@@ -1312,6 +1321,21 @@ class YahooTest extends KernelTestCase
             $this->assertInternalType('float', $quote->getVolume());
             $this->assertInstanceOf(\DateTime::class, $quote->getTimestamp());
         }
+    }
+
+    public function testCollection()
+    {
+        $collection = new ArrayCollection();
+        $expression = Criteria::expr()->eq('symbol', $this->instrument->getSymbol());
+        $criterion = new Criteria($expression);
+        if ($collection->matching($criterion)->isEmpty()) {
+            $collection->add($this->instrument);
+        }
+        if ($collection->matching($criterion)->isEmpty()) {
+            $collection->add($this->instrument);
+        }
+
+        $this->assertCount(1, $collection);
     }
 
     private function createMockHistory($startDate, $numberOfRecords, $interval)

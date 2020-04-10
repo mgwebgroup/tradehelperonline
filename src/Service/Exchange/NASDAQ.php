@@ -23,6 +23,14 @@ class NASDAQ extends Equities
         return ($this->instrumentRepository->findOneBy(['symbol' => $symbol, 'exchange' => $this->getExchangeName()]))? true : false;
     }
 
+    public function isOpen($dateTime)
+    {
+        $timeZone = new \DateTimeZone(self::TIMEZONE);
+        $dateTime->setTimezone($timeZone);
+
+        return parent::isOpen($dateTime);
+    }
+
     protected function matchHolidays($year)
     {
         // add Good Friday

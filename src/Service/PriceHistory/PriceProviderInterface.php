@@ -46,7 +46,7 @@ interface PriceProviderInterface
  	public function addHistory($instrument, $history);
 
 	/**
-	  * Will export history from storage into file system. Options must specify format.
+	  * Will export history from the given array into file system. Options must specify format.
 	  * @param \App\Entity\<History Entity>[]
 	  * @param string $path
 	  * @param array $options
@@ -78,6 +78,12 @@ interface PriceProviderInterface
  	 * @param App\Entity\<Quote Entity> $quote
  	 */
  	public function saveQuote($instrument, $quote);
+
+    /**
+     * Unsets quote from instrument. Quote object is deleted from db.
+     * @param App\Entity\Instrument $instrument
+     */
+ 	public function removeQuote($instrument);
  
  	/**
  	 * Adds a quote object to array of history. No gaps allowed, i.e. if quote date would skip at least one trading day in history,

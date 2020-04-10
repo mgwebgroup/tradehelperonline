@@ -14,8 +14,7 @@ use App\Entity\OHLCVHistory;
 use App\Exception\PriceHistoryException;
 use App\Entity\OHLCVQuote;
 use App\Entity\Instrument;
-use Scheb\YahooFinanceApi\Results\Quote;
-
+use League\Csv\Writer;
 
 /**
  * Class Yahoo
@@ -166,14 +165,15 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         }
     }
 
-    /**
-     * {@inheritDoc}
-     * @param array $options ['interval' => 'P1M|P1W|P1D' ]
-     */
-    public function exportHistory($history, $path, $options)
+    public function exportHistory($history, $path, $options = [])
     {
-        // TO DO: implement export of history to file system
-        throw new PriceHistoryException('exportHistory is not yet implemented.');
+        $csv = Writer::createFromPath($path, 'w');
+        $header = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume'];
+        $csv->insertOne($header);
+
+        $csv->insertAll(array_map(function($v) {
+            return [$v->getTimestamp()->format('Y-m-d'), $v->getOpen(), $v->getHigh(), $v->getLow(), $v->getClose(), $v->getVolume()];
+        }, $history));
     }
 
     /**
@@ -218,35 +218,25 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     public function saveQuote($instrument, $quote)
     {
         if ($oldQuote = $instrument->getOHLCVQuote()) {
-            // $oldQuote->setTimestamp($quote['timestamp']);
-            //       $oldQuote->setOpen($quote['open']);
-            //      $oldQuote->setHigh($quote['high']);
-            //      $oldQuote->setLow($quote['low']);
-            //      $oldQuote->setClose($quote['close']);
-            //      $oldQuote->setVolume($quote['volume']);
-            //      $oldQuote->setTimeinterval(new \DateInterval($quote['interval']));
-            $oldQuote->setTimestamp($quote->getTimestamp());
-            $oldQuote->setOpen($quote->getOpen());
-            $oldQuote->setHigh($quote->getHigh());
-            $oldQuote->setLow($quote->getLow());
-            $oldQuote->setClose($quote->getClose());
-            $oldQuote->setVolume($quote->getVolume());
-            $oldQuote->setTimeinterval($quote->getTimeinterval());
-            $oldQuote->setProvider(self::PROVIDER_NAME);
-        } else {
-            // 	$newQuote = new OHLCVQuote();
-            //       $newQuote->setTimestamp($quote['timestamp']);
-            //       $newQuote->setOpen($quote['open']);
-            //       $newQuote->setHigh($quote['high']);
-            //       $newQuote->setLow($quote['low']);
-            //       $newQuote->setClose($quote['close']);
-            //       $newQuote->setVolume($quote['volume']);
-            //       $newQuote->setTimeinterval(new \DateInterval($quote['interval']));
-            //       $newQuote->setProvider(self::PROVIDER_NAME);
-            //       $newQuote->setInstrument($instrument);
-
-            $instrument->setOHLCVQuote($quote);
+            $this->em->remove($oldQuote);
+            $this->em->flush();
         }
+
+        $instrument->setOHLCVQuote($quote);
+
+        $this->em->persist($instrument);
+        $this->em->flush();
+    }
+
+    public function removeQuote($instrument)
+    {
+        if ($oldQuote = $instrument->getOHLCVQuote()) {
+            $this->em->remove($oldQuote);
+            $this->em->flush();
+        }
+
+        $instrument->unsetOHLCVQuote();
+
         $this->em->persist($instrument);
         $this->em->flush();
     }
@@ -574,7 +564,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
      * @return App\Service\Exchange\ExchangeInterface $exchange
      * @throws PriceHistoryException
      */
-    private function getExchangeForInstrument($instrument)
+    public function getExchangeForInstrument($instrument)
     {
         $exchangeClassName = '\App\Service\Exchange\\'.$instrument->getExchange();
         if (!class_exists($exchangeClassName)) {
@@ -589,7 +579,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
      * @param OHLCVQuote $quote
      * @return OHLCVHistory $element
      */
-    private function castQuoteToHistory($quote)
+    public function castQuoteToHistory($quote)
     {
         $element = new OHLCVHistory();
         $element->setInstrument($quote->getInstrument());

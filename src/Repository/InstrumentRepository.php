@@ -19,6 +19,13 @@ class InstrumentRepository extends ServiceEntityRepository
         parent::__construct($registry, Instrument::class);
     }
 
+//    public function removeQuote($instrument)
+//    {
+//        $instrument = $this->find($instrument->getId());
+//
+//        $instrument->unsetOHLCVQuote();
+//    }
+
     // /**
     //  * @return Instrument[] Returns an array of Instrument objects
     //  */
