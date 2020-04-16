@@ -135,7 +135,7 @@ class OHLCVFixtures_IL extends Fixture implements FixtureGroupInterface
                 $importedFiles++;
                 $message = sprintf('%3d %s: will import %d price records', $importedFiles, $file->getBasename(), $importedRecords);
             } else {
-                $message = sprintf('%s: instrument record was not imported, skipping file', $file->getBasename());
+                $message = sprintf('%s: instrument record missing, skipping file', $file->getBasename());
             }
             $output->writeln($message);
         }
