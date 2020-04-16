@@ -13,15 +13,14 @@ namespace App\DataFixtures;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Component\Console\Output\ConsoleOutput;
-// use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
-// use Symfony\Component\Console\Helper\FormatterHelper;
 use App\Entity\OHLCVHistory;
 use Symfony\Component\Finder\Finder;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
+use League\Csv\Reader;
 
 
-class OHLCVFixtures extends Fixture implements FixtureGroupInterface
+class OHLCVFixtures_QT extends Fixture implements FixtureGroupInterface
 {
 	const DIRECTORY = 'data/source/ohlcv';
     const SUFFIX_DAILY = '_d';
@@ -33,39 +32,45 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
 
     public static function getGroups(): array
     {
-        return ['OHLCV'];
+        return ['OHLCV','Q-T'];
     }
 
     public function load(ObjectManager $manager)
     {
         $this->timeStart = time();
         $this->manager = $manager;
+        $letters = 'Q-T';
         $output = new ConsoleOutput();
         $output->getFormatter()->setStyle('info-init', new OutputFormatterStyle('white', 'blue'));
         $output->getFormatter()->setStyle('info-end', new OutputFormatterStyle('green', 'blue'));
-        // $formatter = new FormatterHelper();
-        $output->writeln(sprintf('<info-init>Will import OHLCV daily and weekly price history from directory %s </>', self::DIRECTORY));
+        $output->getFormatter()->setStyle('letters', new OutputFormatterStyle('yellow', 'black'));
 
-        $output->writeln('This seeder will read csv files stored in the ohlcv directory and if their symbol is already present in');
-        $output->writeln('database instruments table (has been imported by the InstrumentFixtures seeder) will import the price history.');
-            
+        $output->writeln(sprintf('<info-init>Will import OHLCV daily and weekly price history from %s </>', self::DIRECTORY));
+        $output->writeln(null);
+
+        $output->writeln('This seeder will read csv files stored in the ohlcv directory and if their symbol was imported by the InstrumentFixtures seeder will import daily and weekly price history.');
+        $output->writeln(null);
+        $output->writeln(sprintf('Letters <letters>%s</>:', $letters));
+        $output->writeln(null);
+
         // load daily
-        $output->writeln('Looking for daily OHLCV price files...');
+        $output->writeln('Daily:');
         $suffix = self::SUFFIX_DAILY.'.csv';
 
-        $importedFiles = $this->importFiles($suffix, $output);
+        $importedFiles = $this->importFiles($suffix, $output, $letters);
 
         $output->writeln(sprintf('<info-end>Imported %d daily files</>', $importedFiles));
 
         // load weekly
-        $output->writeln('Looking for weekly OHLCV price files...');
+        $output->writeln('Weekly:');
         $suffix = self::SUFFIX_WEEKLY.'.csv';
 
-        $importedFiles = $this->importFiles($suffix, $output);
+        $importedFiles = $this->importFiles($suffix, $output, $letters);
 
         $output->writeln(sprintf('<info-end>Imported %d weekly files</info-end>', $importedFiles));
 
         $minutes = (time() - $this->timeStart)/60;
+        $output->writeln(null);
         $output->writeln(sprintf('<info-end>Execution time: %s minutes</info-end>', $minutes));
     }
 
@@ -78,15 +83,14 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
      * @return integer number of files imported
      * @throws \Exception
      */
-    
-    private function importFiles($suffix, $output)
+    private function importFiles($suffix, $output, $letters = 'A-Z')
     {
         $repository = $this->manager->getRepository(\App\Entity\Instrument::class);
 
         $finder = new Finder();
-        $finder->in(self::DIRECTORY)->files()->name('/^[A-Z]+'.$suffix.'/')->sortByName();
+        $finder->in(self::DIRECTORY)->files()->name(sprintf('/^[%s][A-Z]*%s/', $letters, $suffix))->sortByName();
         $fileCount = $finder->count();
-        $output->writeln(sprintf('Found %d files for letters A-Z ending in %s', $fileCount, $suffix));
+        $output->writeln(sprintf('Found %d files ending in %s', $fileCount, $suffix));
 
         $importedFiles = 0;
         // foreach file select the symbol
@@ -97,19 +101,20 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
             $instrument = $repository->findOneBy(['symbol' => $symbol]);
             if ($instrument) {
                 $fileName = $file->getPath().'/'.$file->getBasename();
-                // TODO Replace generator with CSV Reader of some sort
-                $lines = $this->getLines($fileName);
+                $csv = Reader::createFromPath($fileName, 'r');
+                $csv->setHeaderOffset(0);
+
+                /** @var League\Csv\MapIterator $lines */
+                $lines = $csv->getRecords();
+
                 foreach ($lines as $line) {
-                    $fields = explode(',', $line);
-                    // var_dump($fileName, $fields);
                     $OHLCVHistory = new OHLCVHistory();
-                    // $OHLCVHistory->setTimestamp(strtotime($fields[0]));
-                    $OHLCVHistory->setTimestamp(new \DateTime($fields[0]));
-                    $OHLCVHistory->setOpen($fields[1]);
-                    $OHLCVHistory->setHigh($fields[2]);
-                    $OHLCVHistory->setLow($fields[3]);
-                    $OHLCVHistory->setClose($fields[4]);
-                    $OHLCVHistory->setVolume((int)$fields[5]);
+                    $OHLCVHistory->setTimestamp(new \DateTime($line['Date']));
+                    $OHLCVHistory->setOpen($line['Open']);
+                    $OHLCVHistory->setHigh($line['High']);
+                    $OHLCVHistory->setLow($line['Low']);
+                    $OHLCVHistory->setClose($line['Close']);
+                    $OHLCVHistory->setVolume((int)$line['Volume']);
                     $OHLCVHistory->setInstrument($instrument);
                     switch ($suffix) {
                         case self::SUFFIX_DAILY . '.csv':
@@ -128,7 +133,7 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
                 }
                 $this->manager->flush();
                 $importedFiles++;
-                $message = sprintf('%3d %s: imported %d of %d price records', $importedFiles, $file->getBasename(), $importedRecords, $lines->getReturn());
+                $message = sprintf('%3d %s: will import %d price records', $importedFiles, $file->getBasename(), $importedRecords);
             } else {
                 $message = sprintf('%s: instrument record was not imported, skipping file', $file->getBasename());
             }
@@ -137,25 +142,4 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
 
         return $importedFiles;
     }
-
-    /**
-    * Generator
-    * Skips first line as header
-    * https://www.php.net/manual/en/language.generators.overview.php
-    */
-    private function getLines($file) {
-    	$f = fopen($file, 'r');
-        $counter = 0;
-	    try {
-	        while ($line = fgets($f)) {
-	            // will skip first line as header
-                if ($counter > 0) yield $line;
-                $counter++;
-	        }
-	    } finally {
-	        fclose($f);
-	    }
-
-        return $counter-1;
-	}
 }

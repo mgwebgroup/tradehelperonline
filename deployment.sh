@@ -1,5 +1,9 @@
 cp .env.test .env
 
+# prep variables for the .env file
+echo "APP_ENV=$APP_ENV" >> .env
+echo "DATABASE_URL=\"$DATABASE_CONNECTOR\"" >> .env
+
 # Include bash scripts to formulate y_universe and lists for nyse, amex, and nasdaq
 # ...
 
