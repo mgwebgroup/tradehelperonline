@@ -18,3 +18,4 @@
 /.idea/*
 /.bash_history
 .~lock.*
+/data/source
