@@ -17,3 +17,4 @@ bin/console doctrine:fixtures:load --group=Instruments --no-interaction
 bin/console doctrine:fixtures:load --group=OHLCV --no-interaction --append
 
 bin/phpunit tests/Service/Exchange
+bin/phpunit tests/Service/PriceHistory/OHLCV
