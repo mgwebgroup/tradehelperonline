@@ -4,6 +4,9 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
+    application_log: var/log/tradehelper.log
+    # minimum level from which commands will have on-screen output (Refer to Symfony\Component\Console\Output\OutputInterface)
+    on_screen_chatter: 64
 
 services:
     # default configuration for services in *this* file
@@ -25,3 +28,14 @@ services:
 
     Scheb\YahooFinanceApi\ApiClient:
         factory: ['Scheb\YahooFinanceApi\ApiClientFactory', 'createApiClient']
+
+    app.logging_service:
+        class: Symfony\Component\HttpKernel\Log\Logger
+        arguments:
+            $minLevel: 'debug'
+            $output: '%application_log%'
+    App\Command\SyncPrice:
+        arguments:
+            $logger: '@app.logging_service'
+            $chatter: '%on_screen_chatter%'
+

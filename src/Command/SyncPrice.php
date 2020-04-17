@@ -17,14 +17,24 @@ use Doctrine\Common\Collections\Criteria;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use League\Csv\Reader;
+use Psr\Log\LogLevel;
 
+/**
+ * Class SyncPrice
+ * On Screen chatter legend:
+ * NoPH - No Price History exists in DB
+ * @package App\Command
+ */
 class SyncPrice extends Command
 {
     const DEFAULT_PATH = 'data/source/y_universe.csv';
 
     const START_DATE = '2011-01-01';
+
+    const LOG_FILE = 'var/log/tradehelper.log';
 
     /**
      * @var Doctrine\ORM\EntityManager
@@ -46,15 +56,23 @@ class SyncPrice extends Command
      */
     protected $logger;
 
+    /**
+     * On screen chatter level
+     * @var int
+     */
+    protected $chatter;
+
     public function __construct(
         \Symfony\Bridge\Doctrine\RegistryInterface $doctrine,
         \App\Service\PriceHistory\OHLCV\Yahoo $priceProvider,
-        \Psr\Log\LoggerInterface $logger
+        \Psr\Log\LoggerInterface $logger,
+        $chatter
     )
     {
         $this->em = $doctrine->getManager();
         $this->priceProvider = $priceProvider;
         $this->logger = $logger;
+        $this->chatter = $chatter;
 
         parent::__construct();
     }
@@ -70,12 +88,17 @@ class SyncPrice extends Command
 Uses a csv file with header and list of symbols to define list of symbols to work on. Symbols found in the csv file must
  also be imported as instruments. You can use data fixtures to import all instruments. Header must contain column titles
  contained in the current file data/source/y_universe.csv.
+ The command writes everything into application log, regardless of verbosity settings. No output is sent to the screen
+ by default either. If you want screen output, use -v option.
 EOT
         );
 
         $this->addUsage('data/source/y_universe.csv');
 
         $this->addArgument('path', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on', self::DEFAULT_PATH);
+
+        $this->addOption('prevT-QtoH', null, InputOption::VALUE_NONE, 'If prev T in history is quote, will download history and will replace');
+        $this->addOption('stillT-saveQ', null, InputOption::VALUE_NONE, 'Downloaded Quotes for today will keep replacing last P in history for today');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -93,78 +116,148 @@ EOT
 
         foreach ($records as $key => $record) {
             $logMsg = sprintf('%s: ', $record['Symbol']);
+            $screenMsg = $logMsg;
             $options = ['interval' => 'P1D'];
 
             $instrument = $repository->findOneBySymbol($record['Symbol']);
-            $exchange = $this->priceProvider->getExchangeForInstrument($instrument);
-            $prevT = $exchange->calcPreviousTradingDay($today)->setTime(0,0,0);
 
-            $criterion = new Criteria(Criteria::expr()->eq('symbol', $instrument->getSymbol()));
+            if ($instrument) {
+                $exchange = $this->priceProvider->getExchangeForInstrument($instrument);
+                $prevT = $exchange->calcPreviousTradingDay($today)->setTime(0,0,0);
 
-            // history exists? Download if missing.
-            $lastPrice = $this->priceProvider->retrieveClosingPrice($instrument);
+                $criterion = new Criteria(Criteria::expr()->eq('symbol', $instrument->getSymbol()));
 
-            if (!$lastPrice) {
-                $logMsg .= 'No Price History found ';
-                $fromDate = new \DateTime(self::START_DATE);
-
-                $this->addMissingHistory($instrument, $fromDate, $today, $options);
-
+                // history exists? Download if missing.
                 $lastPrice = $this->priceProvider->retrieveClosingPrice($instrument);
 
-                $logMsg .= sprintf('History downloaded with last date %s ', $lastPrice->getTimestamp()->format('Y-m-d H:i:s'));
-            }
+                if (!$lastPrice) {
+                    $logMsg .= 'No Price History found ';
+                    $screenMsg .= 'noPH ';
+                    $fromDate = new \DateTime(self::START_DATE);
 
-            // gaps exist between today and last day of history? download missing history
-            if ($lastPrice->getTimestamp() < $prevT) {
-                $logMsg .= sprintf('Gap determined: lastP=%s prevT=%s ', $lastPrice->getTimestamp()->format('Y-m-d H:i:s'), $prevT->format('Y-m-d H:i:s'));
-                $this->addMissingHistory($instrument, $lastPrice->getTimestamp()->setTime(0,0,0), $today, $options);
+                    $this->addMissingHistory($instrument, $fromDate, $today, $options);
 
-                $lastPrice = $this->priceProvider->retrieveClosingPrice($instrument);
-                $logMsg .= sprintf('Added missing history lastP=%s ', $lastPrice->getTimestamp()->format('Y-m-d H:i:s'));
-            }
+                    $lastPrice = $this->priceProvider->retrieveClosingPrice($instrument);
 
-            if($lastPrice->getTimestamp()->format('Ymd') == $prevT->format('Ymd')) {
-                // this will put instruments into queue and download quotes in one shot later
-                if ($queue->matching($criterion)->isEmpty()) {
-                    $queue->add($instrument);
+                    $logMsg .= sprintf('History saved from %s through %s ', $fromDate->format('Y-m-d H:i:s'), $lastPrice->getTimestamp()->format('Y-m-d H:i:s'));
+                    $screenMsg .= sprintf('saved%s-%s ', $fromDate->format('Ymd'), $today->format('Ymd'));
                 }
-            }
 
-            // To do: this is optional. Should be done only if specified (force update option)
-            if ($lastPrice->getTimestamp()->format('Ymd') == $today->format('Ymd')) {
-                if ($queue->matching($criterion)->isEmpty()) {
-                    $queue->add($instrument);
+                // gaps exist between today and last day of history? download missing history
+                if ($lastPrice->getTimestamp() < $prevT) {
+                    $logMsg .= sprintf('Gap determined: lastP=%s prevT=%s ', $lastPrice->getTimestamp()->format('Y-m-d H:i:s'), $prevT->format('Y-m-d H:i:s'));
+                    $screenMsg .= sprintf('gap_after%s ', $lastPrice->getTimestamp()->format('Ymd'));
+                    $gapStart = clone $lastPrice;
+
+                    $this->addMissingHistory($instrument, $lastPrice->getTimestamp()->setTime(0,0,0), $today, $options);
+
+                    $lastPrice = $this->priceProvider->retrieveClosingPrice($instrument);
+
+                    $logMsg .= sprintf('Added missing history lastP=%s ', $lastPrice->getTimestamp()->format('Y-m-d H:i:s'));
+                    $screenMsg .= sprintf('saved%s...%s ', $gapStart->getTimestamp()->format('Ymd'), $lastPrice->getTimestamp()->format('Ymd'));
                 }
+
+                // If last price's time is not 0 hours, 0 minutes and 0 seconds, then it is a quote and may need to be downloaded
+                // and replaced as history.
+                if($lastPrice->getTimestamp()->format('Ymd') == $prevT->format('Ymd')) {
+                    // need to check option here to replace quotes with history records
+                    if ($input->getOption('prevT-QtoH') && ($lastPrice->getTimestamp()->format('H') + $lastPrice->getTimestamp()->format('i') + $lastPrice->getTimestamp()->format('s')  > 0 ) ) {
+                        $this->addMissingHistory($instrument, $lastPrice->getTimestamp()->setTime(0,0,0), $today, $options);
+
+                        $logMsg .= sprintf('downloaded and replaced last P from history ');
+                        $screenMsg .= sprintf('replacedQtoH ');
+                    }
+                    // this will put instruments into queue and download quotes in one shot later
+                    if ($queue->matching($criterion)->isEmpty()) {
+                        $queue->add($instrument);
+                        $logMsg .= 'queued for quotes download ';
+                    }
+                }
+
+                // To do: this is optional. Should be done only if specified (force update option)
+                if ($input->getOption('stillT-saveQ') && $lastPrice->getTimestamp()->format('Ymd') == $today->format('Ymd')) {
+                    if ($queue->matching($criterion)->isEmpty()) {
+                        $queue->add($instrument);
+                        $logMsg .= 'queued for quotes download ';
+                        $screenMsg .= 'in_queue_forQ ';
+                    }
+                }
+            } else {
+                $logMsg .= 'not found';
+                $screenMsg = $logMsg;
             }
 
-//            $this->logger->info($logMsg);
-            $output->writeln(sprintf('%3d %5.5s %-30.40s', $key, $record['Symbol'], $record['Name']));
+            if ($logMsg == sprintf('%s: ', $record['Symbol'])) {
+                $logMsg .= 'NOOP';
+            }
+            if ($screenMsg == sprintf('%s: ', $record['Symbol'])) {
+                $screenMsg .= 'NOOP';
+            }
+            $this->logAndSay($output, $logMsg, $screenMsg);
         }
 
         // check for one shot download and updated latest prices anyway:
         if (!$queue->isEmpty()) {
+            $logMsg = sprintf('Will now download quotes for %d symbols', $queue->count());
+            $screenMsg = $logMsg;
+            $this->logAndSay($output, $logMsg, $screenMsg);
+
             $quotes = $this->priceProvider->getQuotes($queue->toArray());
+
+            $logMsg = sprintf('Downloaded %d quotes', count($quotes));
+            $screenMsg = $logMsg;
+            $this->logAndSay($output, $logMsg, $screenMsg);
 
             foreach ($quotes as $quote) {
                 $instrument = $quote->getInstrument();
+                $logMsg = sprintf('%s: ', $instrument->getSymbol());
+                $screenMsg = $logMsg;
                 if ($exchange->isOpen($today)) {
-                    $this->priceProvider->saveQuote($instrument);
+                    $this->priceProvider->saveQuote($instrument, $quote);
                     $this->priceProvider->addQuoteToHistory($quote);
+
+                    $logMsg .= sprintf('saved Quote to History %s $%0.2f ', $quote->getTimestamp()->format('Y-m-d H:i:s'), $quote->getClose());
+                    $screenMsg .= sprintf('savedQ=%0.2f ', $quote->getClose());
                 } else {
                     $this->priceProvider->removeQuote($instrument);
                     $closingPrice = $this->priceProvider->castQuoteToHistory($quote);
                     $this->priceProvider->addClosingPriceToHistory($closingPrice);
+
+                    $logMsg .= sprintf('saved Quote as Closing Price to History %s $%0.2f ', $quote->getTimestamp()->format('Y-m-d H:i:s'), $quote->getClose());
+                    $screenMsg .= sprintf('savedQ=%0.2f as Closing P ', $quote->getClose());
                 }
+
+                $this->logAndSay($output, $logMsg, $screenMsg);
             }
         }
     }
 
+    /**
+     * @param $instrument
+     * @param $fromDate
+     * @param $today
+     * @param $options
+     * @throws \App\Exception\PriceHistoryException
+     * @throws \Scheb\YahooFinanceApi\Exception\ApiException
+     */
     private function addMissingHistory($instrument, $fromDate, $today, $options)
     {
         $history = $this->priceProvider->downloadHistory($instrument, $fromDate, $today, $options);
 
         // To do: implement chunking here
         $this->priceProvider->addHistory($instrument, $history);
+    }
+
+
+    /**
+     * @param Symfony\Component\Console\Output\OutputInterface $output
+     * @param string $logMsg
+     * @param string $screenMsg
+     */
+    private function logAndSay($output, $logMsg, $screenMsg) {
+        $this->logger->log(LogLevel::DEBUG, $logMsg);
+        if ($output->getVerbosity() >= $this->chatter ) {
+            $output->writeln($screenMsg);
+        }
     }
 }
