@@ -13,6 +13,7 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
      */
 	protected function setUp(): void
     {
+        ini_set('date.timezone', 'America/New_York');
         self::bootKernel();
         $this->SUT = self::$container->get(\App\Service\Exchange\NASDAQ::class);
     }
@@ -98,7 +99,7 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
         $this->assertFalse($this->SUT->isOpen($date));
 
         //
-        // insde trading hours 0930-1300:
+        // inside trading hours 0930-1300:
         //
         $secondsSinceMidnight = rand(9.5*3600+1, 13*3600-1);
         $interval = new \DateInterval(sprintf('PT%dS', $secondsSinceMidnight));

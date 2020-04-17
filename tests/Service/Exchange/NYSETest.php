@@ -13,6 +13,7 @@ class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
      */
 	protected function setUp(): void
     {
+        ini_set('date.timezone', 'America/New_York');
         self::bootKernel();
         $this->SUT = self::$container->get(\App\Service\Exchange\NYSE::class);
     }

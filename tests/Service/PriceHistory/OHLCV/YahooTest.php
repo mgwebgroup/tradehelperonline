@@ -49,6 +49,7 @@ class YahooTest extends KernelTestCase
      */
     protected function setUp(): void
     {
+        ini_set('date.timezone', 'America/New_York');
         self::bootKernel();
         $this->SUT = self::$container->get(\App\Service\PriceHistory\OHLCV\Yahoo::class);
 
