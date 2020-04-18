@@ -34,7 +34,7 @@ class SyncPrice extends Command
 
     const START_DATE = '2011-01-01';
 
-    const LOG_FILE = 'var/log/tradehelper.log';
+    const MAX_DELAY = 10;
 
     /**
      * @var Doctrine\ORM\EntityManager
@@ -61,6 +61,12 @@ class SyncPrice extends Command
      * @var int
      */
     protected $chatter;
+
+    /**
+     * Delay in seconds between queries to API
+     * @var int
+     */
+    protected $delay;
 
     public function __construct(
         \Symfony\Bridge\Doctrine\RegistryInterface $doctrine,
@@ -90,17 +96,45 @@ Uses a csv file with header and list of symbols to define list of symbols to wor
  contained in the current file data/source/y_universe.csv.
  The command writes everything into application log, regardless of verbosity settings. No output is sent to the screen
  by default either. If you want screen output, use -v option.
+ Price records in history may be considered as wither a Quote or Price History. 
+ Records with time which is not midnight are considered Quotes. All downloaded records which are historical have their
+ time set to midnight.
+ There are several scenarios possible:
+ A) If market is open, to update last quote with the latest use --stillT-saveQ option.
+ B) If market is closed, and you still have last records saved as Quotes, i.e. last update was done during prior T and 
+ you ended up with a bunch of quotes saved for mid-trading day. These kinds of records are historical records today.
+ Then use --prevT-QtoH option.
+ 
+ Most common usage would be to include both options. However this will bring additional overhead of downloading historical
+ records for previous T as the script will make sure you don't have any mid-day quotes as historical.
+ 
+ So it is best to run price update late at night with --stillT-saveQ option OR
+ early morning with --prevT-QtoH option.
+ 
 EOT
         );
 
-        $this->addUsage('data/source/y_universe.csv');
+        $this->addUsage('[-v] [--prevT-QtoH] [--stillT-saveQ] [--delay] [data/source/y_universe.csv]');
 
         $this->addArgument('path', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on', self::DEFAULT_PATH);
 
         $this->addOption('prevT-QtoH', null, InputOption::VALUE_NONE, 'If prev T in history is quote, will download history and will replace');
         $this->addOption('stillT-saveQ', null, InputOption::VALUE_NONE, 'Downloaded Quotes for today will keep replacing last P in history for today');
+        $this->addOption('delay', null, InputOption::VALUE_REQUIRED, 'Delay in seconds between each query to API or word random for random delay no longer than 10 seconds.');
     }
 
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        if ($delay = $input->getOption('delay')) {
+            if (is_numeric($delay)) {
+                $this->delay = $delay;
+            } elseif ('random' == $delay) {
+                $this->delay = -1;
+            } else {
+                $this->delay = null;
+            }
+        }
+    }
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $repository = $this->em->getRepository(Instrument::class);
@@ -242,9 +276,14 @@ EOT
      */
     private function addMissingHistory($instrument, $fromDate, $today, $options)
     {
+        if ($this->delay > 0) {
+            sleep($this->delay);
+        } elseif ($this->delay < 0) {
+            sleep(rand(0,self::MAX_DELAY));
+        }
+
         $history = $this->priceProvider->downloadHistory($instrument, $fromDate, $today, $options);
 
-        // To do: implement chunking here
         $this->priceProvider->addHistory($instrument, $history);
     }
 
