@@ -201,14 +201,15 @@ EOT
                         $logMsg .= sprintf('downloaded and replaced last P from history ');
                         $screenMsg .= sprintf('replacedQtoH ');
                     }
-                    // this will put instruments into queue and download quotes in one shot later
-                    if ($queue->matching($criterion)->isEmpty()) {
-                        $queue->add($instrument);
-                        $logMsg .= 'queued for quotes download ';
+
+                    if ($exchange->isOpen($today)) {
+                        if ($queue->matching($criterion)->isEmpty()) {
+                            $queue->add($instrument);
+                            $logMsg .= 'market open, queued for quotes download ';
+                        }
                     }
                 }
 
-                // To do: this is optional. Should be done only if specified (force update option)
                 if ($input->getOption('stillT-saveQ') && $lastPrice->getTimestamp()->format('Ymd') == $today->format('Ymd')) {
                     if ($queue->matching($criterion)->isEmpty()) {
                         $queue->add($instrument);
@@ -232,7 +233,7 @@ EOT
 
         // check for one shot download and updated latest prices anyway:
         if (!$queue->isEmpty()) {
-            $logMsg = sprintf('Will now download quotes for %d symbols', $queue->count());
+            $logMsg = sprintf(PHP_EOL . 'Will now download quotes for %d symbols', $queue->count());
             $screenMsg = $logMsg;
             $this->logAndSay($output, $logMsg, $screenMsg);
 
@@ -264,6 +265,10 @@ EOT
                 $this->logAndSay($output, $logMsg, $screenMsg);
             }
         }
+
+        $logMsg = PHP_EOL . 'Finished';
+        $screenMsg = $logMsg;
+        $this->logAndSay($output, $logMsg, $screenMsg);
     }
 
     /**
