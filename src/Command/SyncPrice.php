@@ -179,7 +179,7 @@ EOT
                         $lastPrice = $this->priceProvider->retrieveClosingPrice($instrument);
 
                         $logMsg .= sprintf('History saved from %s through %s ', $fromDate->format('Y-m-d H:i:s'), $lastPrice->getTimestamp()->format('Y-m-d H:i:s'));
-                        $screenMsg .= sprintf('saved%s-%s ', $fromDate->format('Ymd'), $today->format('Ymd'));
+                        $screenMsg .= sprintf('saved%s...%s ', $fromDate->format('Ymd'), $lastPrice->getTimestamp()->format('Ymd'));
                     }
 
                     // gaps exist between today and last day of history? download missing history
