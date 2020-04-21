@@ -207,12 +207,12 @@ EOT
                             $screenMsg .= sprintf('replacedQtoH ');
                         }
 
-                        if ($exchange->isOpen($today)) {
+//                        if ($exchange->isOpen($today)) {
                             if ($queue->matching($criterion)->isEmpty()) {
                                 $queue->add($instrument);
                                 $logMsg .= 'market open, queued for quotes download ';
                             }
-                        }
+//                        }
                     }
 
                     if ($input->getOption('stillT-saveQ') && $lastPrice->getTimestamp()->format('Ymd') == $today->format('Ymd')) {
