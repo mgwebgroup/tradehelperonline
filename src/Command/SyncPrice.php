@@ -153,7 +153,7 @@ EOT
 
         foreach ($records as $key => $record) {
             $logMsg = sprintf('%s: ', $record['Symbol']);
-            $screenMsg = $logMsg;
+            $screenMsg = sprintf('%3.3d ', $key) . $logMsg;
             $options = ['interval' => 'P1D'];
 
             $instrument = $repository->findOneBySymbol($record['Symbol']);
@@ -210,7 +210,8 @@ EOT
 //                        if ($exchange->isOpen($today)) {
                             if ($queue->matching($criterion)->isEmpty()) {
                                 $queue->add($instrument);
-                                $logMsg .= 'market open, queued for quotes download ';
+                                $logMsg .= 'queued for quotes download ';
+                                $screenMsg .= 'queued_for_Q ';
                             }
 //                        }
                     }
