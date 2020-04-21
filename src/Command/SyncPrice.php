@@ -229,10 +229,15 @@ EOT
                 }
             } catch (PriceHistoryException $e) {
                 $logMsg .= $e->getMessage();
-                if ($e->getCode() == 1) {
-                    $screenMsg .= 'Missing exchange name';
-                } else {
-                    $screenMsg .= $e->getMessage();
+                switch ($e->getCode()) {
+                    case 1:
+                        $screenMsg .= 'Missing exchange name';
+                        break;
+                    case 2:
+                        $screenMsg .= 'API_fail';
+                        break;
+                    default:
+                        $screenMsg .= $e->getMessage();
                 }
             } finally {
                 if ($logMsg == sprintf('%s: ', $record['Symbol'])) {
