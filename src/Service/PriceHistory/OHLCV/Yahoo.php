@@ -568,7 +568,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     {
         $exchangeClassName = '\App\Service\Exchange\\'.$instrument->getExchange();
         if (!class_exists($exchangeClassName)) {
-            throw new PriceHistoryException(sprintf('Class for exchange name %s not defined', $exchangeClassName));
+            throw new PriceHistoryException(sprintf('Class for exchange name %s not defined', $exchangeClassName), $code = 1);
         }
 
         return new $exchangeClassName($this->instrumentRepository);
