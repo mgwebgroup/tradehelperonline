@@ -38,4 +38,8 @@ services:
         arguments:
             $logger: '@app.logging_service'
             $chatter: '%on_screen_chatter%'
+    App\Command\ExportOHLCV:
+        arguments:
+            $logger: '@app.logging_service'
+            $chatter: '%on_screen_chatter%'
 
