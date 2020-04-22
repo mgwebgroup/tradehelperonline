@@ -14,6 +14,7 @@ use App\Entity\OHLCVHistory;
 use App\Exception\PriceHistoryException;
 use App\Entity\OHLCVQuote;
 use App\Entity\Instrument;
+use GuzzleHttp\Exception\ClientException;
 use League\Csv\Writer;
 
 /**
@@ -127,7 +128,11 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 
         if (isset($options['interval'])) {
             if (in_array($options['interval'], $this->intervals)) {
-                $history = $this->priceAdapter->getHistoricalData($instrument, $fromDate, $toDate, $options);
+                try {
+                    $history = $this->priceAdapter->getHistoricalData($instrument, $fromDate, $toDate, $options);
+                } catch (ClientException $e) {
+                    throw new PriceHistoryException($e->getMessage(), $code = 2);
+                }
             } else {
                 throw new PriceHistoryException(sprintf('Interval %s is not serviced', $options['interval']));
             }
