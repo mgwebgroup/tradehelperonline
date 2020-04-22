@@ -26,9 +26,10 @@ class NASDAQ extends Equities
     public function isOpen($dateTime)
     {
         $timeZone = new \DateTimeZone(self::TIMEZONE);
-        $dateTime->setTimezone($timeZone);
+        $date = clone $dateTime;
+        $date->setTimezone($timeZone);
 
-        return parent::isOpen($dateTime);
+        return parent::isOpen($date);
     }
 
     protected function matchHolidays($year)
