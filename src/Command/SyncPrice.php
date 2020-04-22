@@ -107,12 +107,12 @@ Uses a csv file with header and list of symbols to define list of symbols to wor
  B) If market is closed, and you still have last records saved as Quotes, i.e. last update was done during prior T and 
  you ended up with a bunch of quotes saved for mid-trading day. These kinds of records are historical records today.
  Then use --prevT-QtoH option.
+ C) If you are running this on trading day, sometime after midnight NYC time and before market open, all downloaded
+ history records will have price for last T. In this case just run the command without the above 2 options.
  
- Most common usage would be to include both options. However this will bring additional overhead of downloading historical
- records for previous T as the script will make sure you don't have any mid-day quotes as historical.
- 
- So it is best to run price update late at night with --stillT-saveQ option OR
- early morning with --prevT-QtoH option.
+ So it is best to run price update during trading hours and after market close but before midnight NYC with 
+ --stillT-saveQ option.
+ After midnight NYC time and before market open without these 2 options.
  
  To conserve memory, you can run this command with --chunk option:
  For 1 Core 1 G of RAM instance --chunk=50
@@ -176,6 +176,7 @@ EOT
                 $logMsg = sprintf('%s: ', $record['Symbol']);
                 $screenMsg = sprintf('%3.3d ', $key).$logMsg;
                 $options = ['interval' => 'P1D'];
+                $noopFlag = true;
 
                 $instrument = $repository->findOneBySymbol($record['Symbol']);
 
@@ -196,6 +197,7 @@ EOT
                             $fromDate = new \DateTime(self::START_DATE);
 
                             $this->addMissingHistory($instrument, $fromDate, $today, $options);
+                            $noopFlag = false;
 
                             $lastPrice = $this->priceProvider->retrieveClosingPrice($instrument);
 
@@ -228,6 +230,8 @@ EOT
                                 $options
                             );
 
+                            $noopFlag = false;
+
                             $lastPrice = $this->priceProvider->retrieveClosingPrice($instrument);
 
                             $logMsg .= sprintf(
@@ -256,6 +260,8 @@ EOT
                                     $today,
                                     $options
                                 );
+
+                                $noopFlag = false;
 
                                 $logMsg .= sprintf('downloaded and replaced last P from history ');
                                 $screenMsg .= sprintf('replacedQtoH ');
@@ -296,10 +302,8 @@ EOT
                             $screenMsg .= $e->getMessage();
                     }
                 } finally {
-                    if ($logMsg == sprintf('%s: ', $record['Symbol'])) {
+                    if ($noopFlag) {
                         $logMsg .= 'NOOP';
-                    }
-                    if ($screenMsg == sprintf('%s: ', $record['Symbol'])) {
                         $screenMsg .= 'NOOP';
                     }
                     $this->logAndSay($output, $logMsg, $screenMsg);
@@ -357,7 +361,7 @@ EOT
             $statement = $statement->offset($offset);
             $records = $statement->process($csv);
         }
-        
+
         $logMsg = PHP_EOL . 'Finished';
         $screenMsg = $logMsg;
         $this->logAndSay($output, $logMsg, $screenMsg);
