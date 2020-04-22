@@ -184,6 +184,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     /**
      * {@inheritDoc}
      * @param array $options ['interval' => 'P1M|P1W|P1D' ]
+     * @throws PriceHistoryException
      */
     public function retrieveHistory($instrument, $fromDate, $toDate, $options)
     {
