@@ -144,19 +144,22 @@ EOT
         if ($chunk = $input->getOption('chunk')) {
             $statement = $statement->limit($chunk);
         }
-
+//        $fh = fopen('memory.csv', 'w');
+//        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
         $records = $statement->process($csv);
-
+//        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
         while ($records->count() > 0) {
             foreach ($records as $key => $record) {
+//                fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                 $instrument = $repository->findOneBySymbol($record['Symbol']);
                 $logMsg = sprintf('%s: ', $record['Symbol']);
                 $screenMsg = sprintf('%3.3d ', $key) . $logMsg;
 
                 if ($instrument) {
                     // will only return price records which were marked for $this->provider name
+//                    fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                     $history = $this->priceProvider->retrieveHistory($instrument, $fromDate, $toDate, ['interval' => $interval]);
-
+//                    fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                     if (!empty($history)) {
                         // backup existing csv file for the given period
                         $exportFile = sprintf('%s/%s_%s.csv', $exportPath, $instrument->getSymbol(), $period);
@@ -166,9 +169,12 @@ EOT
                             $logMsg .= sprintf('backed up original file into %s', $backupFileName);
                             $screenMsg .= 'backed_up ';
                         }
+//                        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                         $this->priceProvider->exportHistory($history, $exportFile);
                         $logMsg .= 'saved PH into file ';
                         $screenMsg .= 'exported ';
+                        unset($history);
+//                        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                     } else {
                         $logMsg .= 'No price history is stored';
                         $screenMsg .= 'no_PH ';
@@ -179,6 +185,7 @@ EOT
                 }
 
                 $this->logAndSay($output, $logMsg, $screenMsg);
+//                fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
             }
 
             if ($chunk > 0) {
@@ -187,8 +194,10 @@ EOT
                 $offset += $key;
             }
             $statement = $statement->offset($offset);
+            unset($records);
             $records = $statement->process($csv);
         }
+//        fclose($fh);
     }
 
     /**

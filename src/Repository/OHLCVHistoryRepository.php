@@ -90,6 +90,8 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
 
         $qb->orderBy('o.timestamp', 'ASC');
 
+//        $query = $qb->getQuery()->useResultCache(false);
+//        $query = $qb->getQuery()->useResultCache(false)->useQueryCache(false);
         $query = $qb->getQuery();
 
         return $query->getResult();
