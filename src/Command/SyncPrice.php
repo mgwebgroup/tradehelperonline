@@ -13,8 +13,11 @@ namespace App\Command;
 
 use App\Entity\Instrument;
 use App\Exception\PriceHistoryException;
+use App\Service\PriceHistory\OHLCV\Yahoo;
+use App\Service\UtilityServices;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -49,20 +52,14 @@ class SyncPrice extends Command
     protected $csv;
 
     /**
-     * @var \App\Service\PriceHistory\OHLCV\Yahoo
+     * @var Yahoo
      */
     protected $priceProvider;
 
     /**
-     * @var Psr/Log/LoggerInterface
+     * @var \App\Service\UtilityServices
      */
-    protected $logger;
-
-    /**
-     * On screen chatter level
-     * @var int
-     */
-    protected $chatter;
+    protected $utilities;
 
     /**
      * Delay in seconds between queries to API
@@ -71,16 +68,14 @@ class SyncPrice extends Command
     protected $delay;
 
     public function __construct(
-        \Symfony\Bridge\Doctrine\RegistryInterface $doctrine,
-        \App\Service\PriceHistory\OHLCV\Yahoo $priceProvider,
-        \Psr\Log\LoggerInterface $logger,
-        $chatter
+        RegistryInterface $doctrine,
+        Yahoo $priceProvider,
+        UtilityServices $utilities
     )
     {
         $this->em = $doctrine->getManager();
         $this->priceProvider = $priceProvider;
-        $this->logger = $logger;
-        $this->chatter = $chatter;
+        $this->utilities = $utilities;
 
         parent::__construct();
     }
@@ -120,7 +115,7 @@ Uses a csv file with header and list of symbols to define list of symbols to wor
 EOT
         );
 
-        $this->addUsage('[-v] [--prevT-QtoH] [--stillT-saveQ] [--delay=X|random] [--offset=X] [--chunk=X] [data/source/y_universe.csv]');
+        $this->addUsage('[-v] [--prevT-QtoH] [--stillT-saveQ] [--delay=int|random] [--offset=int] [--chunk=int] [data/source/y_universe.csv]');
 
         $this->addArgument('path', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on', self::DEFAULT_PATH);
 
@@ -146,6 +141,8 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->utilities->pronounceStart($this, $output);
+
         $repository = $this->em->getRepository(Instrument::class);
 
         $today = new \DateTime();
@@ -306,7 +303,7 @@ EOT
                         $logMsg .= 'NOOP';
                         $screenMsg .= 'NOOP';
                     }
-                    $this->logAndSay($output, $logMsg, $screenMsg);
+                    $this->utilities->logAndSay($output, $logMsg, $screenMsg);
                 }
             }
 
@@ -314,13 +311,13 @@ EOT
             if (!$queue->isEmpty()) {
                 $logMsg = sprintf(PHP_EOL.'Will now download quotes for %d symbols', $queue->count());
                 $screenMsg = $logMsg;
-                $this->logAndSay($output, $logMsg, $screenMsg);
+                $this->utilities->logAndSay($output, $logMsg, $screenMsg);
 
                 $quotes = $this->priceProvider->getQuotes($queue->toArray());
 
                 $logMsg = sprintf('Downloaded %d quotes', count($quotes));
                 $screenMsg = $logMsg;
-                $this->logAndSay($output, $logMsg, $screenMsg);
+                $this->utilities->logAndSay($output, $logMsg, $screenMsg);
 
                 foreach ($quotes as $quote) {
                     $instrument = $quote->getInstrument();
@@ -349,7 +346,7 @@ EOT
                         $screenMsg .= sprintf('savedQ=%0.2f as Closing P ', $quote->getClose());
                     }
 
-                    $this->logAndSay($output, $logMsg, $screenMsg);
+                    $this->utilities->logAndSay($output, $logMsg, $screenMsg);
                 }
             }
 
@@ -362,9 +359,7 @@ EOT
             $records = $statement->process($csv);
         }
 
-        $logMsg = PHP_EOL . 'Finished';
-        $screenMsg = $logMsg;
-        $this->logAndSay($output, $logMsg, $screenMsg);
+        $this->utilities->pronounceEnd($this, $output);
     }
 
     /**
@@ -386,18 +381,5 @@ EOT
         $history = $this->priceProvider->downloadHistory($instrument, $fromDate, $today, $options);
 
         $this->priceProvider->addHistory($instrument, $history);
-    }
-
-
-    /**
-     * @param Symfony\Component\Console\Output\OutputInterface $output
-     * @param string $logMsg
-     * @param string $screenMsg
-     */
-    private function logAndSay($output, $logMsg, $screenMsg) {
-        $this->logger->log(LogLevel::DEBUG, $logMsg);
-        if ($output->getVerbosity() >= $this->chatter ) {
-            $output->writeln($screenMsg);
-        }
     }
 }

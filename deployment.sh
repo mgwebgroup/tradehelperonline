@@ -8,16 +8,19 @@ while (( "$#" > 0 )) ; do
       echo "DATABASE_URL=\"$DATABASE_CONNECTOR\"" >> .env
       composer install
       ;;
-    data)
-      echo 'will copy application data from aws'
-      rclone --config=/home/$INSTANCE_USER/datastore.conf copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
-      ;;
     database)
       echo 'will create blank database and perform migrations'
       bin/console doctrine:database:create
       bin/console doctrine:migrations:migrate --no-interaction
       ;;
+    data)
+      echo 'will copy application data from aws'
+      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
+      bin/console instruments:import -v --clear-db=true
+      ;;
     fixtures)
+      # include check for non-prod environment here
+      # ...
       echo 'will clear out existing database and add fixtures'
       bin/console doctrine:fixtures:load --group=Instruments --no-interaction
       bin/console doctrine:fixtures:load --group=OHLCV --no-interaction --append

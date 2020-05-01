@@ -12,14 +12,17 @@
 namespace App\Command;
 
 use App\Entity\Instrument;
+use App\Service\PriceHistory\OHLCV\Yahoo;
 use League\Csv\Reader;
 use League\Csv\Statement;
-use Psr\Log\LogLevel;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
+use App\Service\UtilityServices;
 
 class ExportOHLCV extends Command
 {
@@ -32,7 +35,7 @@ class ExportOHLCV extends Command
     const START_DATE = '2011-01-01';
 
     /**
-     * @var \App\Service\PriceHistory\OHLCV\Yahoo
+     * @var Yahoo
      */
     protected $priceProvider;
 
@@ -42,34 +45,26 @@ class ExportOHLCV extends Command
     protected $em;
 
     /**
-     * @var \Symfony\Component\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $filesystem;
 
     /**
-     * @var Psr/Log/LoggerInterface
+     * @var \App\Service\UtilityServices
      */
-    protected $logger;
-
-    /**
-     * On screen chatter level
-     * @var int
-     */
-    protected $chatter;
+    protected $utilities;
 
     public function __construct(
-        \App\Service\PriceHistory\OHLCV\Yahoo $priceProvider,
-        \Symfony\Component\Filesystem\Filesystem $filesystem,
-        \Symfony\Bridge\Doctrine\RegistryInterface $doctrine,
-        \Psr\Log\LoggerInterface $logger,
-        $chatter
+        Yahoo $priceProvider,
+        Filesystem $filesystem,
+        RegistryInterface $doctrine,
+        UtilityServices $utilities
     )
     {
         $this->priceProvider = $priceProvider;
         $this->filesystem = $filesystem;
         $this->em = $doctrine;
-        $this->logger = $logger;
-        $this->chatter = $chatter;
+        $this->utilities = $utilities;
 
         parent::__construct();
     }
@@ -88,19 +83,9 @@ saved in database to be able to export them into csv files. Header must contain 
 EOT
         );
 
-        $this->addArgument(
-            'input_path',
-            InputArgument::OPTIONAL,
-            'Path/to/file.csv with list of symbols to work on',
-            self::LIST_PATH
-        );
+        $this->addArgument('input_path', InputArgument::OPTIONAL, 'Path/to/file.csv with list of symbols to work on', self::LIST_PATH);
         $this->addArgument('export_path', InputArgument::OPTIONAL, 'Path/to/directory for csv files to export', self::EXPORT_PATH);
-        $this->addArgument(
-            'interval',
-            InputArgument::OPTIONAL,
-            'Time interval to export OHLCV data for',
-            self::INTERVAL_DAILY
-        );
+        $this->addArgument('interval', InputArgument::OPTIONAL, 'Time interval to export OHLCV data for', self::INTERVAL_DAILY);
         $this->addOption('from-date', null, InputOption::VALUE_REQUIRED, 'Start date of stored history', self::START_DATE);
         $this->addOption('to-date', null, InputOption::VALUE_REQUIRED, 'End date of stored history');
         $this->addOption('chunk', null, InputOption::VALUE_REQUIRED, 'Number of records to process in one chunk');
@@ -109,6 +94,8 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->utilities->pronounceStart($this, $output);
+
         $inputFile = $input->getArgument('input_path');
         $exportPath = $input->getArgument('export_path');
         $interval = $input->getArgument('interval');
@@ -184,7 +171,7 @@ EOT
                     $screenMsg .=  'no_instr ';
                 }
 
-                $this->logAndSay($output, $logMsg, $screenMsg);
+                $this->utilities->logAndSay($output, $logMsg, $screenMsg);
 //                fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
             }
 
@@ -198,17 +185,7 @@ EOT
             $records = $statement->process($csv);
         }
 //        fclose($fh);
-    }
 
-    /**
-     * @param Symfony\Component\Console\Output\OutputInterface $output
-     * @param string $logMsg
-     * @param string $screenMsg
-     */
-    private function logAndSay($output, $logMsg, $screenMsg) {
-        $this->logger->log(LogLevel::DEBUG, $logMsg);
-        if ($output->getVerbosity() >= $this->chatter ) {
-            $output->writeln($screenMsg);
-        }
+        $this->utilities->pronounceEnd($this, $output);
     }
 }
