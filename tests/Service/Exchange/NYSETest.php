@@ -238,7 +238,7 @@ class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
      */
     public function test30()
     {
-        $this->assertTrue($this->SUT->isTraded('MCD', $this->SUT::getExchangeName()));
+        $this->assertTrue($this->SUT->isTraded('LIN', $this->SUT::getExchangeName()));
 
         $this->assertFalse($this->SUT->isTraded('SPY1', $this->SUT::getExchangeName()));
     }
