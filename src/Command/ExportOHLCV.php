@@ -12,14 +12,18 @@
 namespace App\Command;
 
 use App\Entity\Instrument;
+use App\Entity\OHLCVHistory;
 use League\Csv\Reader;
 use League\Csv\Statement;
-use Psr\Log\LogLevel;
+use League\Csv\Writer;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
+use App\Service\UtilityServices;
 
 class ExportOHLCV extends Command
 {
@@ -32,44 +36,34 @@ class ExportOHLCV extends Command
     const START_DATE = '2011-01-01';
 
     /**
-     * @var \App\Service\PriceHistory\OHLCV\Yahoo
-     */
-    protected $priceProvider;
-
-    /**
      * @var Doctrine\ORM\EntityManager
      */
     protected $em;
 
     /**
-     * @var \Symfony\Component\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $filesystem;
 
     /**
-     * @var Psr/Log/LoggerInterface
+     * @var \App\Service\UtilityServices
      */
-    protected $logger;
+    protected $utilities;
 
     /**
-     * On screen chatter level
-     * @var int
+     * @var string
      */
-    protected $chatter;
+    protected $provider;
 
     public function __construct(
-        \App\Service\PriceHistory\OHLCV\Yahoo $priceProvider,
-        \Symfony\Component\Filesystem\Filesystem $filesystem,
-        \Symfony\Bridge\Doctrine\RegistryInterface $doctrine,
-        \Psr\Log\LoggerInterface $logger,
-        $chatter
+        Filesystem $filesystem,
+        RegistryInterface $doctrine,
+        UtilityServices $utilities
     )
     {
-        $this->priceProvider = $priceProvider;
         $this->filesystem = $filesystem;
         $this->em = $doctrine;
-        $this->logger = $logger;
-        $this->chatter = $chatter;
+        $this->utilities = $utilities;
 
         parent::__construct();
     }
@@ -88,30 +82,34 @@ saved in database to be able to export them into csv files. Header must contain 
 EOT
         );
 
-        $this->addArgument(
-            'input_path',
-            InputArgument::OPTIONAL,
-            'Path/to/file.csv with list of symbols to work on',
-            self::LIST_PATH
-        );
+        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] [--provider=YAHOO] [data/source/y_universe.csv] [data/source/ohlcv]');
+
+        $this->addArgument('input_path', InputArgument::OPTIONAL, 'Path/to/file.csv with list of symbols to work on', self::LIST_PATH);
         $this->addArgument('export_path', InputArgument::OPTIONAL, 'Path/to/directory for csv files to export', self::EXPORT_PATH);
-        $this->addArgument(
-            'interval',
-            InputArgument::OPTIONAL,
-            'Time interval to export OHLCV data for',
-            self::INTERVAL_DAILY
-        );
+        $this->addOption('interval', null, InputOption::VALUE_REQUIRED, 'Time interval to export OHLCV data for', self::INTERVAL_DAILY);
         $this->addOption('from-date', null, InputOption::VALUE_REQUIRED, 'Start date of stored history', self::START_DATE);
         $this->addOption('to-date', null, InputOption::VALUE_REQUIRED, 'End date of stored history');
         $this->addOption('chunk', null, InputOption::VALUE_REQUIRED, 'Number of records to process in one chunk');
         $this->addOption('offset', null, InputOption::VALUE_REQUIRED, 'Starting offset, which includes header count. Header has offset=0');
+        $this->addOption('provider', null, InputOption::VALUE_REQUIRED, 'Name of Price Provider. Must match that in PriceProvider class');
+    }
+
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        if ($provider = $input->getOption('provider')) {
+            $this->provider = $provider;
+        } else {
+            $this->provider = null;
+        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->utilities->pronounceStart($this, $output);
+
         $inputFile = $input->getArgument('input_path');
         $exportPath = $input->getArgument('export_path');
-        $interval = $input->getArgument('interval');
+        $interval = $input->getOption('interval');
 
         $fromDate = new \DateTime($input->getOption('from-date'));
         $toDate = $input->getOption('to-date')? new \DateTime($input->getOption('to-date')) : null;
@@ -149,6 +147,7 @@ EOT
         $records = $statement->process($csv);
 //        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
         while ($records->count() > 0) {
+            $priceRepository = $this->em->getRepository(OHLCVHistory::class);
             foreach ($records as $key => $record) {
 //                fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                 $instrument = $repository->findOneBySymbol($record['Symbol']);
@@ -158,7 +157,8 @@ EOT
                 if ($instrument) {
                     // will only return price records which were marked for $this->provider name
 //                    fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
-                    $history = $this->priceProvider->retrieveHistory($instrument, $fromDate, $toDate, ['interval' => $interval]);
+//                    $history = $this->priceProvider->retrieveHistory($instrument, $fromDate, $toDate, ['interval' => $interval]);
+                    $history = $priceRepository->retrieveHistory($instrument, new \DateInterval($interval), $fromDate, $toDate, $this->provider);
 //                    fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                     if (!empty($history)) {
                         // backup existing csv file for the given period
@@ -170,9 +170,16 @@ EOT
                             $screenMsg .= 'backed_up ';
                         }
 //                        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
-                        $this->priceProvider->exportHistory($history, $exportFile);
-                        $logMsg .= 'saved PH into file ';
-                        $screenMsg .= 'exported ';
+//                        $this->priceProvider->exportHistory($history, $exportFile);
+                        $csvWriter = Writer::createFromPath($exportFile, 'w');
+                        $header = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume'];
+                        $csvWriter->insertOne($header);
+                        $csvWriter->insertAll(array_map(function($v) {
+                            return [$v->getTimestamp()->format('Y-m-d'), $v->getOpen(), $v->getHigh(), $v->getLow(), $v->getClose(), $v->getVolume()];
+                        }, $history));
+
+                        $logMsg .= sprintf('exported PH %s ', $interval);
+                        $screenMsg .= sprintf('exported %s', $interval);
                         unset($history);
 //                        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                     } else {
@@ -184,7 +191,7 @@ EOT
                     $screenMsg .=  'no_instr ';
                 }
 
-                $this->logAndSay($output, $logMsg, $screenMsg);
+                $this->utilities->logAndSay($output, $logMsg, $screenMsg);
 //                fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
             }
 
@@ -198,17 +205,7 @@ EOT
             $records = $statement->process($csv);
         }
 //        fclose($fh);
-    }
 
-    /**
-     * @param Symfony\Component\Console\Output\OutputInterface $output
-     * @param string $logMsg
-     * @param string $screenMsg
-     */
-    private function logAndSay($output, $logMsg, $screenMsg) {
-        $this->logger->log(LogLevel::DEBUG, $logMsg);
-        if ($output->getVerbosity() >= $this->chatter ) {
-            $output->writeln($screenMsg);
-        }
+        $this->utilities->pronounceEnd($this, $output);
     }
 }
