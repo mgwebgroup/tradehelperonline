@@ -13,3 +13,6 @@ services:
     autowire: true
 #    arguments:
 #      $expr: '@app.expression_service'
+  App\Service\Exchange\DailyIterator:
+    public: true
+    autowire: true

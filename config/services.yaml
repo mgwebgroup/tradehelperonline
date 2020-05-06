@@ -42,4 +42,7 @@ services:
         arguments:
             $logger: '@app.logging_service'
             $chatter: '%on_screen_chatter%'
-
+    App\Service\Exchange\DailyIterator:
+        arguments:
+            $start: '%dates_begin%'
+            $end: '%dates_end%'
