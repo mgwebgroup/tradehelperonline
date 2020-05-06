@@ -7,6 +7,10 @@ parameters:
     application_log: 'var/log/tradehelper.log'
     # minimum level from which commands will have on-screen output (Refer to Symfony\Component\Console\Output\OutputInterface)
     on_screen_chatter: 64
+    # '2000-01-01'
+    dates_begin: 946684800
+    # '2100-12-31'
+    dates_end: 4133894400
 
 services:
     # default configuration for services in *this* file

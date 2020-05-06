@@ -10,6 +10,8 @@
 
 namespace App\Service\Scanner\OHLCV;
 
+use App\Service\DependencyInjecion\Scanner\OHLCV\SQLExpressionLanguageProvider;
+
 
 class ScannerExpression extends \Symfony\Component\ExpressionLanguage\ExpressionLanguage
 {

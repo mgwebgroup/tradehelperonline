@@ -22,9 +22,10 @@ class Scanner implements ScannerInterface
 
     public function __construct(
       \App\Service\Scanner\OHLCV\ScannerExpression $expr
+
     )
     {
-        $this->expr = $expr;
+//        $this->expr = $expr;
     }
 
     /**

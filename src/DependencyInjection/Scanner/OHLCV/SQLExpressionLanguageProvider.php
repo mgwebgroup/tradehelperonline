@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Service\Scanner\OHLCV;
+namespace App\Service\DependencyInjecion\Scanner\OHLCV;
 
 
 use App\Exception\PriceHistoryException;
@@ -44,13 +44,13 @@ class SQLExpressionLanguageProvider implements ExpressionFunctionProviderInterfa
                     $query = $this->em->createQuery($dql);
                     $result = $query->getSingleResult();
                 } else {
-                    thro new PriceHistoryException('Could not find instrument');
+                    throw new PriceHistoryException('Could not find instrument');
                 }
 
                 if (isset($result['close'])) {
                     return $result['close'];
                 } else {
-                    return new PriceHistoryException('Could not find value');
+                    throw new PriceHistoryException('Could not find value');
                 }
             } else {
                 throw new SyntaxError('Need to pass instrument object as part of the data part');
