@@ -8,3 +8,8 @@ services:
   App\Service\PriceHistory\OHLCV\Yahoo:
     public: true
     autowire: true
+  App\Service\Scanner\OHLCV\Scanner:
+    public: true
+    autowire: true
+#    arguments:
+#      $expr: '@app.expression_service'

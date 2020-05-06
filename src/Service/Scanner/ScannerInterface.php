@@ -10,14 +10,28 @@
 
 namespace App\Service\Scanner;
 
-
-
 interface ScannerInterface
 {
     /**
-     * @param \Doctrine\Common\Collections\Collection $list
-     * @param $criteria
-     * @return mixed
+     * Scans a given list of instruments using a formula while doing direct reads in db
+     * @param \Doctrine\Common\Collections\Collection $list \App\Entity\Instruments[]
+     * @param \Symfony\Component\ExpressionLanguage $expression
+     * @return \Iterable $result
      */
-    public function scan($list, $criteria);
+    public function scan($list, $expression);
+
+//    /**
+//     * Creates a list of instruments
+//     * @param \Symfony\Component\ExpressionLanguage $formula
+//     * @return \Doctrine\Common\Collections $list \App\Entity\Instruments[]
+//     */
+//    public function createList($formula);
+
+//    /**
+//     * This func should be contained in Instruments List repository
+//     * Stores list of instruments in database
+//     * @param \Doctrine\Common\Collections $list
+//     * @return bool
+//     */
+//    public function storeList($list);
 }

@@ -9,7 +9,7 @@ use App\Entity\OHLCVHistory;
 use App\Entity\Instrument;
 use App\Entity\OHLCVQuote;
 use App\Exception\PriceHistoryException;
-use function Symfony\Component\DependencyInjection\Loader\Configurator\expr;
+
 
 class YahooTest extends KernelTestCase
 {

@@ -38,3 +38,4 @@ services:
         arguments:
             $logger: '@app.logging_service'
             $chatter: '%on_screen_chatter%'
+
