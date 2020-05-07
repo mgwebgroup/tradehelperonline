@@ -39,7 +39,7 @@ class DailyIteratorTest extends KernelTestCase
     /**
      * Test that iterator returns dates
      */
-    public function testScalarOperands10()
+    public function testDates10()
     {
         $expected = [
           '20000101' => '2000-01-01',

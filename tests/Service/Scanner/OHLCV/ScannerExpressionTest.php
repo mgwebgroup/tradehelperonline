@@ -59,60 +59,95 @@ class ScannerExpressionTest extends KernelTestCase
     }
 
     /**
-     * Function: Closing P
      * Period: Daily
+     * Simple functions: Closing, Open, High, Low, Volume
      * Test getting past and present values
      */
-    public function testClosingPrice10()
+    public function testSimpleFunctions10()
     {
         $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
         $period = 'P1D';
         $expression = 'Close(1)';
         $data = [
-          'instrument' => $this->instrument,
-          'interval' => new \DateInterval($period),
+            'instrument' => $this->instrument,
+            'interval' => new \DateInterval($period),
           ];
         $result = $this->SUT->evaluate($expression, $data);
         $this->assertEquals(110, $result);
 
         $expression = 'Close(0)';
         $data = [
-          'instrument' => $this->instrument,
+            'instrument' => $this->instrument,
         ];
         $result = $this->SUT->evaluate($expression, $data);
         $this->assertEquals(101, $result);
+
+        $expression = 'Close(5)';
+        $data = [
+            'instrument' => $this->instrument,
+            'date' => (clone $this->latestDate)->sub(new \DateInterval($period))
+        ];
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(115, $result);
+
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1D';
+        $expression = 'Open(1)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(101, $result);
+
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1D';
+        $expression = 'High(1)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(110.05, $result);
+
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1D';
+        $expression = 'Low(0)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(91.05, $result);
+
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1D';
+        $expression = 'Volume(9)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(1010, $result);
     }
 
     /**
-     * Function: Open P
-     * Period: Daily
-     * Test getting past and present values
-     */
-
-    /**
-     * Function: High P
-     * Period: Daily
-     * Test getting past and present values
-     */
-
-
-    /**
-     * Function: Low P
-     * Period: Daily
-     * Test getting past and present values
-     */
-
-    /**
-     * Function Volume
-     * Period: Daily
-     * Test getting past and present values
-     */
-
-    /**
-     * Function Close P
      * Period: Weekly
+     * Function Close P
      * Test getting past and present values
      */
+    public function testSimpleFunctions20()
+    {
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P7D';
+        $expression = 'Close(1)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(110, $result);
+    }
 
     /**
      * Function Open P
@@ -143,10 +178,10 @@ class ScannerExpressionTest extends KernelTestCase
      * Period: Daily
      * Test getting P which is not present in price history. Test getting exception
      */
-    public function testException20()
-    {
-
-    }
+//    public function testException20()
+//    {
+//
+//    }
 
     /**
      * Function Average P

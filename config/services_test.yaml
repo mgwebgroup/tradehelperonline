@@ -14,8 +14,9 @@ services:
   App\Service\Scanner\OHLCV\ScannerExpression:
       public: true
       autowire: true
-#    arguments:
-#      $expr: '@app.expression_service'
   App\Service\Exchange\DailyIterator:
+    public: true
+    autowire: true
+  App\Service\Exchange\WeeklyIterator:
     public: true
     autowire: true

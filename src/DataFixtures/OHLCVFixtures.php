@@ -43,35 +43,34 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
         $instrumentRepository = $manager->getRepository(\App\Entity\Instrument::class);
         $instrument = $instrumentRepository->findOneBySymbol('FB');
         $provider = null;
+        $interval = [
+          'daily' => new \DateInterval('P1D'),
+          'weekly' => new \DateInterval('P1W'),
+          'monthly' => new \DateInterval('P1M'),
+          'yearly' => new \DateInterval('P1Y'),
+        ];
 
         $date = new \DateTime('2020-03-06'); // 6-March-2020 Friday
         $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
         $tradingCalendar->getInnerIterator()->rewind();
 
-        $interval = [
-            'daily' => new \DateInterval('P1D'),
-            'weekly' => new \DateInterval('P1W'),
-            'monthly' => new \DateInterval('P1M'),
-            'yearly' => new \DateInterval('P1Y'),
-        ];
-
         // daily 10 days back
         $open = 100;
-        $sequence[1] = [
-          [10, .1, 0.05, 1000],
-          [10, .9, 0.05, 1000],
-          [10, -.9, 0.05, 1000],
-          [10, -.1, 0.05, 1000],
-          [5, .5, 0.01, 1000],
-          [10, .1, 0.05, 1000],
-          [10, .9, 0.05, 1000],
-          [10, -.9, 0.05, 1000],
-          [10, -.1, 0.05, 1000],
-          [5, .5, 0.01, 1000],
+        $sequence = [
+          [10, .1, 0.05, 1001],
+          [10, .9, 0.05, 1002],
+          [10, -.9, 0.05, 1003],
+          [10, -.1, 0.05, 1004],
+          [5, .5, 0.01, 1005],
+          [10, .1, 0.05, 1006],
+          [10, .9, 0.05, 1007],
+          [10, -.9, 0.05, 1008],
+          [10, -.1, 0.05, 1009],
+          [5, .5, 0.01, 1010],
         ];
         $gradient = 1;
         $data = [$provider, $date, $instrument, $interval['daily']];
-        foreach ($sequence[1] as $name => $parameters) {
+        foreach ($sequence as $name => $parameters) {
             array_push($data, $open);
             $data = array_merge($data, $parameters);
 
@@ -87,54 +86,54 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
             $data[1] = $tradingCalendar->current();
             $data = array_splice($data, 0, 4);
         }
+        $output->writeln(sprintf('Imported daily prices for %s', $instrument->getSymbol()));
 
 
         // weekly 10 weeks back
+        $date = new \DateTime('2020-03-02'); // 2-March-2020 Monday
+        $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
+        $tradingCalendar->getInnerIterator()->rewind();
+        $open = 200;
+        $sequence = [
+          [20, .1, 0.05, 2001],
+          [20, .9, 0.05, 2002],
+          [20, -.9, 0.05, 2003],
+          [20, -.1, 0.05, 2004],
+          [10, .5, 0.01, 2005],
+          [20, .1, 0.05, 2006],
+          [20, .9, 0.05, 2007],
+          [20, -.9, 0.05, 2008],
+          [20, -.1, 0.05, 2009],
+          [10, .5, 0.01, 2010],
+        ];
+        $gradient = 1;
+        $data = [$provider, $date, $instrument, $interval['weekly']];
+        foreach ($sequence as $name => $parameters) {
+            array_push($data, $open);
+            $data = array_merge($data, $parameters);
+
+//            $func = 'generate' . \ucwords($name);
+//            $ohlcv = call_user_func([$this, $func], ...$data);
+            $ohlcv = $this->generateCandle(...$data);
+
+            $manager->persist($ohlcv);
+            $manager->flush();
+
+            $open += $gradient;
+            $date->sub($interval['weekly']);
+//            $tradingCalendar->next();
+//            $data[1] = $tradingCalendar->current();
+            $data = array_splice($data, 0, 4);
+        }
+        $output->writeln(sprintf('Imported weekly prices for %s', $instrument->getSymbol()));
 
 
         // monthly
 
         // yearly
 
-
-//        $output->writeln(sprintf('Imported symbol=%s', $symbol));
-
     }
 
-    /**
-     * @param string | null $provider
-     * @param \DateTime $date
-     * @param \App\Entity\Instrument $instrument
-     * @param \DateInterval $interval
-     * @param float $open
-     * @param float $size
-     * Solid hammer: $movement > 0
-     * Hollow hammer: $movement < 0
-     * @param float $movement as percent of $open
-     * @param $volume
-     * @return \App\Entity\OHLCVHistory $candle
-     */
-//    public function generateHammer($provider, $date, $instrument, $interval, $open, $size, $movement, $volume)
-//    {
-//        $p = new OHLCVHistory();
-//
-//        $p->setProvider($provider);
-//        $p->setTimestamp($date);
-//        $p->setInstrument($instrument);
-//        $p->setTimeinterval($interval);
-//        $p->setOpen($open);
-//        $p->setClose($open * (1 + $movement));
-//        if ($movement > 0) {
-//            $p->setHigh($p->getClose() + 0.1);
-//        } else {
-//            $p->setHigh($p->getOpen() + 0.1);
-//        }
-//        $p->setLow($p->getHigh() - $size);
-//
-//        $p->setVolume($volume);
-//
-//        return $p;
-//    }
 
     /**
      * @param string | null $provider
@@ -174,5 +173,40 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
 
         return $p;
     }
+
+//    /**
+//     * @param string | null $provider
+//     * @param \DateTime $date
+//     * @param \App\Entity\Instrument $instrument
+//     * @param \DateInterval $interval
+//     * @param float $open
+//     * @param float $size
+//     * Solid hammer: $movement > 0
+//     * Hollow hammer: $movement < 0
+//     * @param float $movement as percent of $open
+//     * @param $volume
+//     * @return \App\Entity\OHLCVHistory $candle
+//     */
+//    public function generateHammer($provider, $date, $instrument, $interval, $open, $size, $movement, $volume)
+//    {
+//        $p = new OHLCVHistory();
+//
+//        $p->setProvider($provider);
+//        $p->setTimestamp($date);
+//        $p->setInstrument($instrument);
+//        $p->setTimeinterval($interval);
+//        $p->setOpen($open);
+//        $p->setClose($open * (1 + $movement));
+//        if ($movement > 0) {
+//            $p->setHigh($p->getClose() + 0.1);
+//        } else {
+//            $p->setHigh($p->getOpen() + 0.1);
+//        }
+//        $p->setLow($p->getHigh() - $size);
+//
+//        $p->setVolume($volume);
+//
+//        return $p;
+//    }
 
 }

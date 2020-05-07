@@ -93,12 +93,14 @@ class ScannerSimpleFunctionsProvider implements ExpressionFunctionProviderInterf
             } else {
                 $today = new \DateTime();
             }
+
+            if (isset($arguments['date']) && $arguments['date'] instanceof \DateTime) {
+                $today = $arguments['date'];
+            }
+
             $exchange = $this->catalog->getExchangeFor($instrument);
             $exchange->tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
             $limitIterator = new \LimitIterator($exchange->tradingCalendar, $offset, 1);
-//                            foreach ($limitIterator as $key => $date) {
-//                                break;
-//                            }
             $limitIterator->rewind();
             $date = $limitIterator->current();
 
