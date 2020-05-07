@@ -11,6 +11,7 @@
 namespace App\Service\Scanner\OHLCV;
 
 use App\Service\DependencyInjecion\Scanner\OHLCV\SQLExpressionLanguageProvider;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 
 
 class ScannerExpression extends \Symfony\Component\ExpressionLanguage\ExpressionLanguage
@@ -20,7 +21,7 @@ class ScannerExpression extends \Symfony\Component\ExpressionLanguage\Expression
     protected $instrument;
 
     public function __construct(
-      \Symfony\Bridge\Doctrine\RegistryInterface $registry
+      RegistryInterface $registry
     )
     {
         $this->em = $registry->getManager();

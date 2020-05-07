@@ -37,6 +37,12 @@ abstract class Exchange implements ExchangeInterface
 
     public function isTradingDay($date) {
         $this->tradingCalendar->getInnerIterator()->setStartDate($date);
+//        $this->tradingCalendar->getInnerIterator()->rewind();
+//        $value = $this->tradingCalendar->current();
+//        if ($value == $date) {
+//            return true;
+//        }
+
         $limitIterator = new \LimitIterator($this->tradingCalendar, 0, 1);
         foreach ($limitIterator as $key => $value) {
             if ($value == $date) {

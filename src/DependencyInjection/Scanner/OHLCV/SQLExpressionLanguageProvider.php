@@ -10,7 +10,6 @@
 
 namespace App\Service\DependencyInjecion\Scanner\OHLCV;
 
-
 use App\Exception\PriceHistoryException;
 use Symfony\Component\ExpressionLanguage\ExpressionFunction;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
@@ -39,18 +38,20 @@ class SQLExpressionLanguageProvider implements ExpressionFunctionProviderInterfa
                 $instrument = $arguments['instrument'];
                 $instrumentId = $instrument->getId();
                 if ($instrumentId) {
+                    // determine date
+
                     $dql = sprintf('select h.close from \App\Entity\OHLCVHistory h join h.instrument i where i.id =  
                         %s and h.timestamp = \'%s\'', $instrumentId, '2011-09-19 00:00:00');
                     $query = $this->em->createQuery($dql);
                     $result = $query->getSingleResult();
                 } else {
-                    throw new PriceHistoryException('Could not find instrument');
+                    throw new PriceHistoryException('Instrument is not saved in database');
                 }
 
                 if (isset($result['close'])) {
                     return $result['close'];
                 } else {
-                    throw new PriceHistoryException('Could not find value');
+                    throw new PriceHistoryException('Could not find value for `Close`');
                 }
             } else {
                 throw new SyntaxError('Need to pass instrument object as part of the data part');

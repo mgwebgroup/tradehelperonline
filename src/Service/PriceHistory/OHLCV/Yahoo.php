@@ -14,6 +14,7 @@ use App\Entity\OHLCVHistory;
 use App\Exception\PriceHistoryException;
 use App\Entity\OHLCVQuote;
 use App\Entity\Instrument;
+use App\Service\Exchange\Catalog;
 use App\Service\Exchange\Equities\TradingCalendar;
 use GuzzleHttp\Exception\ClientException;
 use League\Csv\Writer;
@@ -66,15 +67,22 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
      */
     private $tradingCalendar;
 
+    /**
+     * @var App\Service\Exchange\Catalog
+     */
+    private $catalog;
+
     public function __construct(
         RegistryInterface $registry,
         PriceAdapter_Scheb $priceAdapter,
-        TradingCalendar $tradingCalendar
+        TradingCalendar $tradingCalendar,
+        Catalog $catalog
     ) {
         $this->em = $registry->getManager();
         $this->priceAdapter = $priceAdapter;
         $this->instrumentRepository = $this->em->getRepository(Instrument::class);
         $this->tradingCalendar = $tradingCalendar;
+        $this->catalog = $catalog;
     }
 
     /**
@@ -95,7 +103,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
             $today = date('Y-m-d');
         }
 
-        $exchange = $this->getExchangeForInstrument($instrument);
+        $exchange = $this->catalog->getExchangeFor($instrument);
 
         if ($toDate->format('U') > strtotime($today)) {
             $toDate = new \DateTime($today);
@@ -221,7 +229,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
             $today = new \DateTime();
         }
 
-        $exchange = $this->getExchangeForInstrument($instrument);
+        $exchange = $this->catalog->getExchangeFor($instrument);
 
         if ($exchange->isOpen($today)) {
             return $this->priceAdapter->getQuote($instrument);
@@ -276,7 +284,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         }
 
         $instrument = $quote->getInstrument();
-        $exchange = $this->getExchangeForInstrument($instrument);
+        $exchange = $this->catalog->getExchangeFor($instrument);
         $quoteInterval = $quote->getTimeinterval();
         $prevT = $exchange->calcPreviousTradingDay($quote->getTimestamp());
 
@@ -405,7 +413,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
             $today = new \DateTime();
         }
 
-        $exchange = $this->getExchangeForInstrument($instrument);
+        $exchange = $this->catalog->getExchangeFor($instrument);
 
         if ($exchange->isOpen($today)) {
             return null;
@@ -457,7 +465,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     public function addClosingPriceToHistory($closingPrice, $history = [])
     {
         $instrument = $closingPrice->getInstrument();
-        $exchange = $this->getExchangeForInstrument($instrument);
+        $exchange = $this->catalog->getExchangeFor($instrument);
         $closingPriceInterval = $closingPrice->getTimeinterval();
         $prevT = $exchange->calcPreviousTradingDay($closingPrice->getTimestamp());
 
@@ -572,21 +580,6 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         }
 
         return $result;
-    }
-
-    /**
-     * @param App\Entity\Instrument $instrument
-     * @return App\Service\Exchange\ExchangeInterface $exchange
-     * @throws PriceHistoryException
-     */
-    public function getExchangeForInstrument($instrument)
-    {
-        $exchangeClassName = '\App\Service\Exchange\Equities\\'.$instrument->getExchange();
-        if (!class_exists($exchangeClassName)) {
-            throw new PriceHistoryException(sprintf('Class for exchange name %s not defined', $exchangeClassName), $code = 1);
-        }
-
-        return new $exchangeClassName($this->instrumentRepository, $this->tradingCalendar);
     }
 
     /**

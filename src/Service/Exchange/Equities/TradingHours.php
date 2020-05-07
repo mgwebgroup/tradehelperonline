@@ -10,6 +10,11 @@
 
 namespace App\Service\Exchange\Equities;
 
+/**
+ * Trait TradingHours
+ * Made as a trait so that it could be duplicated and inserted into other exchanges in the future
+ * @package App\Service\Exchange\Equities
+ */
 trait TradingHours
 {
     public function isTradingHours($datetime)

@@ -24,8 +24,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use League\Csv\Reader;
-use Psr\Log\LogLevel;
 use League\Csv\Statement;
+use App\Service\Exchange\Catalog;
 
 /**
  * Class SyncPrice
@@ -67,15 +67,22 @@ class SyncPrice extends Command
      */
     protected $delay;
 
+    /**
+     * @var App\Service\Exchange\Equities\Catalog
+     */
+    protected $catalog;
+
     public function __construct(
         RegistryInterface $doctrine,
         Yahoo $priceProvider,
+        Catalog $catalog,
         UtilityServices $utilities
     )
     {
         $this->em = $doctrine->getManager();
         $this->priceProvider = $priceProvider;
         $this->utilities = $utilities;
+        $this->catalog = $catalog;
 
         parent::__construct();
     }
@@ -179,7 +186,7 @@ EOT
 
                 try {
                     if ($instrument) {
-                        $exchange = $this->priceProvider->getExchangeForInstrument($instrument);
+                        $exchange = $this->catalog->getExchangeFor($instrument);
 
                         $prevT = $exchange->calcPreviousTradingDay($today)->setTime(0, 0, 0);
 
