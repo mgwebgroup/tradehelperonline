@@ -10,23 +10,31 @@
 
 namespace App\Service\Scanner\OHLCV;
 
-use App\Service\DependencyInjecion\Scanner\OHLCV\SQLExpressionLanguageProvider;
 use Symfony\Bridge\Doctrine\RegistryInterface;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
+use App\Service\Exchange\Catalog;
 
-
-class ScannerExpression extends \Symfony\Component\ExpressionLanguage\ExpressionLanguage
+/**
+ * Class ScannerExpression
+ * Registers simple functions used in scanners, like Close, High, etc.
+ * @package App\Service\Scanner\OHLCV
+ */
+class ScannerExpression extends ExpressionLanguage
 {
     protected $em;
 
     protected $instrument;
 
+    protected $catalog;
+
     public function __construct(
-      RegistryInterface $registry
+      RegistryInterface $registry,
+      Catalog $catalog
     )
     {
         $this->em = $registry->getManager();
-
-        $this->registerProvider(new SQLExpressionLanguageProvider($this->em));
+        $this->catalog = $catalog;
+        $this->registerProvider(new ScannerSimpleFunctionsProvider($this->em, $catalog));
 
         parent::__construct();
     }

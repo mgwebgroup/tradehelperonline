@@ -23,6 +23,7 @@ while (( "$#" > 0 )) ; do
       # ...
       echo 'will clear out existing database and add fixtures'
       bin/console doctrine:fixtures:load --group=Instruments --no-interaction
+      bin/console doctrine:fixtures:load --group=OHLCV --append --no-interaction
       ;;
     tests)
       echo 'will run unit tests'

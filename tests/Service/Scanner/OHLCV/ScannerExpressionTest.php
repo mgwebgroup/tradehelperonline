@@ -10,7 +10,10 @@
 
 namespace App\Tests\Service\Scanner\OHLCV;
 
+use App\Entity\OHLCVHistory;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use \App\Entity\Instrument;
+use \App\Service\Scanner\OHLCV\ScannerExpression;
 
 class ScannerExpressionTest extends KernelTestCase
 {
@@ -24,17 +27,30 @@ class ScannerExpressionTest extends KernelTestCase
     private $instrument;
 
     /**
+     * @var \DateTime
+     */
+    private $latestDate;
+
+    /**
      * Details on how to access services in tests:
      * https://symfony.com/blog/new-in-symfony-4-1-simpler-service-testing
      */
     protected function setUp(): void
     {
         self::bootKernel();
-        $this->SUT = self::$container->get(\App\Service\Scanner\OHLCV\ScannerExpression::class);
+        $this->SUT = self::$container->get(ScannerExpression::class);
 
         $this->em = self::$container->get('doctrine')->getManager();
 
-        $this->instrument = $this->em->getRepository(\App\Entity\Instrument::class)->findOneBySymbol('FB');
+        $this->instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol('FB');
+
+        $result = $this->em->getRepository(OHLCVHistory::class)->findBy(
+          ['instrument' => $this->instrument],
+          ['timestamp' => 'desc'],
+          1
+        );
+        $OHLCVHistory = array_shift($result);
+        $this->latestDate = clone $OHLCVHistory->getTimestamp();
     }
 
     public function testIntro()
@@ -49,9 +65,22 @@ class ScannerExpressionTest extends KernelTestCase
      */
     public function testClosingPrice10()
     {
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1D';
         $expression = 'Close(1)';
-        $result = $this->SUT->evaluate($expression, ['instrument' => $this->instrument]);
-        fwrite(STDOUT, $result);
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+          ];
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(110, $result);
+
+        $expression = 'Close(0)';
+        $data = [
+          'instrument' => $this->instrument,
+        ];
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(101, $result);
     }
 
     /**

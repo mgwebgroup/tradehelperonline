@@ -11,14 +11,12 @@
 namespace App\DataFixtures;
 
 use App\Entity\OHLCVHistory;
-use App\Service\PriceHistory\OHLCV\Yahoo;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Component\Console\Output\ConsoleOutput;
-use App\Entity\Instrument;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
-use App\Service\Exchange\Equities\NASDAQ;
-use App\Service\Exchange\Equities\NYSE;
+use App\Service\Exchange\Equities\TradingCalendar;
+use App\Service\Exchange\DailyIterator;
 
 
 class OHLCVFixtures extends Fixture implements FixtureGroupInterface
@@ -28,15 +26,28 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
         return ['OHLCV'];
     }
 
+    /**
+     * Price data are imported as candlesticks of know characteristics. Candlesticks are described in $sequence arrays:
+     * [size (absolute length from high to low), bodySize (percent), tail (absolute length from closing price to
+     * high/low, volume)]
+     * All items in a sequence go in reverse chronological order, i.e. most recent candlesticks first.
+     * @param ObjectManager $manager
+     * @throws \Exception
+     */
     public function load(ObjectManager $manager)
     {
         $output = new ConsoleOutput();
+
+        $tradingCalendar = new TradingCalendar(new DailyIterator());
 
         $instrumentRepository = $manager->getRepository(\App\Entity\Instrument::class);
         $instrument = $instrumentRepository->findOneBySymbol('FB');
         $provider = null;
 
-        $date = new \DateTime();
+        $date = new \DateTime('2020-03-06'); // 6-March-2020 Friday
+        $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
+        $tradingCalendar->getInnerIterator()->rewind();
+
         $interval = [
             'daily' => new \DateInterval('P1D'),
             'weekly' => new \DateInterval('P1W'),
@@ -51,7 +62,12 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
           [10, .9, 0.05, 1000],
           [10, -.9, 0.05, 1000],
           [10, -.1, 0.05, 1000],
-            [5, .5, 0.01, 1000],
+          [5, .5, 0.01, 1000],
+          [10, .1, 0.05, 1000],
+          [10, .9, 0.05, 1000],
+          [10, -.9, 0.05, 1000],
+          [10, -.1, 0.05, 1000],
+          [5, .5, 0.01, 1000],
         ];
         $gradient = 1;
         $data = [$provider, $date, $instrument, $interval['daily']];
@@ -60,14 +76,15 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
             $data = array_merge($data, $parameters);
 
 //            $func = 'generate' . \ucwords($name);
-            $func = 'generate' . 'Candle';
-            $ohlcv = call_user_func([$this, $func], ...$data);
+//            $ohlcv = call_user_func([$this, $func], ...$data);
+            $ohlcv = $this->generateCandle(...$data);
 
             $manager->persist($ohlcv);
             $manager->flush();
 
             $open += $gradient;
-            $date->sub($data[3]);
+            $tradingCalendar->next();
+            $data[1] = $tradingCalendar->current();
             $data = array_splice($data, 0, 4);
         }
 
