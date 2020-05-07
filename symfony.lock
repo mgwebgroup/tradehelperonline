@@ -2,6 +2,9 @@
     "azuyalabs/yasumi": {
         "version": "2.1.0"
     },
+    "beberlei/doctrineextensions": {
+        "version": "v1.2.6"
+    },
     "doctrine/annotations": {
         "version": "1.0",
         "recipe": {
