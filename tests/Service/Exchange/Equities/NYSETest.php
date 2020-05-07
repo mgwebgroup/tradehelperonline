@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Tests\Service\Exchange;
+namespace App\Tests\Service\Exchange\Equities;
 
 
-class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
+class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
 {
     private $SUT;
 
@@ -15,13 +15,12 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
     {
         ini_set('date.timezone', 'America/New_York');
         self::bootKernel();
-        $this->SUT = self::$container->get(\App\Service\Exchange\NASDAQ::class);
+        $this->SUT = self::$container->get(\App\Service\Exchange\Equities\NYSE::class);
     }
 
     public function testIntro()
     {
-//    	fwrite(STDOUT, 'Testing NASDAQ symbols'.PHP_EOL);
-    	$this->assertTrue(true);
+        $this->assertInstanceOf(\App\Service\Exchange\Equities\TradingCalendar::class, $this->SUT->tradingCalendar);
     }
 
     /**
@@ -99,7 +98,7 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
         $this->assertFalse($this->SUT->isOpen($date));
 
         //
-        // inside trading hours 0930-1300:
+        // insde trading hours 0930-1300:
         //
         $secondsSinceMidnight = rand(9.5*3600+1, 13*3600-1);
         $interval = new \DateInterval(sprintf('PT%dS', $secondsSinceMidnight));
@@ -237,7 +236,7 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
      */
     public function test30()
     {
-        $this->assertTrue($this->SUT->isTraded('FB', $this->SUT::getExchangeName()));
+        $this->assertTrue($this->SUT->isTraded('LIN', $this->SUT::getExchangeName()));
 
         $this->assertFalse($this->SUT->isTraded('SPY1', $this->SUT::getExchangeName()));
     }
@@ -248,11 +247,14 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
     public function test40()
     {
         $result = $this->SUT->getTradedInstruments($this->SUT::getExchangeName());
-        $nasdaq = file_get_contents($this->SUT::SYMBOLS_LIST);
+        $nyse = file_get_contents($this->SUT::SYMBOLS_LIST);
         // var_dump($nyse); exit();
         foreach ($result as $instrument) {
             $needle = sprintf('%s', $instrument->getSymbol());
-            $this->assertTrue(false != strpos($nasdaq, $needle), sprintf( 'symbol=%s was not found in list of NASDAQ symbols.', $instrument->getSymbol() ) );
+            if ($needle == 'A') {
+                $needle = 'A,';
+            }
+            $this->assertTrue(false !== strpos($nyse, $needle), sprintf( 'symbol=%s was not found in list of NYSE symbols.', $instrument->getSymbol() ) );
         }
     }
 

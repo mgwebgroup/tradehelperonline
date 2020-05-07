@@ -9,6 +9,7 @@ use App\Entity\OHLCVHistory;
 use App\Entity\Instrument;
 use App\Entity\OHLCVQuote;
 use App\Exception\PriceHistoryException;
+use App\Service\Exchange\Equities\NYSE;
 
 
 class YahooTest extends KernelTestCase
@@ -57,7 +58,7 @@ class YahooTest extends KernelTestCase
         $exchanges = ['NYSE', 'NASDAQ'];
         $exchangeName = $this->faker->randomElement($exchanges);
         $className = $exchangeName;
-        $this->exchange = self::$container->get('App\Service\Exchange\\'.$className);
+        $this->exchange = self::$container->get('App\Service\Exchange\Equities\\'.$className);
         $this->instruments = $this->exchange->getTradedInstruments($className);
         $this->instrument = $this->faker->randomElement($this->instruments);
 
@@ -909,7 +910,7 @@ class YahooTest extends KernelTestCase
         $instrument = new Instrument();
         $instrument->setSymbol('TEST');
         $instrument->setName('Instrument for testing purposes');
-        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+        $instrument->setExchange(NYSE::getExchangeName());
 
         $this->em->persist($instrument);
         $this->em->flush();
@@ -947,7 +948,7 @@ class YahooTest extends KernelTestCase
         $instrument = new Instrument();
         $instrument->setSymbol('TEST');
         $instrument->setName('Instrument for testing purposes');
-        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+        $instrument->setExchange(NYSE::getExchangeName());
 
         $this->em->persist($instrument);
         $this->em->flush();
@@ -982,7 +983,7 @@ class YahooTest extends KernelTestCase
         $instrument = new Instrument();
         $instrument->setSymbol('TEST');
         $instrument->setName('Instrument for testing purposes');
-        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+        $instrument->setExchange(NYSE::getExchangeName());
 
         $this->em->persist($instrument);
 
@@ -1074,7 +1075,7 @@ class YahooTest extends KernelTestCase
         $instrument = new Instrument();
         $instrument->setSymbol('TEST');
         $instrument->setName('Instrument for testing purposes');
-        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+        $instrument->setExchange(NYSE::getExchangeName());
         $this->em->persist($instrument);
         $this->em->flush($instrument);
 
@@ -1265,7 +1266,7 @@ class YahooTest extends KernelTestCase
         $instrument = new Instrument();
         $instrument->setSymbol('TEST');
         $instrument->setName('Instrument for testing purposes');
-        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+        $instrument->setExchange(NYSE::getExchangeName());
         $this->em->persist($instrument);
         $this->em->flush($instrument);
 
@@ -1344,7 +1345,7 @@ class YahooTest extends KernelTestCase
         $instrument = new Instrument();
         $instrument->setSymbol('TEST');
         $instrument->setName('Instrument for testing purposes');
-        $instrument->setExchange(\App\Service\Exchange\NYSE::getExchangeName());
+        $instrument->setExchange(NYSE::getExchangeName());
 
         $this->em->persist($instrument);
 

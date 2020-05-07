@@ -11,8 +11,8 @@
 namespace App\Command;
 
 use App\Entity\Instrument;
-use App\Service\Exchange\NASDAQ;
-use App\Service\Exchange\NYSE;
+use App\Service\Exchange\Equities\NASDAQ;
+use App\Service\Exchange\Equities\NYSE;
 use App\Service\UtilityServices;
 use League\Csv\Statement;
 use Psr\Log\LoggerInterface;

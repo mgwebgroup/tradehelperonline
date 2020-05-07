@@ -46,3 +46,6 @@ services:
         arguments:
             $start: '%dates_begin%'
             $end: '%dates_end%'
+    App\Service\Exchange\Equities\TradingCalendar:
+        arguments:
+            $iterator: '@App\Service\Exchange\DailyIterator'

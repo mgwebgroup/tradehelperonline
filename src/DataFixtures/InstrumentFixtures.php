@@ -16,8 +16,8 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use App\Entity\Instrument;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
-use App\Service\Exchange\NASDAQ;
-use App\Service\Exchange\NYSE;
+use App\Service\Exchange\Equities\NASDAQ;
+use App\Service\Exchange\Equities\NYSE;
 
 
 class InstrumentFixtures extends Fixture implements FixtureGroupInterface

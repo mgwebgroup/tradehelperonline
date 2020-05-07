@@ -14,8 +14,10 @@ use App\Entity\OHLCVHistory;
 use App\Exception\PriceHistoryException;
 use App\Entity\OHLCVQuote;
 use App\Entity\Instrument;
+use App\Service\Exchange\Equities\TradingCalendar;
 use GuzzleHttp\Exception\ClientException;
 use League\Csv\Writer;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
  * Class Yahoo
@@ -59,13 +61,20 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
      */
     private $instrumentRepository;
 
+    /**
+     * @var TradingCalendar
+     */
+    private $tradingCalendar;
+
     public function __construct(
-        \Symfony\Bridge\Doctrine\RegistryInterface $registry,
-        \App\Service\PriceHistory\OHLCV\PriceAdapter_Scheb $priceAdapter
+        RegistryInterface $registry,
+        PriceAdapter_Scheb $priceAdapter,
+        TradingCalendar $tradingCalendar
     ) {
         $this->em = $registry->getManager();
         $this->priceAdapter = $priceAdapter;
         $this->instrumentRepository = $this->em->getRepository(Instrument::class);
+        $this->tradingCalendar = $tradingCalendar;
     }
 
     /**
@@ -572,12 +581,12 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
      */
     public function getExchangeForInstrument($instrument)
     {
-        $exchangeClassName = '\App\Service\Exchange\\'.$instrument->getExchange();
+        $exchangeClassName = '\App\Service\Exchange\Equities\\'.$instrument->getExchange();
         if (!class_exists($exchangeClassName)) {
             throw new PriceHistoryException(sprintf('Class for exchange name %s not defined', $exchangeClassName), $code = 1);
         }
 
-        return new $exchangeClassName($this->instrumentRepository);
+        return new $exchangeClassName($this->instrumentRepository, $this->tradingCalendar);
     }
 
     /**

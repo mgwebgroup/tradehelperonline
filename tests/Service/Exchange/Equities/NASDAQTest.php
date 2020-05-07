@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Tests\Service\Exchange;
+namespace App\Tests\Service\Exchange\Equities;
 
 
-class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
+class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
 {
     private $SUT;
 
@@ -15,14 +15,12 @@ class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
     {
         ini_set('date.timezone', 'America/New_York');
         self::bootKernel();
-        $this->SUT = self::$container->get(\App\Service\Exchange\NYSE::class);
+        $this->SUT = self::$container->get(\App\Service\Exchange\Equities\NASDAQ::class);
     }
 
     public function testIntro()
     {
-//    	fwrite(STDOUT, 'Testing NYSE symbols'.PHP_EOL);
-//        fwrite(STDOUT, $this->SUT::getExchangeName());
-    	$this->assertTrue(true);
+        $this->assertInstanceOf(\App\Service\Exchange\Equities\TradingCalendar::class, $this->SUT->tradingCalendar);
     }
 
     /**
@@ -100,7 +98,7 @@ class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
         $this->assertFalse($this->SUT->isOpen($date));
 
         //
-        // insde trading hours 0930-1300:
+        // inside trading hours 0930-1300:
         //
         $secondsSinceMidnight = rand(9.5*3600+1, 13*3600-1);
         $interval = new \DateInterval(sprintf('PT%dS', $secondsSinceMidnight));
@@ -238,9 +236,11 @@ class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
      */
     public function test30()
     {
-        $this->assertTrue($this->SUT->isTraded('LIN', $this->SUT::getExchangeName()));
+//        $this->assertTrue($this->SUT->isTraded('FB', $this->SUT::getExchangeName()));
+        $this->assertTrue($this->SUT->isTraded('FB'));
 
-        $this->assertFalse($this->SUT->isTraded('SPY1', $this->SUT::getExchangeName()));
+//        $this->assertFalse($this->SUT->isTraded('SPY1', $this->SUT::getExchangeName()));
+        $this->assertFalse($this->SUT->isTraded('SPY1'));
     }
 
     /**
@@ -249,14 +249,11 @@ class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
     public function test40()
     {
         $result = $this->SUT->getTradedInstruments($this->SUT::getExchangeName());
-        $nyse = file_get_contents($this->SUT::SYMBOLS_LIST);
+        $nasdaq = file_get_contents($this->SUT::SYMBOLS_LIST);
         // var_dump($nyse); exit();
         foreach ($result as $instrument) {
             $needle = sprintf('%s', $instrument->getSymbol());
-            if ($needle == 'A') {
-                $needle = 'A,';
-            }
-            $this->assertTrue(false !== strpos($nyse, $needle), sprintf( 'symbol=%s was not found in list of NYSE symbols.', $instrument->getSymbol() ) );
+            $this->assertTrue(false != strpos($nasdaq, $needle), sprintf( 'symbol=%s was not found in list of NASDAQ symbols.', $instrument->getSymbol() ) );
         }
     }
 
@@ -270,13 +267,13 @@ class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
         $prevT = $this->SUT->calcPreviousTradingDay($date);
         $this->assertSame('25-March-2020', $prevT->format('d-F-Y'));
 
-        // When day is a T on Monday
-        $date->modify('23-March-2020');
+        // When day is any weekend day
+        $date->modify('22-March-2020');
         $prevT = $this->SUT->calcPreviousTradingDay($date);
         $this->assertSame('20-March-2020', $prevT->format('d-F-Y'));
 
-        // When day is any weekend day
-        $date->modify('22-March-2020');
+        // When day is a T on Monday
+        $date->modify('23-March-2020');
         $prevT = $this->SUT->calcPreviousTradingDay($date);
         $this->assertSame('20-March-2020', $prevT->format('d-F-Y'));
 
@@ -284,10 +281,5 @@ class NYSETest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
         $date->modify('1-January-2020');
         $prevT = $this->SUT->calcPreviousTradingDay($date);
         $this->assertSame('31-December-2019', $prevT->format('d-F-Y'));
-    }
-
-    protected function tearDown(): void
-    {
-        // fwrite(STDOUT, __METHOD__ . "\n");
     }
 }

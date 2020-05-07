@@ -13,7 +13,6 @@ namespace App\Service\Exchange;
 /**
  * Class DailyIterator
  * Simple iterator to iterate between START and END dates in both directions
- * Does not account for weekends and holidays
  * @package App\Service\Exchange
  */
 class DailyIterator implements \Iterator
@@ -131,6 +130,8 @@ class DailyIterator implements \Iterator
         } else {
             throw new \Exception('Value of direction must be numeric');
         }
+
+        return $this;
     }
 
     /**
@@ -149,5 +150,7 @@ class DailyIterator implements \Iterator
         } else {
             throw new \Exception('Date must be instance of \DateTime');
         }
+
+        return $this;
     }
 }

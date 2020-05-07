@@ -17,8 +17,8 @@ use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use App\Entity\Instrument;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
-use App\Service\Exchange\NASDAQ;
-use App\Service\Exchange\NYSE;
+use App\Service\Exchange\Equities\NASDAQ;
+use App\Service\Exchange\Equities\NYSE;
 
 
 class OHLCVFixtures extends Fixture implements FixtureGroupInterface

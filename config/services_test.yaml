@@ -1,8 +1,8 @@
 services:
-  App\Service\Exchange\NYSE:
+  App\Service\Exchange\Equities\NYSE:
     public: true
     autowire: true
-  App\Service\Exchange\NASDAQ:
+  App\Service\Exchange\Equities\NASDAQ:
     public: true
     autowire: true
   App\Service\PriceHistory\OHLCV\Yahoo:
