@@ -21,11 +21,6 @@ class TradingCalendar extends \FilterIterator
     const TIMEZONE = 'America/New_York';
 
     /**
-     * @var \Iterator
-     */
-    protected $iterator;
-
-    /**
      * @var Yasumi\Provider\USA
      */
     protected $holidaysCalculator;
@@ -34,8 +29,6 @@ class TradingCalendar extends \FilterIterator
         \Iterator $iterator
     )
     {
-        $this->iterator = $iterator;
-
         parent::__construct($iterator);
     }
 

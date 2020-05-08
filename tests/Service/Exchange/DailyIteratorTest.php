@@ -27,7 +27,6 @@ class DailyIteratorTest extends KernelTestCase
     {
         self::bootKernel();
         $this->SUT = self::$container->get(\App\Service\Exchange\DailyIterator::class);
-//        $this->em = self::$container->get('doctrine')->getManager();
     }
 
 

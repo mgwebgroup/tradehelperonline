@@ -15,6 +15,7 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
+use App\Service\Exchange\WeeklyIterator;
 use App\Service\Exchange\Equities\TradingCalendar;
 use App\Service\Exchange\DailyIterator;
 
@@ -86,13 +87,16 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
             $data[1] = $tradingCalendar->current();
             $data = array_splice($data, 0, 4);
         }
+        
         $output->writeln(sprintf('Imported daily prices for %s', $instrument->getSymbol()));
 
 
         // weekly 10 weeks back
-        $date = new \DateTime('2020-03-02'); // 2-March-2020 Monday
         $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
-        $tradingCalendar->getInnerIterator()->rewind();
+        $tradingCalendar->rewind();
+        $weeklyIterator = new WeeklyIterator($tradingCalendar);
+        $date = $weeklyIterator->seek(new \DateTime('2020-03-02')); // 2-March-2020 Monday
+
         $open = 200;
         $sequence = [
           [20, .1, 0.05, 2001],
@@ -120,11 +124,11 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
             $manager->flush();
 
             $open += $gradient;
-            $date->sub($interval['weekly']);
-//            $tradingCalendar->next();
-//            $data[1] = $tradingCalendar->current();
+            $weeklyIterator->next();
+            $data[1] = $weeklyIterator->current();
             $data = array_splice($data, 0, 4);
         }
+
         $output->writeln(sprintf('Imported weekly prices for %s', $instrument->getSymbol()));
 
 

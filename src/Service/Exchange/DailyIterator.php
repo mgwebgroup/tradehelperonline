@@ -54,8 +54,8 @@ class DailyIterator implements \Iterator
 
     public function __construct($start = null, $end = null)
     {
-        $this->lowerLimit = (is_numeric($start) && $start > 0)? $start : self::START;
-        $this->upperLimit = (is_numeric($end) && $end > 0)? $end : self::END;
+        $this->lowerLimit = (is_int($start) && $start > 0)? $start : self::START;
+        $this->upperLimit = (is_int($end) && $end > 0)? $end : self::END;
         $this->direction = 1;
     }
     /**
@@ -132,6 +132,13 @@ class DailyIterator implements \Iterator
         }
 
         return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getDirection() {
+        return $this->direction;
     }
 
     /**
