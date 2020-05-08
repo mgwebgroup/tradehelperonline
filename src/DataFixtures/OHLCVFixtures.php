@@ -15,6 +15,7 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
+use App\Service\Exchange\MonthlyIterator;
 use App\Service\Exchange\WeeklyIterator;
 use App\Service\Exchange\Equities\TradingCalendar;
 use App\Service\Exchange\DailyIterator;
@@ -87,7 +88,7 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
             $data[1] = $tradingCalendar->current();
             $data = array_splice($data, 0, 4);
         }
-        
+
         $output->writeln(sprintf('Imported daily prices for %s', $instrument->getSymbol()));
 
 
@@ -133,6 +134,43 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
 
 
         // monthly
+        $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
+        $tradingCalendar->rewind();
+        $monthlyIterator = new MonthlyIterator($tradingCalendar);
+
+        $open = 300;
+        $sequence = [
+          [30, .1, 0.05, 3001],
+          [30, .9, 0.05, 3002],
+          [30, -.9, 0.05, 3003],
+          [30, -.1, 0.05, 3004],
+          [15, .5, 0.01, 3005],
+          [30, .1, 0.05, 3006],
+          [30, .9, 0.05, 3007],
+          [30, -.9, 0.05, 3008],
+          [30, -.1, 0.05, 3009],
+          [15, .5, 0.01, 3010],
+        ];
+        $gradient = 1;
+        $data = [$provider, $date, $instrument, $interval['monthly']];
+        foreach ($sequence as $name => $parameters) {
+            array_push($data, $open);
+            $data = array_merge($data, $parameters);
+
+//            $func = 'generate' . \ucwords($name);
+//            $ohlcv = call_user_func([$this, $func], ...$data);
+            $ohlcv = $this->generateCandle(...$data);
+
+            $manager->persist($ohlcv);
+            $manager->flush();
+
+            $open += $gradient;
+            $monthlyIterator->next();
+            $data[1] = $monthlyIterator->current();
+            $data = array_splice($data, 0, 4);
+        }
+
+
 
         // yearly
 

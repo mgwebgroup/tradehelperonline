@@ -20,3 +20,6 @@ services:
   App\Service\Exchange\WeeklyIterator:
     public: true
     autowire: true
+  App\Service\Exchange\MonthlyIterator:
+    public: true
+    autowire: true

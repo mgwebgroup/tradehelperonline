@@ -29,6 +29,7 @@ while (( "$#" > 0 )) ; do
       echo 'will run unit tests'
       bin/phpunit tests/Service/Exchange/DailyIteratorTest.php
       bin/phpunit tests/Service/Exchange/WeeklyIteratorTest.php
+      bin/phpunit tests/Service/Exchange/MonthlyIteratorTest.php
       bin/phpunit tests/Service/Exchange/Equities
       bin/phpunit tests/Service/PriceHistory/OHLCV
       ;;

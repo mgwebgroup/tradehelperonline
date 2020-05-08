@@ -52,3 +52,6 @@ services:
     App\Service\Exchange\WeeklyIterator:
         arguments:
             $iterator: '@App\Service\Exchange\Equities\TradingCalendar'
+    App\Service\Exchange\MonthlyIterator:
+        arguments:
+            $iterator: '@App\Service\Exchange\Equities\TradingCalendar'
