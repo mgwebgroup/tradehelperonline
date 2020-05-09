@@ -32,6 +32,7 @@ while (( "$#" > 0 )) ; do
       bin/phpunit tests/Service/Exchange/MonthlyIteratorTest.php
       bin/phpunit tests/Service/Exchange/Equities
       bin/phpunit tests/Service/PriceHistory/OHLCV
+      bin/phpunit tests/Service/Scanner/OHLCV
       ;;
     *) echo "invalid directive $1"
       ;;

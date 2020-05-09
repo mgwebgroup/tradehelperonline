@@ -11,7 +11,8 @@
 namespace App\Service\Scanner\OHLCV;
 
 use App\Exception\PriceHistoryException;
-use DoctrineExtensions\Query\Mysql\Exp;
+use App\Service\Exchange\MonthlyIterator;
+use App\Service\Exchange\WeeklyIterator;
 use Symfony\Component\ExpressionLanguage\ExpressionFunction;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
@@ -68,6 +69,11 @@ class ScannerSimpleFunctionsProvider implements ExpressionFunctionProviderInterf
                 function ($offset) { return null; },
                 function($arguments, $offset) { return $this->getValue('volume', $arguments, $offset); }
             ),
+            new ExpressionFunction(
+            'Average',
+            function ($column, $period) { return null; },
+            function($arguments, $column, $period) { return $this->getAverage($arguments, $column, $period); }
+            ),
             ];
     }
 
@@ -99,8 +105,20 @@ class ScannerSimpleFunctionsProvider implements ExpressionFunctionProviderInterf
             }
 
             $exchange = $this->catalog->getExchangeFor($instrument);
-            $exchange->tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
-            $limitIterator = new \LimitIterator($exchange->tradingCalendar, $offset, 1);
+            $tradingCalendar = $exchange->getTradingCalendar();
+            $tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
+
+            if ('+P00Y00M01DT00H00M00S' == $interval) {
+                $limitIterator = new \LimitIterator($tradingCalendar, $offset, 1);
+            } elseif ('+P00Y00M07DT00H00M00S' == $interval) {
+                $weeklyIterator = new WeeklyIterator($tradingCalendar);
+                $limitIterator = new \LimitIterator($weeklyIterator, $offset, 1);
+            } elseif ('+P00Y01M00DT00H00M00S' == $interval) {
+                $monthlyIterator = new MonthlyIterator($tradingCalendar);
+                $limitIterator = new \LimitIterator($monthlyIterator, $offset, 1);
+            } else {
+                throw new SyntaxError(sprintf('Undefined interval %s', $interval));
+            }
             $limitIterator->rewind();
             $date = $limitIterator->current();
 
@@ -117,5 +135,10 @@ class ScannerSimpleFunctionsProvider implements ExpressionFunctionProviderInterf
         } catch (NoResultException $e) {
             throw new PriceHistoryException(sprintf('Could not find value for `Close(%d)`', $offset));
         }
+    }
+
+    protected function getAverage($arguments, $column, $period) {
+        sleep(1);
+        return null;
     }
 }

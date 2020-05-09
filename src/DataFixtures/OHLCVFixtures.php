@@ -171,7 +171,6 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
         }
 
 
-
         // yearly
 
     }

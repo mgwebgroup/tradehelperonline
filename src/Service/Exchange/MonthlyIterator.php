@@ -59,7 +59,7 @@ class MonthlyIterator implements SeekableIterator, OuterIterator
         } else {
             $date->sub($this->interval);
         }
-        return $this->seek($date);
+        return $this->toBeginning($date);
     }
 
     /**
@@ -85,24 +85,36 @@ class MonthlyIterator implements SeekableIterator, OuterIterator
     {
         $this->getInnerIterator()->rewind();
         $date = $this->getInnerIterator()->current();
-        $this->seek($date);
+        $this->toBeginning($date);
     }
 
     /**
-     * @inheritDoc
+     * Determines date for beginning of the month. Usually it is date on a weekday, however takes into account holidays.
+     * @param \DateTime $date
+     * @return \DateTime
+     * @throws \Exception
      */
-    public function seek($date)
+    public function toBeginning($date)
     {
-//        if ($date->format('N') != 1) {
-            $date->modify(sprintf('first day of %s %s', $date->format('F'), $date->format('Y')));
-//        }
-        // check if Monday is a holiday
+        $date->modify(sprintf('first day of %s %s', $date->format('F'), $date->format('Y')));
         while (false === $this->getInnerIterator()->accept($date)) {
-//                $this->getInnerIterator()->next();
             $date->add(new DateInterval('P1D'));
         }
 
         return $date;
+    }
+
+    public function seek($position)
+    {
+        $this->getInnerIterator()->rewind();
+        $date = $this->getInnerIterator()->current();
+        $intervalString = sprintf('P%dM', $position);
+        if ($this->getInnerIterator()->getInnerIterator()->getDirection() > 1) {
+            $date->add(new \DateInterval($intervalString));
+        } else {
+            $date->sub(new \DateInterval($intervalString));
+        }
+        $this->toBeginning($date);
     }
 
     /**

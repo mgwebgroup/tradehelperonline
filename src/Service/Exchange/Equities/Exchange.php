@@ -19,7 +19,7 @@ abstract class Exchange implements ExchangeInterface
     /**
      * @var TradingCalendar
      */
-    public $tradingCalendar;
+    private $tradingCalendar;
 
     /**
      * @var App\Repository\InstrumentRepository
@@ -83,5 +83,10 @@ abstract class Exchange implements ExchangeInterface
         $value = $this->tradingCalendar->current();
 
         return $value;
+    }
+
+    public function getTradingCalendar()
+    {
+        return $this->tradingCalendar;
     }
 }

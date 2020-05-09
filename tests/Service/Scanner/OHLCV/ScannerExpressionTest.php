@@ -11,9 +11,11 @@
 namespace App\Tests\Service\Scanner\OHLCV;
 
 use App\Entity\OHLCVHistory;
+use App\Exception\PriceHistoryException;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use \App\Entity\Instrument;
 use \App\Service\Scanner\OHLCV\ScannerExpression;
+use Symfony\Component\ExpressionLanguage\SyntaxError;
 
 class ScannerExpressionTest extends KernelTestCase
 {
@@ -51,11 +53,6 @@ class ScannerExpressionTest extends KernelTestCase
         );
         $OHLCVHistory = array_shift($result);
         $this->latestDate = clone $OHLCVHistory->getTimestamp();
-    }
-
-    public function testIntro()
-    {
-        $this->assertTrue(true);
     }
 
     /**
@@ -146,7 +143,7 @@ class ScannerExpressionTest extends KernelTestCase
           'interval' => new \DateInterval($period),
         ];
         $result = $this->SUT->evaluate($expression, $data);
-        $this->assertEquals(110, $result);
+        $this->assertEquals(219, $result);
     }
 
     /**
@@ -154,39 +151,71 @@ class ScannerExpressionTest extends KernelTestCase
      * Period Monthly
      * Test getting past and present values
      */
-
-    /**
-     * Function High P
-     * Period Yearly
-     * Test getting past and present values
-     */
+    public function testSimpleFunctions30()
+    {
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1M';
+        $expression = 'Open(1)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(301, $result);
+    }
 
     /**
      * Function Low P
-     * Period; Quarterly (not present)
+     * Period; Yearly (not present)
      * Test getting exception
      */
-
-    /**
-     * Function Volume P
-     * Period; Quarterly (not present)
-     * Test getting exception
-     */
+    public function testSimpleFunctions40()
+    {
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1Y';
+        $expression = 'Open(1)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $this->expectException(SyntaxError::class);
+        $this->SUT->evaluate($expression, $data);
+    }
 
     /**
      * Function Close P
      * Period: Daily
      * Test getting P which is not present in price history. Test getting exception
      */
-//    public function testException20()
-//    {
-//
-//    }
+    public function testSimpleFunctions50()
+    {
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1D';
+        $expression = 'Open(20)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $this->expectException(PriceHistoryException::class);
+        $this->SUT->evaluate($expression, $data);
+    }
 
     /**
      * Function Average P
      * Period: daily for 10 days
      */
+    public function testSimpleFunctions60()
+    {
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1D';
+        $expression = 'Average("Open", 2)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+//        $this->expectException(PriceHistoryException::class);
+        $result = $this->SUT->evaluate($expression, $data);
+    }
 
     /**
      * Function Average P
