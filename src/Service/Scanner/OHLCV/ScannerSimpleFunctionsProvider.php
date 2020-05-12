@@ -47,98 +47,218 @@ class ScannerSimpleFunctionsProvider implements ExpressionFunctionProviderInterf
             new ExpressionFunction(
                 'Close',
                 function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('close', $arguments, $offset); }
+                function($arguments, $offset) { return $this->getValue('close', $offset, $arguments); }
                 ),
             new ExpressionFunction(
                 'Open',
                 function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('open', $arguments, $offset); }
+                function($arguments, $offset) { return $this->getValue('open', $offset, $arguments); }
                 ),
             new ExpressionFunction(
                 'High',
                 function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('high', $arguments, $offset); }
+                function($arguments, $offset) { return $this->getValue('high', $offset, $arguments); }
             ),
             new ExpressionFunction(
                 'Low',
                 function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('low', $arguments, $offset); }
+                function($arguments, $offset) { return $this->getValue('low', $offset, $arguments); }
             ),
             new ExpressionFunction(
                 'Volume',
                 function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('volume', $arguments, $offset); }
+                function($arguments, $offset) { return $this->getValue('volume', $offset, $arguments); }
             ),
             new ExpressionFunction(
-            'Average',
+            'Avg',
             function ($column, $period) { return null; },
-            function($arguments, $column, $period) { return $this->getAverage($arguments, $column, $period); }
+            function($arguments, $column, $period) { return $this->getAverage($column, $period, $arguments); }
             ),
             ];
     }
 
-    protected function getValue($column, $arguments, $offset)
+    protected function getValue($column, $offset, $arguments)
     {
         $column = strtolower($column);
         try {
-            if (isset($arguments['instrument']) && $arguments['instrument'] instanceof \App\Entity\Instrument) {
-                $instrument = $arguments['instrument'];
-            } else {
-                throw new SyntaxError('Need to pass instrument object as part of the data part');
+            $instrument = $this->getInstrument($arguments);
+            $interval = $this->getInterval($arguments);
+            $today = $this->getToday($arguments);
+//            $exchange = $this->catalog->getExchangeFor($instrument);
+//            $tradingCalendar = $exchange->getTradingCalendar();
+//            $tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
+//
+//            $offsetDate = $this->figureOffsetDate($tradingCalendar, $interval, $offset);
+//
+//            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h
+//                join h.instrument i
+//                where i.id =  :id and
+//                date_format(h.timestamp, \'%%Y-%%m-%%d\') = :date and
+//                h.timeinterval = :interval',
+//                           $column);
+//
+//            $query = $this->em->createQuery($dql);
+//            $query->setParameter('id', $instrument->getId());
+//            $query->setParameter('date', $offsetDate->format('Y-m-d'));
+//            $query->setParameter('interval', $interval);
+
+            // faster alternative is to use a limit statement
+            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h 
+                join h.instrument i 
+                where i.id = :id and 
+                date_format(h.timestamp, \'%%Y-%%m-%%d\') <= :date and 
+                h.timeinterval = :interval 
+                order by h.timestamp desc',
+                           $column);
+            $query = $this->em->createQuery($dql)->setFirstResult($offset)->setMaxResults(1);
+            $query->setParameter('id', $instrument->getId());
+            $query->setParameter('date', $today->format('Y-m-d'));
+            $query->setParameter('interval', $interval);
+
+
+//            $result = $query->getSingleResult();
+            $result = $query->getArrayResult();
+
+//            return $result[$column];
+            if (empty($result)) {
+                throw new NoResultException();
             }
-            $interval = null;
-            if (isset($arguments['interval']) && $arguments['interval'] instanceof \DateInterval) {
-                $interval = $arguments['interval']->format('%RP%YY%MM%DDT%HH%IM%SS');
-            } else {
-                $defaultInterval = new \DateInterval('P1D');
-                $interval = $defaultInterval->format('%RP%YY%MM%DDT%HH%IM%SS');
-            }
-
-            if ('test' == $_SERVER['APP_ENV'] && isset($_SERVER['TODAY'])) {
-                $today = new \DateTime($_SERVER['TODAY']);
-            } else {
-                $today = new \DateTime();
-            }
-
-            if (isset($arguments['date']) && $arguments['date'] instanceof \DateTime) {
-                $today = $arguments['date'];
-            }
-
-            $exchange = $this->catalog->getExchangeFor($instrument);
-            $tradingCalendar = $exchange->getTradingCalendar();
-            $tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
-
-            if ('+P00Y00M01DT00H00M00S' == $interval) {
-                $limitIterator = new \LimitIterator($tradingCalendar, $offset, 1);
-            } elseif ('+P00Y00M07DT00H00M00S' == $interval) {
-                $weeklyIterator = new WeeklyIterator($tradingCalendar);
-                $limitIterator = new \LimitIterator($weeklyIterator, $offset, 1);
-            } elseif ('+P00Y01M00DT00H00M00S' == $interval) {
-                $monthlyIterator = new MonthlyIterator($tradingCalendar);
-                $limitIterator = new \LimitIterator($monthlyIterator, $offset, 1);
-            } else {
-                throw new SyntaxError(sprintf('Undefined interval %s', $interval));
-            }
-            $limitIterator->rewind();
-            $date = $limitIterator->current();
-
-            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h join h.instrument i where i.id =  %s and date_format(h.timestamp, \'%%Y-%%m-%%d\') = \'%s\'',
-                           $column, $instrument->getId(), $date->format('Y-m-d'));
-            if ($interval) {
-                $dql .= sprintf(' and h.timeinterval = \'%s\'', $interval);
-            }
-
-            $query = $this->em->createQuery($dql);
-            $result = $query->getSingleResult();
-
-            return $result[$column];
+            return $result[0][$column];
         } catch (NoResultException $e) {
             throw new PriceHistoryException(sprintf('Could not find value for `Close(%d)`', $offset));
         }
     }
 
-    protected function getAverage($arguments, $column, $period) {
-        sleep(1);
-        return null;
+    protected function getAverage($column, $period, $arguments) {
+        $column = strtolower($column);
+        try {
+            $instrument = $this->getInstrument($arguments);
+            $interval = $this->getInterval($arguments);
+            $today = $this->getToday($arguments);
+//            $exchange = $this->catalog->getExchangeFor($instrument);
+//            $tradingCalendar = $exchange->getTradingCalendar();
+//            $tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
+//
+//            $offsetDate = $this->figureOffsetDate($tradingCalendar, $interval, $period);
+
+            // not using avg(h.%s) aggregate function, because it will mask error if number of records present is less
+            // than $period
+//            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h
+//                join h.instrument i
+//                where i.id = :id and
+//                date_format(h.timestamp, \'%%Y-%%m-%%d\') > :date and
+//                h.timeinterval = :interval
+//                order by h.timestamp desc',
+//                           $column);
+//            $query = $this->em->createQuery($dql);
+//            $query->setParameter('id', $instrument->getId());
+//            $query->setParameter('date', $offsetDate->format('Y-m-d'));
+//            $query->setParameter('interval', $interval);
+
+            // faster alternative would be to use limit statement:
+            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h 
+                join h.instrument i 
+                where i.id = :id and 
+                date_format(h.timestamp, \'%%Y-%%m-%%d\') <= :date and 
+                h.timeinterval = :interval 
+                order by h.timestamp desc',
+                           $column);
+            $query = $this->em->createQuery($dql)->setMaxResults($period);
+            $query->setParameter('id', $instrument->getId());
+            $query->setParameter('date', $today->format('Y-m-d'));
+            $query->setParameter('interval', $interval);
+
+            $result = $query->getResult();
+
+            if (count($result) < $period) {
+                throw new PriceHistoryException(sprintf('Not enough values for `Average(%s, %d)`', $column, $period));
+            } elseif (count($result) > $period) {
+                throw new PriceHistoryException(sprintf('Error in getting accurate result for `Average(%s, %d)`',
+                                                        $column, $period));
+            }
+
+            return array_sum(array_map(function($v) use ($column)  {return $v[$column];}, $result)) / count($result);
+        } catch (NoResultException $e) {
+            throw new PriceHistoryException(sprintf('Could not find value for `Average(%s, %d)`', $column, $period));
+        }
+    }
+
+    /**
+     * @param array $arguments
+     * @return \App\Entity\Instrument
+     * @throws SyntaxError
+     */
+    private function getInstrument($arguments)
+    {
+        if (isset($arguments['instrument']) && $arguments['instrument'] instanceof \App\Entity\Instrument) {
+            $instrument = $arguments['instrument'];
+        } else {
+            throw new SyntaxError('Need to pass instrument object as part of the data part');
+        }
+
+        return $instrument;
+    }
+
+    /**
+     * @param array $arguments
+     * @return string
+     * @throws \Exception
+     */
+    private function getInterval($arguments)
+    {
+        if (isset($arguments['interval']) && $arguments['interval'] instanceof \DateInterval) {
+            $interval = $arguments['interval']->format('%RP%YY%MM%DDT%HH%IM%SS');
+        } else {
+            $defaultInterval = new \DateInterval('P1D');
+            $interval = $defaultInterval->format('%RP%YY%MM%DDT%HH%IM%SS');
+        }
+
+        return $interval;
+    }
+
+    /**
+     * @param array $arguments
+     * @return \DateTime
+     * @throws \Exception
+     */
+    private function getToday($arguments) {
+        if ('test' == $_SERVER['APP_ENV'] && isset($_SERVER['TODAY'])) {
+            $today = new \DateTime($_SERVER['TODAY']);
+        } else {
+            $today = new \DateTime();
+        }
+
+        if (isset($arguments['date']) && $arguments['date'] instanceof \DateTime) {
+            $today = $arguments['date'];
+        }
+
+        return $today;
+    }
+
+    /**
+     * Figures the date from which to retrieve price records. This date is based on the offset given as argument to
+     * ths scanner function, i.e. Close(10)
+     * @param App\Service\Exchange\Equities\TradingCalendar $tradingCalendar
+     * @param integer $interval
+     * @param integer $offset
+     * @return \DateTime
+     * @throws \Exception
+     */
+    private function figureOffsetDate($tradingCalendar, $interval, $offset)
+    {
+        if ('+P00Y00M01DT00H00M00S' == $interval) {
+            $limitIterator = new \LimitIterator($tradingCalendar, $offset, 1);
+        } elseif ('+P00Y00M07DT00H00M00S' == $interval) {
+            $weeklyIterator = new WeeklyIterator($tradingCalendar);
+            $limitIterator = new \LimitIterator($weeklyIterator, $offset, 1);
+        } elseif ('+P00Y01M00DT00H00M00S' == $interval) {
+            $monthlyIterator = new MonthlyIterator($tradingCalendar);
+            $limitIterator = new \LimitIterator($monthlyIterator, $offset, 1);
+        } else {
+            throw new SyntaxError(sprintf('Undefined interval %s', $interval));
+        }
+        $limitIterator->rewind();
+
+        return $limitIterator->current();
     }
 }

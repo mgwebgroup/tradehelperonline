@@ -178,7 +178,7 @@ class ScannerExpressionTest extends KernelTestCase
           'instrument' => $this->instrument,
           'interval' => new \DateInterval($period),
         ];
-        $this->expectException(SyntaxError::class);
+        $this->expectException(PriceHistoryException::class);
         $this->SUT->evaluate($expression, $data);
     }
 
@@ -208,13 +208,14 @@ class ScannerExpressionTest extends KernelTestCase
     {
         $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
         $period = 'P1D';
-        $expression = 'Average("Open", 2)';
+        $expression = 'Avg("Open", 2)';
         $data = [
           'instrument' => $this->instrument,
           'interval' => new \DateInterval($period),
         ];
-//        $this->expectException(PriceHistoryException::class);
         $result = $this->SUT->evaluate($expression, $data);
+
+        $this->assertEquals(100.5, $result);
     }
 
     /**
@@ -223,4 +224,16 @@ class ScannerExpressionTest extends KernelTestCase
      * Range goes beyond existing price data
      * Test getting exception
      */
+    public function testSimpleFunctions70()
+    {
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P7D';
+        $expression = 'Avg("Open", 20)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $this->expectException(PriceHistoryException::class);
+        $result = $this->SUT->evaluate($expression, $data);
+    }
 }
