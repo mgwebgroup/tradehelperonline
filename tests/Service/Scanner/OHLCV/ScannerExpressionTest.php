@@ -236,4 +236,22 @@ class ScannerExpressionTest extends KernelTestCase
         $this->expectException(PriceHistoryException::class);
         $result = $this->SUT->evaluate($expression, $data);
     }
+
+    /**
+     * Period: daily
+     * Test expression
+     */
+    public function testExpression10()
+    {
+        $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
+        $period = 'P1D';
+        $expression = 'Avg("Open", 2)';
+        $data = [
+          'instrument' => $this->instrument,
+          'interval' => new \DateInterval($period),
+        ];
+        $expression = 'Open(0)+High(1)+Low(2)+Close(3)';
+        $result = $this->SUT->evaluate($expression, $data);
+        $this->assertEquals(405, $result);
+    }
 }
