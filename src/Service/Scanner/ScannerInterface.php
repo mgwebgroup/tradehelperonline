@@ -13,25 +13,19 @@ namespace App\Service\Scanner;
 interface ScannerInterface
 {
     /**
-     * Scans a given list of instruments using a formula while doing direct reads in db
-     * @param \Doctrine\Common\Collections\Collection $list \App\Entity\Instruments[]
-     * @param \Symfony\Component\ExpressionLanguage $expression
+     * Scans a given list of instruments using a formula
+     * Example:
+     * $expression = '(Close(0)+Close(1)) / 2';
+     * $comparison = ['=', 1.02];  // second item in the comparison array must be float or 0
+     * $interval = new \DateInterval('P1D');
+     * $results = scan($list, $expression, $comparison, $interval)
+     * @param \App\Entity\Instruments[] $list
+     * @param string $expression
+     * @param array $comparison
+     * @param \DateInterval $interval
+     * @param \DateTime $date
      * @return \Iterable $result
      */
-    public function scan($list, $expression);
+    public function scan($list, $expression, $comparison, $interval, $date);
 
-//    /**
-//     * Creates a list of instruments
-//     * @param \Symfony\Component\ExpressionLanguage $formula
-//     * @return \Doctrine\Common\Collections $list \App\Entity\Instruments[]
-//     */
-//    public function createList($formula);
-
-//    /**
-//     * This func should be contained in Instruments List repository
-//     * Stores list of instruments in database
-//     * @param \Doctrine\Common\Collections $list
-//     * @return bool
-//     */
-//    public function storeList($list);
 }

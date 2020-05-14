@@ -41,9 +41,7 @@ class ScannerExpressionTest extends KernelTestCase
     {
         self::bootKernel();
         $this->SUT = self::$container->get(ScannerExpression::class);
-
         $this->em = self::$container->get('doctrine')->getManager();
-
         $this->instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol('FB');
 
         $result = $this->em->getRepository(OHLCVHistory::class)->findBy(

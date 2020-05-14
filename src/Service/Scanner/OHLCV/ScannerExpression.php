@@ -23,8 +23,6 @@ class ScannerExpression extends ExpressionLanguage
 {
     protected $em;
 
-    protected $instrument;
-
     protected $catalog;
 
     public function __construct(
@@ -37,10 +35,5 @@ class ScannerExpression extends ExpressionLanguage
         $this->registerProvider(new ScannerSimpleFunctionsProvider($this->em, $catalog));
 
         parent::__construct();
-    }
-
-    public function setInstrument(\App\Entity\Instrument $instrument)
-    {
-        $this->instrument = $instrument;
     }
 }

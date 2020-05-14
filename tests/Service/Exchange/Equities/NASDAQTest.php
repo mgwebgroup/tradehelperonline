@@ -20,7 +20,7 @@ class NASDAQTest extends \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase
 
     public function testIntro()
     {
-        $this->assertInstanceOf(\App\Service\Exchange\Equities\TradingCalendar::class, $this->SUT->tradingCalendar);
+        $this->assertInstanceOf(\App\Service\Exchange\Equities\TradingCalendar::class, $this->SUT->getTradingCalendar());
     }
 
     /**

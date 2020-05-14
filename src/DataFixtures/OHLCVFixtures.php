@@ -169,7 +169,7 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
             $data[1] = $monthlyIterator->current();
             $data = array_splice($data, 0, 4);
         }
-
+        $output->writeln(sprintf('Imported monthly prices for %s', $instrument->getSymbol()));
 
         // yearly
 
