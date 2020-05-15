@@ -96,8 +96,8 @@ class SyncPrice extends Command
         $this->setHelp(
             <<<'EOT'
 Uses a csv file with header and list of symbols to define list of symbols to work on. Symbols found in the csv file must
- also be imported as instruments. You can use data fixtures to import all instruments. Header must contain column titles
- contained in the current file data/source/y_universe.csv.
+ also be imported as instruments. You can use instruments:import command to import all instruments. Header must contain 
+ column titles contained in the current file data/source/y_universe.csv.
  The command writes everything into application log, regardless of verbosity settings. No output is sent to the screen
  by default either. If you want screen output, use -v option.
  Price records in history may be considered as either a Quote or Price History. 

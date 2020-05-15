@@ -142,14 +142,9 @@ EOT
         if ($chunk = $input->getOption('chunk')) {
             $statement = $statement->limit($chunk);
         }
-//        $fh = fopen('memory.csv', 'w');
-//        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
         $records = $statement->process($csv);
-//        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
-//        while ($records->count() > 0) {
             $priceRepository = $this->em->getRepository(OHLCVHistory::class);
             foreach ($records as $key => $record) {
-//                fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                 $instrument = $repository->findOneBySymbol($record['Symbol']);
                 $logMsg = sprintf('%s: ', $record['Symbol']);
                 $screenMsg = sprintf('%3.3d ', $key) . $logMsg;
@@ -192,20 +187,7 @@ EOT
                 }
 
                 $this->utilities->logAndSay($output, $logMsg, $screenMsg);
-//                fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
             }
-
-//            if ($chunk > 0) {
-//                $offset += $chunk;
-//            } else {
-//                $offset += $key;
-//            }
-//            $statement = $statement->offset($offset);
-//            unset($records);
-//            $records = $statement->process($csv);
-//        }
-//        fclose($fh);
-
         $this->utilities->pronounceEnd($this, $output);
     }
 }

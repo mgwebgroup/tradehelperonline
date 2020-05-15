@@ -89,9 +89,9 @@ class ImportInstruments extends Command
     {
         $this->setName('instruments:import');
 
-        $this->setHelp('Imports list of instruments into database');
+        $this->setDescription('Imports list of instruments into database');
 
-        $this->setDescription(
+        $this->setHelp(
           <<<'EOT'
 This command uses several files to import stock symbols. The main file with list of all instruments on which this app 
 operates is called y_universe. It is saved in data/source/ directory. Each instrument is traded on either NASDAQ or 
