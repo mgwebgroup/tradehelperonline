@@ -149,7 +149,7 @@ EOT
         $csvMainReader->setHeaderOffset(0);
         $statement = new Statement();
         if ($this->offset > 0) {
-            $statement = $statement->offset($this->offset) - 1;
+            $statement = $statement->offset($this->offset - 1);
         }
         if ($this->chunk > 0) {
             $statement = $statement->limit($this->chunk);

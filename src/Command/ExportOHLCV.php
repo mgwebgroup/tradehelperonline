@@ -55,6 +55,11 @@ class ExportOHLCV extends Command
      */
     protected $provider;
 
+    /**
+     * @var string
+     */
+    protected $symbol;
+
     public function __construct(
         Filesystem $filesystem,
         RegistryInterface $doctrine,
@@ -76,13 +81,25 @@ class ExportOHLCV extends Command
 
         $this->setHelp(
             <<<'EOT'
-Uses a csv file with header to define list of symbols to work on. Symbols found in the csv file should have OHLCV data
-saved in database to be able to export them into csv files. Header must contain column titles contained in the current
- file data/source/y_universe.csv. If a file is found with .csv prices it will be backed up with .bak extension.
+In the first form uses a csv file with header to define list of symbols to work on. You can export history for all or
+several consecutive symbols listed in the y_universe file. To complete export of several symbols specify --offset 
+and --chunk options. To export all symbols don't specify these options. Example can be:
+
+bin/console price:export [data/source/y_universe.csv] [data/source/ohlcv]
+
+In the second form, command will use --symbol option to look for a specific one symbol in the price history database.
+ The symbol has to be listed in the y_universe, or other file if it replaces the y_universe.
+For example, to export daily history for Facebook, you can use this:
+
+bin/console price:export --symbol=FB [data/source/ohlcv] 
+
+If there is an existing file with .csv prices found in the (default) export directory, it will be backed up with .bak 
+ extension.
 EOT
         );
 
         $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] [--provider=YAHOO] [data/source/y_universe.csv] [data/source/ohlcv]');
+        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] [--provider=YAHOO] --symbol=FB [data/source/ohlcv]');
 
         $this->addArgument('input_path', InputArgument::OPTIONAL, 'Path/to/file.csv with list of symbols to work on', self::LIST_PATH);
         $this->addArgument('export_path', InputArgument::OPTIONAL, 'Path/to/directory for csv files to export', self::EXPORT_PATH);
@@ -90,8 +107,9 @@ EOT
         $this->addOption('from-date', null, InputOption::VALUE_REQUIRED, 'Start date of stored history', self::START_DATE);
         $this->addOption('to-date', null, InputOption::VALUE_REQUIRED, 'End date of stored history');
         $this->addOption('chunk', null, InputOption::VALUE_REQUIRED, 'Number of records to process in one chunk');
-        $this->addOption('offset', null, InputOption::VALUE_REQUIRED, 'Starting offset, which includes header count. Header has offset=0');
+        $this->addOption('offset', null, InputOption::VALUE_REQUIRED, 'Starting offset in y_universe file. Header has offset=0');
         $this->addOption('provider', null, InputOption::VALUE_REQUIRED, 'Name of Price Provider. Must match that in PriceProvider class');
+        $this->addOption('symbol', null, InputOption::VALUE_REQUIRED, 'Symbol to export');
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
@@ -100,6 +118,12 @@ EOT
             $this->provider = $provider;
         } else {
             $this->provider = null;
+        }
+
+        if ($symbol = $input->getOption('symbol')) {
+            $this->symbol = $symbol;
+        } else {
+            $this->symbol = null;
         }
     }
 
@@ -133,15 +157,20 @@ EOT
         $csv = Reader::createFromPath($inputFile, 'r');
         $csv->setHeaderOffset(0);
         $statement = new Statement();
-        if ($input->getOption('offset')) {
-            $offset = (int)$input->getOption('offset') - 1;
+        if ($this->symbol) {
+            $statement = $statement->where(function($v) { return $v['Symbol'] == $this->symbol; });
         } else {
-            $offset = 0;
+            if ($input->getOption('offset')) {
+                $offset = (int)$input->getOption('offset') - 1;
+            } else {
+                $offset = 0;
+            }
+            $statement = $statement->offset($offset);
+            if ($chunk = $input->getOption('chunk')) {
+                $statement = $statement->limit($chunk);
+            }
         }
-        $statement = $statement->offset($offset);
-        if ($chunk = $input->getOption('chunk')) {
-            $statement = $statement->limit($chunk);
-        }
+
         $records = $statement->process($csv);
             $priceRepository = $this->em->getRepository(OHLCVHistory::class);
             foreach ($records as $key => $record) {
