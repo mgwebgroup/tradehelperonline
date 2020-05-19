@@ -56,6 +56,19 @@ class ExportOHLCV extends Command
     protected $provider;
 
     /**
+     * Offset in list file to start from. Header offset = 0
+     * @var integer
+     */
+    protected $offset;
+
+    /**
+     * Number of records to go over in the list file
+     * @var integer
+     */
+    protected $chunk;
+
+
+    /**
      * @var string
      */
     protected $symbol;
@@ -120,6 +133,18 @@ EOT
             $this->provider = null;
         }
 
+        if ($input->getOption('offset')) {
+            $this->offset = $input->getOption('offset');
+        } else {
+            $this->offset = 0;
+        }
+
+        if ($input->getOption('chunk')) {
+            $this->chunk = $input->getOption('chunk');
+        } else {
+            $this->chunk = -1;
+        }
+
         if ($symbol = $input->getOption('symbol')) {
             $this->symbol = $symbol;
         } else {
@@ -160,14 +185,11 @@ EOT
         if ($this->symbol) {
             $statement = $statement->where(function($v) { return $v['Symbol'] == $this->symbol; });
         } else {
-            if ($input->getOption('offset')) {
-                $offset = (int)$input->getOption('offset') - 1;
-            } else {
-                $offset = 0;
+            if ($this->offset > 0) {
+                $statement = $statement->offset($this->offset - 1);
             }
-            $statement = $statement->offset($offset);
-            if ($chunk = $input->getOption('chunk')) {
-                $statement = $statement->limit($chunk);
+            if ($this->chunk > 0) {
+                $statement = $statement->limit($this->chunk);
             }
         }
 
@@ -180,10 +202,7 @@ EOT
 
                 if ($instrument) {
                     // will only return price records which were marked for $this->provider name
-//                    fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
-//                    $history = $this->priceProvider->retrieveHistory($instrument, $fromDate, $toDate, ['interval' => $interval]);
                     $history = $priceRepository->retrieveHistory($instrument, new \DateInterval($interval), $fromDate, $toDate, $this->provider);
-//                    fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                     if (!empty($history)) {
                         // backup existing csv file for the given period
                         $exportFile = sprintf('%s/%s_%s.csv', $exportPath, $instrument->getSymbol(), $period);
@@ -193,8 +212,6 @@ EOT
                             $logMsg .= sprintf('backed up original file into %s', $backupFileName);
                             $screenMsg .= 'backed_up ';
                         }
-//                        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
-//                        $this->priceProvider->exportHistory($history, $exportFile);
                         $csvWriter = Writer::createFromPath($exportFile, 'w');
                         $header = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume'];
                         $csvWriter->insertOne($header);
@@ -205,7 +222,6 @@ EOT
                         $logMsg .= sprintf('exported PH %s ', $interval);
                         $screenMsg .= sprintf('exported %s', $interval);
                         unset($history);
-//                        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                     } else {
                         $logMsg .= 'No price history is stored';
                         $screenMsg .= 'no_PH ';
