@@ -39,6 +39,7 @@ while (( "$#" > 0 )) ; do
     audits)
       echo 'run audits on data'
       bin/console price:audit -v --provider=YAHOO
+      ;;
     *) echo "invalid directive $1"
       ;;
   esac
