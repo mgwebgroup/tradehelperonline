@@ -94,7 +94,7 @@ class ImportOHLCV extends Command
 
         $this->setHelp(
           <<<'EOT'
-In the first form, uses symbols list to import OHLCV data into database. Symbols list is usually a filed named 
+In the first form, uses symbols list to import OHLCV data into database. Symbols list is usually a file named 
 y_universe and saved in data/source directory. Other file may be used and must have symbols listed in its first column
 titled 'Symbol'. Order of columns not important and other columns may be present. The command will go through symbols in
 the y_universe and then will try to locate OHLCV price data files in data/source/OHLCV directory.

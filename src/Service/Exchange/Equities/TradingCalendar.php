@@ -9,6 +9,7 @@
  */
 namespace App\Service\Exchange\Equities;
 
+use Yasumi\Holiday;
 use Yasumi\Yasumi;
 
 /**
@@ -51,5 +52,10 @@ class TradingCalendar extends \FilterIterator
         $this->holidaysCalculator->addHoliday($this->holidaysCalculator->goodFriday($year, self::TIMEZONE, 'en_US'));
         $this->holidaysCalculator->removeHoliday('columbusDay');
         $this->holidaysCalculator->removeHoliday('veteransDay');
+        $this->holidaysCalculator->removeHoliday('substituteHoliday:veteransDay');
+
+        $this->holidaysCalculator->addHoliday(new Holiday('HurricaneSandy1', [], new \DateTime('2012-10-29')));
+        $this->holidaysCalculator->addHoliday(new Holiday('HurricaneSandy2', [], new \DateTime('2012-10-30')));
+        $this->holidaysCalculator->addHoliday(new Holiday('BushMourning', [], new \DateTime('2018-12-05')));
     }
 }
