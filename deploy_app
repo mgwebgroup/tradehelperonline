@@ -1,3 +1,4 @@
+#! /bin/bash -
 while (( "$#" > 0 )) ; do
   case $1 in
     bare)
@@ -37,7 +38,7 @@ while (( "$#" > 0 )) ; do
       ;;
     audits)
       echo 'run audits on data'
-      bin phpunit price:audit -v --provider=YAHOO
+      bin/console price:audit -v --provider=YAHOO
     *) echo "invalid directive $1"
       ;;
   esac
