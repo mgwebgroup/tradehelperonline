@@ -38,6 +38,9 @@ services:
         arguments:
             $minLevel: 'debug'
             $output: '%application_log%'
+    app.price_provider:
+        class: App\Service\PriceHistory\OHLCV\Yahoo
+
     App\Service\UtilityServices:
         arguments:
             $logger: '@app.logging_service'
@@ -55,6 +58,9 @@ services:
     App\Service\Exchange\MonthlyIterator:
         arguments:
             $iterator: '@App\Service\Exchange\Equities\TradingCalendar'
+    App\Command\SyncPrice:
+        arguments:
+            $priceProvider: '@app.price_provider'
 #    App\Service\Charts\Chart:
 #        arguments:
 #            $args: [{path: 'assets/chart.png', ttf_font: 'assets/fonts/arial.ttf'}]

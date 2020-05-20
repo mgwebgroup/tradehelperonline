@@ -55,6 +55,24 @@ class ExportOHLCV extends Command
      */
     protected $provider;
 
+    /**
+     * Offset in list file to start from. Header offset = 0
+     * @var integer
+     */
+    protected $offset;
+
+    /**
+     * Number of records to go over in the list file
+     * @var integer
+     */
+    protected $chunk;
+
+
+    /**
+     * @var string
+     */
+    protected $symbol;
+
     public function __construct(
         Filesystem $filesystem,
         RegistryInterface $doctrine,
@@ -76,13 +94,29 @@ class ExportOHLCV extends Command
 
         $this->setHelp(
             <<<'EOT'
-Uses a csv file with header to define list of symbols to work on. Symbols found in the csv file should have OHLCV data
-saved in database to be able to export them into csv files. Header must contain column titles contained in the current
- file data/source/y_universe.csv. If a file is found with .csv prices it will be backed up with .bak extension.
+In the first form uses a csv file with header to define list of symbols to work on. You can export history for all or
+several consecutive symbols listed in the y_universe file. To complete export of several symbols specify --offset 
+and --chunk options. Header starts with offset=0. To export all symbols don't specify these options. Example can be:
+
+bin/console price:export --provider=YAHOO [data/source/y_universe.csv] [data/source/ohlcv]
+
+In the second form, command will use --symbol option to look for a specific one symbol in the price history database.
+ The symbol has to be listed in the y_universe, or other file if it replaces the y_universe.
+For example, to export daily history for Facebook, you can use this:
+
+bin/console price:export --symbol=FB --provider=YAHOO [data/source/ohlcv] 
+
+Take note of the --provider option. If you don't specify a provider, i.e. omit this option, ALL price records (for 
+default interval daily) will be exported. This way you may end up for multiple records for same date, because they are 
+stored for multiple providers in db. 
+
+If there is an existing file with .csv prices found in the (default) export directory, it will be backed up with .bak 
+ extension.
 EOT
         );
 
-        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] [--provider=YAHOO] [data/source/y_universe.csv] [data/source/ohlcv]');
+        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] --provider=YAHOO [data/source/y_universe.csv] [data/source/ohlcv]');
+        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] --provider=YAHOO --symbol=FB [data/source/ohlcv]');
 
         $this->addArgument('input_path', InputArgument::OPTIONAL, 'Path/to/file.csv with list of symbols to work on', self::LIST_PATH);
         $this->addArgument('export_path', InputArgument::OPTIONAL, 'Path/to/directory for csv files to export', self::EXPORT_PATH);
@@ -90,8 +124,9 @@ EOT
         $this->addOption('from-date', null, InputOption::VALUE_REQUIRED, 'Start date of stored history', self::START_DATE);
         $this->addOption('to-date', null, InputOption::VALUE_REQUIRED, 'End date of stored history');
         $this->addOption('chunk', null, InputOption::VALUE_REQUIRED, 'Number of records to process in one chunk');
-        $this->addOption('offset', null, InputOption::VALUE_REQUIRED, 'Starting offset, which includes header count. Header has offset=0');
+        $this->addOption('offset', null, InputOption::VALUE_REQUIRED, 'Starting offset in y_universe file. Header has offset=0');
         $this->addOption('provider', null, InputOption::VALUE_REQUIRED, 'Name of Price Provider. Must match that in PriceProvider class');
+        $this->addOption('symbol', null, InputOption::VALUE_REQUIRED, 'Symbol to export');
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
@@ -100,6 +135,24 @@ EOT
             $this->provider = $provider;
         } else {
             $this->provider = null;
+        }
+
+        if ($input->getOption('offset')) {
+            $this->offset = $input->getOption('offset');
+        } else {
+            $this->offset = 0;
+        }
+
+        if ($input->getOption('chunk')) {
+            $this->chunk = $input->getOption('chunk');
+        } else {
+            $this->chunk = -1;
+        }
+
+        if ($symbol = $input->getOption('symbol')) {
+            $this->symbol = $symbol;
+        } else {
+            $this->symbol = null;
         }
     }
 
@@ -133,15 +186,17 @@ EOT
         $csv = Reader::createFromPath($inputFile, 'r');
         $csv->setHeaderOffset(0);
         $statement = new Statement();
-        if ($input->getOption('offset')) {
-            $offset = (int)$input->getOption('offset') - 1;
+        if ($this->symbol) {
+            $statement = $statement->where(function($v) { return $v['Symbol'] == $this->symbol; });
         } else {
-            $offset = 0;
+            if ($this->offset > 0) {
+                $statement = $statement->offset($this->offset - 1);
+            }
+            if ($this->chunk > 0) {
+                $statement = $statement->limit($this->chunk);
+            }
         }
-        $statement = $statement->offset($offset);
-        if ($chunk = $input->getOption('chunk')) {
-            $statement = $statement->limit($chunk);
-        }
+
         $records = $statement->process($csv);
             $priceRepository = $this->em->getRepository(OHLCVHistory::class);
             foreach ($records as $key => $record) {
@@ -151,10 +206,7 @@ EOT
 
                 if ($instrument) {
                     // will only return price records which were marked for $this->provider name
-//                    fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
-//                    $history = $this->priceProvider->retrieveHistory($instrument, $fromDate, $toDate, ['interval' => $interval]);
                     $history = $priceRepository->retrieveHistory($instrument, new \DateInterval($interval), $fromDate, $toDate, $this->provider);
-//                    fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                     if (!empty($history)) {
                         // backup existing csv file for the given period
                         $exportFile = sprintf('%s/%s_%s.csv', $exportPath, $instrument->getSymbol(), $period);
@@ -164,8 +216,6 @@ EOT
                             $logMsg .= sprintf('backed up original file into %s', $backupFileName);
                             $screenMsg .= 'backed_up ';
                         }
-//                        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
-//                        $this->priceProvider->exportHistory($history, $exportFile);
                         $csvWriter = Writer::createFromPath($exportFile, 'w');
                         $header = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume'];
                         $csvWriter->insertOne($header);
@@ -176,7 +226,6 @@ EOT
                         $logMsg .= sprintf('exported PH %s ', $interval);
                         $screenMsg .= sprintf('exported %s', $interval);
                         unset($history);
-//                        fwrite($fh, sprintf('%4.4s,%s'.PHP_EOL, __LINE__, memory_get_usage()));
                     } else {
                         $logMsg .= 'No price history is stored';
                         $screenMsg .= 'no_PH ';

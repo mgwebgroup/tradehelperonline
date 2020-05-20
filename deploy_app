@@ -1,3 +1,4 @@
+#! /bin/bash -
 while (( "$#" > 0 )) ; do
   case $1 in
     bare)
@@ -13,15 +14,11 @@ while (( "$#" > 0 )) ; do
       bin/console doctrine:database:create
       bin/console doctrine:migrations:migrate --no-interaction
       ;;
-    data)
-      echo 'will copy application data from aws'
-      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
-      bin/console instruments:import -v --clear-db=true
-      ;;
     fixtures)
       # include check for non-prod environment here
       # ...
       echo 'will clear out existing database and add fixtures'
+      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
       bin/console doctrine:fixtures:load --group=Instruments --no-interaction
       bin/console doctrine:fixtures:load --group=OHLCV1 --append --no-interaction
       bin/console doctrine:fixtures:load --group=OHLCV2 --append --no-interaction
@@ -34,6 +31,16 @@ while (( "$#" > 0 )) ; do
       bin/phpunit tests/Service/Exchange/Equities
       bin/phpunit tests/Service/PriceHistory/OHLCV
       bin/phpunit tests/Service/Scanner/OHLCV
+      ;;
+    data)
+      echo 'will copy application data from aws'
+      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
+      bin/console instruments:import -v --clear-db=true
+      bin/console price:import -v --provider=YAHOO
+      ;;
+    audits)
+      echo 'run audits on data'
+      bin/console price:audit -v --provider=YAHOO
       ;;
     *) echo "invalid directive $1"
       ;;
