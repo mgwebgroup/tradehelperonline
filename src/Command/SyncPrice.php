@@ -13,7 +13,7 @@ namespace App\Command;
 
 use App\Entity\Instrument;
 use App\Exception\PriceHistoryException;
-use App\Service\PriceHistory\OHLCV\Yahoo;
+use App\Service\PriceHistory\PriceAdapterInterface;
 use App\Service\UtilityServices;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
@@ -74,7 +74,7 @@ class SyncPrice extends Command
 
     public function __construct(
         RegistryInterface $doctrine,
-        Yahoo $priceProvider,
+        PriceAdapterInterface $priceProvider,
         Catalog $catalog,
         UtilityServices $utilities
     )

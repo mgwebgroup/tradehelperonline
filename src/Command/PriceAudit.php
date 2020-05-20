@@ -74,10 +74,6 @@ class PriceAudit extends Command
      */
     private $fileSystem;
 
-//    /**
-//     * @var App\Service\Exchange\DailyIterator
-//     */
-//    private $dailyIterator;
 
     /**
      * @var \DateInterval
@@ -112,13 +108,11 @@ class PriceAudit extends Command
       RegistryInterface $doctrine,
       UtilityServices $utilities,
       Filesystem $fileSystem,
-//      DailyIterator $dailyIterator,
       Catalog $catalog
     ) {
         $this->em = $doctrine->getManager();;
         $this->utilities = $utilities;
         $this->fileSystem = $fileSystem;
-//        $this->dailyIterator = $dailyIterator;
         $this->catalog = $catalog;
 
         parent::__construct();
@@ -283,6 +277,8 @@ EOT
                             }
 
                             // check if last date matches last T relative to today
+                            $lastRecord = array_pop($priceHistory);
+                            $datePriceHistory = $lastRecord->getTimestamp()->format('Y-m-d');
                             if ($this->toDate === null) {
                                 $prevT = $exchange->calcPreviousTradingDay(new \DateTime());
                                 if ($datePriceHistory != $prevT->format('Y-m-d')) {
