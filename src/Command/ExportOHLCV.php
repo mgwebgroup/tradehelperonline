@@ -96,23 +96,27 @@ class ExportOHLCV extends Command
             <<<'EOT'
 In the first form uses a csv file with header to define list of symbols to work on. You can export history for all or
 several consecutive symbols listed in the y_universe file. To complete export of several symbols specify --offset 
-and --chunk options. To export all symbols don't specify these options. Example can be:
+and --chunk options. Header starts with offset=0. To export all symbols don't specify these options. Example can be:
 
-bin/console price:export [data/source/y_universe.csv] [data/source/ohlcv]
+bin/console price:export --provider=YAHOO [data/source/y_universe.csv] [data/source/ohlcv]
 
 In the second form, command will use --symbol option to look for a specific one symbol in the price history database.
  The symbol has to be listed in the y_universe, or other file if it replaces the y_universe.
 For example, to export daily history for Facebook, you can use this:
 
-bin/console price:export --symbol=FB [data/source/ohlcv] 
+bin/console price:export --symbol=FB --provider=YAHOO [data/source/ohlcv] 
+
+Take note of the --provider option. If you don't specify a provider, i.e. omit this option, ALL price records (for 
+default interval daily) will be exported. This way you may end up for multiple records for same date, because they are 
+stored for multiple providers in db. 
 
 If there is an existing file with .csv prices found in the (default) export directory, it will be backed up with .bak 
  extension.
 EOT
         );
 
-        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] [--provider=YAHOO] [data/source/y_universe.csv] [data/source/ohlcv]');
-        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] [--provider=YAHOO] --symbol=FB [data/source/ohlcv]');
+        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] --provider=YAHOO [data/source/y_universe.csv] [data/source/ohlcv]');
+        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] --provider=YAHOO --symbol=FB [data/source/ohlcv]');
 
         $this->addArgument('input_path', InputArgument::OPTIONAL, 'Path/to/file.csv with list of symbols to work on', self::LIST_PATH);
         $this->addArgument('export_path', InputArgument::OPTIONAL, 'Path/to/directory for csv files to export', self::EXPORT_PATH);

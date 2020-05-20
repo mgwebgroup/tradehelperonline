@@ -256,6 +256,7 @@ EOT
                             // check beginning date matches first date from history
                             if ($firstRecord->getTimestamp()->format('Y-m-d') != $beginningDate) {
                                 $status['daily_start'] = sprintf('daily_start=%s ', $firstRecord->getTimestamp()->format('Y-m-d'));
+                                $beginningDate = $firstRecord->getTimestamp()->format('Y-m-d');
                             }
 
                             // check for gaps within history

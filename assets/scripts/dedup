@@ -1,0 +1,15 @@
+#! /bin/sh -
+# Removes duplicate price lines from data source .csv files. Assumes the source file is sorted, i.e. all duplicate
+# lines are adjacent
+# Example:
+# dedup data/source/ohlcv/DOW_d.csv
+
+if [ ! -e $1 ]
+	then
+	echo "ERROR: Could not find $1"; exit
+fi
+
+temp_file="$1"."tmp"
+uniq $1 > $temp_file
+mv $temp_file $1
+

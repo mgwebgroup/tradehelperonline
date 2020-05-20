@@ -72,6 +72,11 @@ class ImportOHLCV extends Command
      */
     protected $symbol;
 
+    /**
+     * @var string
+     */
+    protected $provider;
+
     public function __construct(
         RegistryInterface $doctrine,
         UtilityServices $utilities,
@@ -100,6 +105,13 @@ titled 'Symbol'. Order of columns not important and other columns may be present
 the y_universe and then will try to locate OHLCV price data files in data/source/OHLCV directory.
 In the second form, only one symbol will be imported. Command will still rely on (default) y_universe file which must
 have the symbol listed in it. 
+Take note of the --provider option. If you omit it, price provider will not be assigned. This will lead to download 
+of entire price data again by the price:sync command, when it is run for the first time for a given symbol. Price Sync 
+uses query to retrieve prices marked with the current application-wide price provider, and if you have imported 
+records with the null provider, it will assume that there is no price history.
+ To lookup the current price provider, see config/services.yaml file under services.app.price_provider 
+key, then lookup the constant for provider name in the price provider class. It is best to mimic current provider 
+when importing histories, i.e. use --provider=YAHOO.
 
 Each price data file must have header with the following columns: 
 Date, Open, High, Low, Close, Volume. 
@@ -115,6 +127,7 @@ EOT
         $this->addOption('offset', null, InputOption::VALUE_REQUIRED, 'Starting offset, which includes header count. Header has offset=0');
         $this->addOption('chunk', null, InputOption::VALUE_REQUIRED, 'Number of records to process in one chunk');
         $this->addOption('symbol', null, InputOption::VALUE_REQUIRED, 'Symbol to export');
+        $this->addOption('provider', null, InputOption::VALUE_REQUIRED, 'Name of Price Provider');
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
@@ -154,6 +167,12 @@ EOT
         } else {
             $this->symbol = null;
         }
+
+        if ($provider = $input->getOption('provider')) {
+            $this->provider = $provider;
+        } else {
+            $this->provider = null;
+        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -187,7 +206,7 @@ EOT
             if ($instrument) {
                 $dailyFile = sprintf('%s/%s_d.csv', $this->ohlcvPath, $record['Symbol']);
                 if ($this->fileSystem->exists($dailyFile)) {
-                    $importedLines = $this->importPrices($dailyFile, $instrument, new \DateInterval('P1D'));
+                    $importedLines = $this->importPrices($dailyFile, $instrument, new \DateInterval('P1D'), $this->provider);
                     $logMsg .= sprintf('%d daily price records imported ', $importedLines);
                     $screenMsg = $logMsg;
                 } else {
@@ -197,7 +216,7 @@ EOT
 
                 $weeklyFile = sprintf('%s/%s_w.csv', $this->ohlcvPath, $record['Symbol']);
                 if ($this->fileSystem->exists($weeklyFile)) {
-                    $importedLines = $this->importPrices($weeklyFile, $instrument, new \DateInterval('P1W'));
+                    $importedLines = $this->importPrices($weeklyFile, $instrument, new \DateInterval('P1W'), $this->provider);
                     $logMsg .= sprintf('%d weekly price records imported ', $importedLines);
                     $screenMsg = $logMsg;
                 } else {
@@ -219,10 +238,11 @@ EOT
      * @param string $file
      * @param \App\Entity\Instrument $instrument
      * @param \DateInterval $period
+     * @param string $provider
      * @return int $number
      * @throws \Exception
      */
-    private function importPrices($file, $instrument, $period)
+    private function importPrices($file, $instrument, $period, $provider)
     {
         $ohlcvReader = Reader::createFromPath($file, 'r');
         $ohlcvReader->setHeaderOffset(0);
@@ -238,6 +258,7 @@ EOT
             $OHLCVHistory->setVolume((int)$line['Volume']);
             $OHLCVHistory->setInstrument($instrument);
             $OHLCVHistory->setTimeinterval($period);
+            $OHLCVHistory->setProvider($provider);
 
             $this->em->persist($OHLCVHistory);
         }

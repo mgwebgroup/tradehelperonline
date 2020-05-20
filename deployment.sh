@@ -17,6 +17,7 @@ while (( "$#" > 0 )) ; do
       echo 'will copy application data from aws'
       rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
       bin/console instruments:import -v --clear-db=true
+      bin/console price:import -v --provider=YAHOO
       ;;
     fixtures)
       # include check for non-prod environment here
@@ -34,6 +35,9 @@ while (( "$#" > 0 )) ; do
       bin/phpunit tests/Service/PriceHistory/OHLCV
       bin/phpunit tests/Service/Scanner/OHLCV
       ;;
+    audits)
+      echo 'run audits on data'
+      bin phpunit price:audit -v --provider=YAHOO
     *) echo "invalid directive $1"
       ;;
   esac
