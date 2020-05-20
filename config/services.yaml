@@ -55,3 +55,7 @@ services:
     App\Service\Exchange\MonthlyIterator:
         arguments:
             $iterator: '@App\Service\Exchange\Equities\TradingCalendar'
+#    App\Service\Charts\Chart:
+#        arguments:
+#            $args: [{path: 'assets/chart.png', ttf_font: 'assets/fonts/arial.ttf'}]
+#            $args: {path: 'assets/chart.png', ttf_font: 'assets/fonts/arial.ttf'}

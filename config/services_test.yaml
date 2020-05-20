@@ -23,3 +23,9 @@ services:
   App\Service\Exchange\MonthlyIterator:
     public: true
     autowire: true
+  App\Service\Charts\Chart:
+    public: true
+    autowire: true
+  App\Service\Exchange\Catalog:
+    public: true
+    autowire: true

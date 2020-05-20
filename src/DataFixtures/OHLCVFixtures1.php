@@ -21,18 +21,19 @@ use App\Service\Exchange\Equities\TradingCalendar;
 use App\Service\Exchange\DailyIterator;
 
 
-class OHLCVFixtures extends Fixture implements FixtureGroupInterface
+class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
 {
     public static function getGroups(): array
     {
-        return ['OHLCV'];
+        return ['OHLCV1'];
     }
 
     /**
-     * Price data are imported as candlesticks of know characteristics. Candlesticks are described in $sequence arrays:
+     * Price data are imported as candlesticks of known characteristics. Candlesticks are described in $sequence arrays:
      * [size (absolute length from high to low), bodySize (percent), tail (absolute length from closing price to
      * high/low, volume)]
-     * All items in a sequence go in reverse chronological order, i.e. most recent candlesticks first.
+     * For FB all items in a sequence go in reverse chronological order, i.e. most recent candlesticks first.
+     * For LIN, I use real csv datadfdf
      * @param ObjectManager $manager
      * @throws \Exception
      */
@@ -93,10 +94,10 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
 
 
         // weekly 10 weeks back
+        $date = new \DateTime('2020-03-02'); // 2-March-2020 Monday
         $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
         $tradingCalendar->rewind();
         $weeklyIterator = new WeeklyIterator($tradingCalendar);
-        $date = $weeklyIterator->seek(new \DateTime('2020-03-02')); // 2-March-2020 Monday
 
         $open = 200;
         $sequence = [
@@ -172,6 +173,7 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
         $output->writeln(sprintf('Imported monthly prices for %s', $instrument->getSymbol()));
 
         // yearly
+        // ...
 
     }
 
