@@ -93,10 +93,10 @@ class OHLCVFixtures extends Fixture implements FixtureGroupInterface
 
 
         // weekly 10 weeks back
+        $date = new \DateTime('2020-03-02');
         $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
         $tradingCalendar->rewind();
         $weeklyIterator = new WeeklyIterator($tradingCalendar);
-        $date = $weeklyIterator->seek(new \DateTime('2020-03-02')); // 2-March-2020 Monday
 
         $open = 200;
         $sequence = [
