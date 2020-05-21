@@ -67,7 +67,6 @@ class ExportOHLCV extends Command
      */
     protected $chunk;
 
-
     /**
      * @var string
      */
