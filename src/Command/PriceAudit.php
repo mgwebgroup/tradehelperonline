@@ -127,10 +127,34 @@ class PriceAudit extends Command
         );
 
         $this->setHelp(
-          <<<'EOT'
+          sprintf(
+            <<<EOT
 Audits price data for a given interval and symbols list contained in y_universe, or just one symbol. Currently the 
-audit checks beginning date for the price, price gaps and either last price record has last trading day timestamp.
+audit checks beginning date for the price to match %s, price gaps and either last price record has last trading day 
+timestamp.
+Following error situations will be displayed:
+... daily start=2013-01-10... - Start of price history does not match standard beginning date
+... P date error at id=828626 ... - When going through consecutive dates in the trading calendar defined for the 
+exchange in which symbol is trading on, a date mismatch in price history was determined. This usually happens when 
+there is a gap or duplicate price entry.
+...  Last P date=2020-05-15 ... - This means that last price in history is older than date of last Trading Day 
+relative to today.
+
+To help correct the inconsistencies listed in the audit results use the following shell commands:
+1. Convert all lines that have P date error into 0-separated file names of price .csv files:
+```
+sed -ne '/P date error/p' list | cut -d ':' -f1 | sed -ne 's-^[0-9 ]*-data/source/ohlcv/-p' | sed -ne 's/$/_d.csv/p'  | tr '\\n' '\0' | xargs -0 -n1 echo
+```
+2. Convert all lines that have P date error into space separated stock symbols:
+```
+sed -ne '/P date error/p' list | cut -d ':' -f1 | sed -ne 's-^[0-9 ]*--p' | tr '\n' ' '
+```
+3. Convert same lines into comma separated quoted symbols:
+```
+sed -ne '/P date error/p' list | cut -d ':' -f1 | sed -ne 's-^[0-9 ]*--p' | sed -ne "s/^/'/p" | sed -ne "s/$/'/p"  | tr '\n' ','
+```
 EOT
+            , self::DAILY_BEGINNING)
         );
 
         $this->addUsage('[-v] [--offset=int] [--chunk=int] [--interval=daily] [--from=2019-01-02] [to=2019-12-31] [data/source/y_universe.csv]');

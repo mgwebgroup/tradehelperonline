@@ -119,7 +119,7 @@ CSV files must be named as symbol_period.csv. Example: AAPL_d.csv or ABX_w.csv
 EOT
         );
 
-        $this->addUsage('[-v] [--offset=int] [--chunk=int] [data/source/y_universe.scv] [data/source/ohlcv]');
+        $this->addUsage('[-v] [--offset=int] [--chunk=int] [data/source/y_universe.csv] [data/source/ohlcv]');
         $this->addUsage('[-v] [--offset=int] [--chunk=int] --symbol=FB [data/source/ohlcv]');
 
         $this->addArgument('list-file', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on', self::MAIN_FILE);

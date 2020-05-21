@@ -9,7 +9,9 @@ if [ ! -e $1 ]
 	echo "ERROR: Could not find $1"; exit
 fi
 
-temp_file="$1"."tmp"
-uniq $1 > $temp_file
-mv $temp_file $1
+#temp_file="$1"."tmp"
+#uniq $1 > $temp_file
+#mv $temp_file $1
 
+sed -ne '1!p' $1 | sort -u -t, -k1,1 | (echo Date,Open,High,Low,Close,Volume && cat) > temp
+mv temp $1
