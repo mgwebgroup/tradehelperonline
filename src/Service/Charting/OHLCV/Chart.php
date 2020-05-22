@@ -26,16 +26,12 @@
 * 
 */
 
-namespace App\Service\Charts;
+namespace App\Service\Charting\OHLCV;
 
 use App\Exception\ChartException;
 
-class Chart {
-
-  /**
-	/* Data Members
-	*/
-
+class Chart
+{
 	public $canvas = array( 'path' => 'src/Studies/MyStudy/chart.png', 'percent_chart_area' => 90, 'symbol' => '___',
 		'ttf_font' => 'assets/fonts/arial.ttf', 'width' => 4800, 'height' => 1800,
 		'img_background' => 'gray', 'chart_background' => 'white', ); 
@@ -61,8 +57,7 @@ class Chart {
 	/** 'font_size' (optional), font sizes to be used on values of the axis. Uses $this->defalut['font_size_x'] (defined below) if not specified here */
 	/** 'precision' (optional), uses $this->defalut['precision_x'] (defined below) if not specified here */
 	/** 'font_angle' (optional), assigned to zero if not specified here */
-	
-	public $x_axis = array( 
+	public $x_axis = array(
 		0 => array( 'show' => TRUE, 
 			'min' => 0, 'max' => 250, 'upp' => 0, 
 			'y_intersect' => 250, 
@@ -134,7 +129,9 @@ class Chart {
 	
 	public $chart = array(); /**< stores pixel coordinates for chart center, four corners and four middle points. */
 	
-	/**< line prototype are specifed as: array( array( <dot or gap> => <number of pixels> ), array( <dot or gap> => <number of pixels> ),  ); */
+	/**< line prototype are specified as: array( array( <dot or gap> => <number of pixels> ), array( <dot or gap> =>
+     * <number of pixels> ),  );
+     */
 	public $line_prototypes = array( 
 		'default' => array( 0 => array( 1 => 8 ), ),
 		'dash' => array( 0 => array( 1 => 4, ), 1 => array( 0 => 4, ), ),
@@ -190,11 +187,6 @@ class Chart {
 	);
 	
 	public $result; //*< Debug variable used to display class output for testing purposes */
-
-
-	/**
-	/* Methods
-	*/
 
     /**
      *
@@ -306,9 +298,7 @@ class Chart {
                     if ( isset( $args[$i + 1]['categories'] ) && !is_array( $args[$i + 1]['categories'] ) ) throw new ChartException( $this->errors['134'] );
                     if ( !isset( $args[$i + 1]['precision'] ) || empty( $args[$i + 1]['precision'] ) ) $this->y_axis[$j]['precision'] = $this->default['precision_y'];
 				}
-			
 			}
-		
 		}
 		
 		/// calculate units per pixes ('upp') and chart origins for each axis pair

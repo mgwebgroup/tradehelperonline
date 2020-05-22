@@ -61,7 +61,4 @@ services:
     App\Command\SyncPrice:
         arguments:
             $priceProvider: '@app.price_provider'
-#    App\Service\Charts\Chart:
-#        arguments:
-#            $args: [{path: 'assets/chart.png', ttf_font: 'assets/fonts/arial.ttf'}]
-#            $args: {path: 'assets/chart.png', ttf_font: 'assets/fonts/arial.ttf'}
+
