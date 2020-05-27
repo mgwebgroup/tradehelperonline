@@ -58,16 +58,11 @@ class ChartFactory
 
         $chart = new Chart([$canvas, $x_axis, $y_axis]);
 
-        $chart->add_candlestick_series(['open' => $open, 'high' => $high, 'low' => $low, 'close' => $close]);
+        $color_up = ($style->color_up)? : 'green';
+        $color_down = ($style->color_down)? : 'red';
+
+        $chart->add_candlestick_series(['open' => $open, 'high' => $high, 'low' => $low, 'close' => $close, 'color_up' => $color_up, 'color_down' => $color_down ]);
 
         return $chart;
     }
-
-    /**
-     * @param $chart
-     */
-//    public static function save($chart)
-//    {
-//
-//    }
 }

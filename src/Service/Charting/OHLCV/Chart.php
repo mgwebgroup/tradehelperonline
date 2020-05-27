@@ -241,8 +241,8 @@ class Chart
 		/// allocate standard colors
 		$black = imagecolorallocate( $this->image, 0, 0, 0 );
 		$gray = imagecolorallocate( $this->image, 204, 204, 204 ); 
-		$red = imagecolorallocate( $this->image, 190, 75, 72 );
-		$green = imagecolorallocate( $this->image, 152, 185, 84 ); 
+		$red = imagecolorallocate( $this->image, 238, 36, 36 );
+		$green = imagecolorallocate( $this->image, 7, 152, 0 );
 		$blue = imagecolorallocate( $this->image, 74, 126, 187 ); 
 		$white = imagecolorallocate( $this->image, 255, 255, 255 );
 		$yellow = imagecolorallocate( $this->image, 255, 255, 0 );
@@ -296,7 +296,7 @@ class Chart
                     if ( isset( $args[$i + 1]['major_grid_style'] ) && !array_key_exists( $args[$i + 1]['major_grid_style'], $this->line_prototypes ) ) throw new ChartException( $this->errors['126'] );
                     if ( isset( $args[$i + 1]['minor_grid_style'] ) && !array_key_exists( $args[$i + 1]['minor_grid_style'], $this->line_prototypes ) ) throw new ChartException( $this->errors['126'] );
                     if ( isset( $args[$i + 1]['categories'] ) && !is_array( $args[$i + 1]['categories'] ) ) throw new ChartException( $this->errors['134'] );
-                    if ( !isset( $args[$i + 1]['precision'] ) || empty( $args[$i + 1]['precision'] ) ) $this->y_axis[$j]['precision'] = $this->default['precision_y'];
+                    if ( !isset( $args[$i + 1]['precision'] )) $this->y_axis[$j]['precision'] = $this->default['precision_y'];
 				}
 			}
 		}
@@ -397,7 +397,9 @@ class Chart
 							} else {
 								$text = sprintf( "%.{$font['precision']}f", $i );
 							}
-							imagettftext( $this->image, $font['size'], $font['angle'], $anchors['tick']['start'][0], $anchors['tick']['start'][1] + $row['major_tick_size'] + $font['offset_major'], $this->pen_colors[$row['axis_color']], $this->canvas['ttf_font'], $text );
+							imagettftext( $this->image, $font['size'], $font['angle'], $anchors['tick']['start'][0] +
+                                                      $font['size'] / 2, $anchors['tick']['start'][1] + $row['major_tick_size'] +
+                                                      $font['offset_major'], $this->pen_colors[$row['axis_color']], $this->canvas['ttf_font'], $text );
 						}
 					} else { // draw minor grid
 						if ( isset( $row['show_minor_grid'] ) && $row['show_minor_grid'] === TRUE ) {
@@ -464,7 +466,8 @@ class Chart
 							if ( isset( $row['categories'][$i] ) && !empty( $row['categories'][$i] ) ) {
 								$text = $row['categories'][$i];
 							} else {
-								$text = sprintf( "%.{$font['precision']}f", $i );
+								$text = $text = ($font['precision'] > 0)? sprintf( "%.{$font['precision']}f", $i ) : sprintf(
+                                  "%d", $i );
 							}
 							imagettftext( $this->image, $font['size'], $font['angle'], $anchors['tick']['start'][0] + $row['major_tick_size'] + $font['offset_major'], $anchors['tick']['start'][1] + $font['size'] / 2, $this->pen_colors[$row['axis_color']], $this->canvas['ttf_font'], $text );
 						}
@@ -481,7 +484,8 @@ class Chart
 							if ( isset( $row['categories'][$i] ) && !empty( $row['categories'][$i] ) ) {
 								$text = $row['categories'][$i];
 							} else {
-								$text = sprintf( "%.{$font['precision']}f", $i );
+								$text = ($font['precision'] > 0)? sprintf( "%.{$font['precision']}f", $i ) : sprintf(
+								  "%d", $i );
 							}
 							imagettftext( $this->image, $font['size'], $font['angle'], $anchors['tick']['start'][0] + $row['minor_tick_size'] + $font['offset_minor'], $anchors['tick']['start'][1] + $font['size'] / 2, $this->pen_colors[$row['axis_color']], $this->canvas['ttf_font'], $text );
 						}
@@ -702,7 +706,6 @@ class Chart
 						$text = sprintf( "%.{$font['precision']}f", $args['open'][$key] );
 						imagettftext( $this->image, $font['size'], $font['angle'], $candle['upper_shadow']['start'][0] + $candle['width'] / 2 + $font['offset_x'], $candle['upper_shadow']['start'][1] + $font['offset_y'], $font['color'], $this->canvas['ttf_font'], $text ); 
 					}
-
 				}
 				/// print candlestick
 				imageline( $this->image, $candle['lower_shadow']['start'][0], $candle['lower_shadow']['start'][1], $candle['body']['start'][0], $candle['body']['start'][1], $candle['color'] );
@@ -1077,7 +1080,8 @@ class Chart
 	/**
 	* @public place_text( array( 'sx' => 10, 'sy' => 10, 'text' => 'text', ['vert_algn' => 'up' | 'center' | 'down' ]['color' => 'black', ] ['x_axis' => 0, ] ['y_axis' => 0, ] ['wordwrap' => 15, ] ['font_size'] => 12, ] ['font_angle' => 0, ] ['ttf_font' => 'path/']  ) )
 	* 
-	* Places text at specified sx and sy coordinates (units of specified indeces for axes as references, not pixels). Text node is specified by sx and sy, and text is centered vertically around that node using 'vert_algn'
+	* Places text at specified sx and sy coordinates (units of specified indicies for axes as references, not pixels).
+     * Text node is specified by sx and sy, and text is centered vertically around that node using 'vert_algn'
 	* 
 	* @params (optional) 'vert_align' Default is 'center'. Text will be centered vertically around text node, 'up' text node will be located in the upper left corner, 'down' text node will be located in the lower left corner.
 	* @params (optional) 'color' color name must be specified in $this->pen_colors.
@@ -1119,8 +1123,7 @@ class Chart
             }
             //$result 
         } else {
-            $result = imagettftext( $this->image, $font['font_size'], $font['font_angle'], $anchors['text_node']['x'], $anchors['text_node']['y'], $font['color'], $font['ttf_font'], $args['text'] );
-        
+            $result = imagettftext($this->image, $font['font_size'], $font['font_angle'], $anchors['text_node']['x'], $anchors['text_node']['y'], $font['color'], $font['ttf_font'], $args['text'] );
         }
         
         return $result;

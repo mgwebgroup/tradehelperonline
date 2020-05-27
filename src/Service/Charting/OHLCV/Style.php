@@ -52,6 +52,10 @@ class Style implements StyleInterface
 
     public $categories;
 
+    public $color_up;
+
+    public $color_down;
+
     /**
      * @param string $name
      */

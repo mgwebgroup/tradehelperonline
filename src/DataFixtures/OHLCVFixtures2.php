@@ -60,7 +60,7 @@ class OHLCVFixtures2 extends Fixture implements FixtureGroupInterface
             $p->setInstrument($instrument);
             $p->setTimeinterval($interval['daily']);
             $p->setOpen($line['Open']);
-            $p->setHigh($line['Close']);
+            $p->setHigh($line['High']);
             $p->setLow($line['Low']);
             $p->setClose($line['Close']);
             $p->setVolume($line['Volume']);
