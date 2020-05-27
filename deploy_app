@@ -18,9 +18,10 @@ while (( "$#" > 0 )) ; do
       # include check for non-prod environment here
       # ...
       echo 'will clear out existing database and add fixtures'
-      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
+#      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
       bin/console doctrine:fixtures:load --group=Instruments --no-interaction
-      bin/console doctrine:fixtures:load --group=OHLCV --append --no-interaction
+      bin/console doctrine:fixtures:load --group=OHLCV1 --append --no-interaction
+      bin/console doctrine:fixtures:load --group=OHLCV2 --append --no-interaction
       ;;
     tests)
       echo 'will run unit tests'
