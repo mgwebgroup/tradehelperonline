@@ -244,7 +244,8 @@ class ChartTest extends KernelTestCase
         $chart = ChartFactory::create($style, $history);
 
         if (isset($style->symbol)) {
-            $chart->place_text(['sx' => 50, 'sy' => 230, 'text' => $style->symbol, 'font_size' => 30, 'color' => 'gray']);
+            $chart->place_text(['sx' => 50, 'sy' => 230, 'text' => $style->symbol, 'font_size' => 30, 'color' => 'gray
+            ']);
         }
 
         $chart->save_chart();
