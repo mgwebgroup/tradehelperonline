@@ -34,26 +34,63 @@ class Style implements StyleInterface
      */
     private $line_prototypes;
 
+    /**
+     * @var string
+     */
     public $chart_path;
 
+    /**
+     * @var int
+     */
     public $percent_chart_area;
 
+    /**
+     * @var string
+     */
     public $symbol;
 
+    /**
+     * Path to font
+     * @var string
+     */
     public $font;
 
+    /**
+     * @var int
+     */
     public $width;
 
+    /**
+     * @var int
+     */
     public $height;
 
+    /**
+     * @var float
+     */
     public $upper_freeboard;
 
+    /**
+     * @var float
+     */
     public $lower_freeboard;
 
+    /**
+     * Array of values to be displayed on x-axis. Keys usually coincide with keys in open
+     * @var array
+     */
     public $categories;
 
+    /**
+     * Name of pre-defined color inside the chart class
+     * @var string
+     */
     public $color_up;
 
+    /**
+     * Name of pre-defined color inside the chart class
+     * @var string
+     */
     public $color_down;
 
     /**
@@ -107,7 +144,7 @@ class Style implements StyleInterface
           'dash_dot' => [[1 => 3], [0 => 2], [1 => 1], [0 => 2]]
         ];
 
-        $this->chart_path = 'src/Studies/MyStudy/chart.png';
+        $this->chart_path = 'public/default.png';
         $this->percent_chart_area = 90;
         $this->symbol = 'TEST';
         $this->font = 'assets/fonts/arial.ttf';
@@ -118,6 +155,11 @@ class Style implements StyleInterface
         $this->lower_freeboard = .03;
 
         $this->categories = [];
+    }
+
+    public function getName()
+    {
+        return $this->name;
     }
 
 }
