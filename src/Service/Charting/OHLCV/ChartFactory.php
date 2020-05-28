@@ -11,16 +11,19 @@
 namespace App\Service\Charting\OHLCV;
 
 use App\Entity\OHLCVHistory;
-use App\Service\Charting\OHLCV\Style;
-use App\Service\Charting\OHLCV\Chart;
 
-
+/**
+ * Wrapper class on top of the old Chart class
+ * TODO: Rewrite the old chart class to be OOP and have Generators/Iterators for the axes
+ * @package App\Service\Charting\OHLCV
+ */
 class ChartFactory
 {
     /**
      * @param Style $style
      * @param OHLCVHistory[]
      * @return App\Service\Charting\OHLCV\Chart $chart
+     * @throws \App\Exception\ChartException
      */
     public static function create(Style $style, $history)
     {
