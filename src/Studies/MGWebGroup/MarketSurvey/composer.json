@@ -1,0 +1,19 @@
+{
+  "name": "mgwebgroup/market-survey",
+  "type": "symfony-bundle",
+  "description": "Bundle for doing market survey",
+  "keywords": ["Stock Market", "Score", "Analysis", "Prices", "Stocks", "Trading"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Alex Kay",
+      "email": "alex110504@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": { "App\\Studies\\MGWebGroup\\MarketSurvey\\": "" }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

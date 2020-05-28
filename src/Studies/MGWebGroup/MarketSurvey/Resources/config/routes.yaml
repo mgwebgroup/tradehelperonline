@@ -1,0 +1,3 @@
+market_survey_main:
+  path: market-survey
+  controller: App\Studies\MGWebGroup\MarketSurvey\Controller\Controller::index
