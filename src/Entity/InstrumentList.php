@@ -34,6 +34,11 @@ class InstrumentList
     private $instruments;
 
     /**
+     * @ORM\ManyToMany(targetEntity="App\Entity\Expression")
+     */
+    private $expression;
+
+    /**
      * @ORM\Column(type="datetime")
      */
     private $created_at;
@@ -46,6 +51,7 @@ class InstrumentList
     public function __construct()
     {
         $this->instruments = new ArrayCollection();
+        $this->expression = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -123,6 +129,32 @@ class InstrumentList
     public function setUpdatedAt(?\DateTimeInterface $updated_at): self
     {
         $this->updated_at = $updated_at;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Expression[]
+     */
+    public function getExpression(): Collection
+    {
+        return $this->expression;
+    }
+
+    public function addExpression(Expression $expression): self
+    {
+        if (!$this->expression->contains($expression)) {
+            $this->expression[] = $expression;
+        }
+
+        return $this;
+    }
+
+    public function removeExpression(Expression $expression): self
+    {
+        if ($this->expression->contains($expression)) {
+            $this->expression->removeElement($expression);
+        }
 
         return $this;
     }
