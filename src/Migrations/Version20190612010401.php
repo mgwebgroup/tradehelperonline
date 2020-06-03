@@ -14,7 +14,7 @@ final class Version20190612010401 extends AbstractMigration
 {
     public function getDescription() : string
     {
-        return 'Added InstrumentList Entity';
+        return 'Added Watchlist Entity';
     }
 
     public function up(Schema $schema) : void

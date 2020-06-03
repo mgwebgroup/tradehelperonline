@@ -21,8 +21,14 @@ use App\Service\Exchange\Catalog;
  */
 class Formula extends ExpressionLanguage
 {
+    /**
+     * @var \Doctrine\Common\Persistence\ObjectManager
+     */
     protected $em;
 
+    /**
+     * @var Catalog
+     */
     protected $catalog;
 
     public function __construct(

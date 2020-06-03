@@ -7,9 +7,9 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repository\InstrumentListRepository")
+ * @ORM\Entity(repositoryClass="App\Repository\WatchlistRepository")
  */
-class InstrumentList
+class Watchlist
 {
     /**
      * @ORM\Id()

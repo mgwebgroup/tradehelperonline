@@ -2,25 +2,25 @@
 
 namespace App\Repository;
 
-use App\Entity\InstrumentList;
+use App\Entity\Watchlist;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
- * @method InstrumentList|null find($id, $lockMode = null, $lockVersion = null)
- * @method InstrumentList|null findOneBy(array $criteria, array $orderBy = null)
- * @method InstrumentList[]    findAll()
- * @method InstrumentList[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Watchlist|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Watchlist|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Watchlist[]    findAll()
+ * @method Watchlist[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class InstrumentListRepository extends ServiceEntityRepository
+class WatchlistRepository extends ServiceEntityRepository
 {
     public function __construct(RegistryInterface $registry)
     {
-        parent::__construct($registry, InstrumentList::class);
+        parent::__construct($registry, Watchlist::class);
     }
 
     // /**
-    //  * @return InstrumentList[] Returns an array of InstrumentList objects
+    //  * @return Watchlist[] Returns an array of Watchlist objects
     //  */
     /*
     public function findByExampleField($value)
@@ -37,7 +37,7 @@ class InstrumentListRepository extends ServiceEntityRepository
     */
 
     /*
-    public function findOneBySomeField($value): ?InstrumentList
+    public function findOneBySomeField($value): ?Watchlist
     {
         return $this->createQueryBuilder('i')
             ->andWhere('i.exampleField = :val')
