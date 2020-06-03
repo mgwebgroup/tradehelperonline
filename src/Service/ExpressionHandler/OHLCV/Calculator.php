@@ -8,18 +8,18 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Service\Formula\OHLCV;
+namespace App\Service\ExpressionHandler\OHLCV;
 
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use App\Service\Exchange\Catalog;
 
 /**
- * Class Formula
+ * Class Calculator
  * Registers simple functions used in scanners, like Close, High, etc.
  * @package App\Service\Scanner\OHLCV
  */
-class Formula extends ExpressionLanguage
+class Calculator extends ExpressionLanguage
 {
     /**
      * @var \Doctrine\Common\Persistence\ObjectManager

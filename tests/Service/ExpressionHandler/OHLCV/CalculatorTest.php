@@ -8,19 +8,19 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Tests\Service\Formula\OHLCV;
+namespace App\Tests\Service\ExpressionHandler\OHLCV;
 
 use App\Entity\OHLCVHistory;
 use App\Exception\PriceHistoryException;
-use App\Service\Formula\OHLCV\Formula;
+use App\Service\ExpressionHandler\OHLCV\Calculator;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use \App\Entity\Instrument;
 use \App\Service\Scanner\OHLCV\ScannerExpression;
 
-class FormulaTest extends KernelTestCase
+class CalculatorTest extends KernelTestCase
 {
     /**
-     * @var \App\Service\Formula\OHLCV\Formula
+     * @var \App\Service\Formula\OHLCV\Calculator
      */
     private $SUT;
 
@@ -40,7 +40,7 @@ class FormulaTest extends KernelTestCase
     protected function setUp(): void
     {
         self::bootKernel();
-        $this->SUT = self::$container->get(Formula::class);
+        $this->SUT = self::$container->get(Calculator::class);
         $this->em = self::$container->get('doctrine')->getManager();
         $this->instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol('FB');
 

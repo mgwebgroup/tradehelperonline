@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Service\Formula\OHLCV;
+namespace App\Service\ExpressionHandler\OHLCV;
 
 use App\Exception\PriceHistoryException;
 use App\Service\Exchange\MonthlyIterator;
