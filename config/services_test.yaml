@@ -11,7 +11,7 @@ services:
   App\Service\Scanner\OHLCV\Scanner:
     public: true
     autowire: true
-  App\Service\Scanner\OHLCV\ScannerExpression:
+  App\Service\Formula\OHLCV\Formula:
       public: true
       autowire: true
   App\Service\Exchange\DailyIterator:

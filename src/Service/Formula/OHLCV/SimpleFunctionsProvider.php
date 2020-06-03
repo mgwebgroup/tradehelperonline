@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Service\Scanner\OHLCV;
+namespace App\Service\Formula\OHLCV;
 
 use App\Exception\PriceHistoryException;
 use App\Service\Exchange\MonthlyIterator;
@@ -20,7 +20,7 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\NoResultException;
 use App\Service\Exchange\Catalog;
 
-class ScannerSimpleFunctionsProvider implements ExpressionFunctionProviderInterface
+class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
 {
     /**
      * @var \Doctrine\ORM\EntityManager
