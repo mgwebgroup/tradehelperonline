@@ -5,9 +5,9 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repository\ExpressionRepository")
+ * @ORM\Entity(repositoryClass="App\Repository\FormulaRepository")
  */
-class Expression
+class Formula
 {
     /**
      * @ORM\Id()
@@ -19,7 +19,7 @@ class Expression
     /**
      * @ORM\Column(type="string", length=2048)
      */
-    private $expression;
+    private $formula;
 
     /**
      * @ORM\Column(type="string", length=255)
@@ -41,14 +41,14 @@ class Expression
         return $this->id;
     }
 
-    public function getExpression(): ?string
+    public function getFormula(): ?string
     {
-        return $this->expression;
+        return $this->formula;
     }
 
-    public function setExpression(string $expression): self
+    public function setFormula(string $formula): self
     {
-        $this->expression = $expression;
+        $this->formula = $formula;
 
         return $this;
     }

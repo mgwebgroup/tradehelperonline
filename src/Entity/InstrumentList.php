@@ -34,9 +34,9 @@ class InstrumentList
     private $instruments;
 
     /**
-     * @ORM\ManyToMany(targetEntity="App\Entity\Expression")
+     * @ORM\ManyToMany(targetEntity="App\Entity\Formula")
      */
-    private $expression;
+    private $formulas;
 
     /**
      * @ORM\Column(type="datetime")
@@ -51,7 +51,7 @@ class InstrumentList
     public function __construct()
     {
         $this->instruments = new ArrayCollection();
-        $this->expression = new ArrayCollection();
+        $this->formulas = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -134,26 +134,26 @@ class InstrumentList
     }
 
     /**
-     * @return Collection|Expression[]
+     * @return Collection|Formula[]
      */
-    public function getExpression(): Collection
+    public function getFormulas(): Collection
     {
-        return $this->expression;
+        return $this->formulas;
     }
 
-    public function addExpression(Expression $expression): self
+    public function addFormula(Formula $formula): self
     {
-        if (!$this->expression->contains($expression)) {
-            $this->expression[] = $expression;
+        if (!$this->formulas->contains($formula)) {
+            $this->formulas[] = $formula;
         }
 
         return $this;
     }
 
-    public function removeExpression(Expression $expression): self
+    public function removeFormula(Formula $formula): self
     {
-        if ($this->expression->contains($expression)) {
-            $this->expression->removeElement($expression);
+        if ($this->formulas->contains($formula)) {
+            $this->formulas->removeElement($formula);
         }
 
         return $this;
