@@ -32,7 +32,7 @@ services:
   App\Service\Charting\OHLCV\StyleLibrary:
     public: true
     autowire: true
-  App\Service\Watchlist\Manager:
+  App\Service\Watchlist\Factory:
     public: true
     autowire: true
 

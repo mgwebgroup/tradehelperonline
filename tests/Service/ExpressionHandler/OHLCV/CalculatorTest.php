@@ -14,8 +14,8 @@ use App\Entity\OHLCVHistory;
 use App\Exception\PriceHistoryException;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use \App\Entity\Instrument;
-use \App\Service\Scanner\OHLCV\ScannerExpression;
+use App\Entity\Instrument;
+use App\Service\Scanner\OHLCV\ScannerExpression;
 
 class CalculatorTest extends KernelTestCase
 {

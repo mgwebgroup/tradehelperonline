@@ -61,4 +61,7 @@ services:
     App\Command\SyncPrice:
         arguments:
             $priceProvider: '@app.price_provider'
+#    App\Service\Watchlist\Factory:
+#        arguments:
+#            $em: '@'
 

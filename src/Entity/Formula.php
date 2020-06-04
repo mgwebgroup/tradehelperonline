@@ -19,7 +19,12 @@ class Formula
     /**
      * @ORM\Column(type="string", length=2048)
      */
-    private $formula;
+    private $content;
+
+    /**
+     * @ORM\Column(type="dateinterval", nullable=false)
+     */
+    private $timeinterval;
 
     /**
      * @ORM\Column(type="string", length=255)
@@ -41,14 +46,14 @@ class Formula
         return $this->id;
     }
 
-    public function getFormula(): ?string
+    public function getContent(): ?string
     {
-        return $this->formula;
+        return $this->content;
     }
 
-    public function setFormula(string $formula): self
+    public function setContent(string $formula): self
     {
-        $this->formula = $formula;
+        $this->content = $formula;
 
         return $this;
     }
@@ -85,6 +90,18 @@ class Formula
     public function setUpdatedAt(?\DateTimeInterface $updated_at): self
     {
         $this->updated_at = $updated_at;
+
+        return $this;
+    }
+
+    public function getTimeInterval()
+    {
+        return $this->timeinterval;
+    }
+
+    public function setTimeInterval($interval): self
+    {
+        $this->timeinterval = $interval;
 
         return $this;
     }

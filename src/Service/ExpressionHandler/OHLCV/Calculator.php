@@ -16,7 +16,7 @@ use App\Service\Exchange\Catalog;
 
 /**
  * Class Calculator
- * Registers simple functions used in scanners, like Close, High, etc.
+ * Registers simple functions used in scanners and watchlists, like Close, High, etc.
  * @package App\Service\Scanner\OHLCV
  */
 class Calculator extends ExpressionLanguage
