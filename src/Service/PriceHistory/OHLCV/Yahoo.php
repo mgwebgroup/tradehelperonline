@@ -17,6 +17,7 @@ use App\Entity\Instrument;
 use App\Service\Exchange\Catalog;
 use App\Service\Exchange\Equities\TradingCalendar;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ServerException;
 use League\Csv\Writer;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
@@ -149,6 +150,8 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
                     $history = $this->priceAdapter->getHistoricalData($instrument, $fromDate, $toDate, $options);
                 } catch (ClientException $e) {
                     throw new PriceHistoryException($e->getMessage(), $code = 2);
+                } catch (ServerException $e) {
+                    throw new PriceHistoryException($e->getMessage(), $code = 3);
                 }
             } else {
                 throw new PriceHistoryException(sprintf('Interval %s is not serviced', $options['interval']));
