@@ -8,10 +8,10 @@ while (( "$#" > 0 )) ; do
       echo "APP_ENV=$APP_ENV" >> .env
       echo "DATABASE_URL=\"$DATABASE_CONNECTOR\"" >> .env
       composer install
-      ;;
-    database)
-      echo 'will create blank database and perform migrations'
       bin/console doctrine:database:create
+      ;;
+    migrations)
+      echo 'will run database migrations'
       bin/console doctrine:migrations:migrate --no-interaction
       ;;
     fixtures)
@@ -35,7 +35,7 @@ while (( "$#" > 0 )) ; do
       ;;
     data)
       echo 'will copy application data from aws'
-      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
+      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data /var/www/html/data
       bin/console instruments:import -v --clear-db=true
       bin/console price:import -v --provider=YAHOO
       ;;
