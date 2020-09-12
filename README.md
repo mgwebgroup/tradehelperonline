@@ -16,18 +16,14 @@ All components are organized into Symphony services and are located in src/Servi
 
 
 #### Exchange Component
-Securities market exchange usually trades in various types of commodities. Each type of commodity may have its own trading hours, rules for quotation, price format, etc. All exchange classes are named after exchange (NASDAQ, NYSE, etc.) and extend *Exchange* abstract class which implements the general *Exchange* Interface. Exchange classes are located in a dedicated directory for a type of traded commodity and handle responses about market hours, trading days and traded instruments. Example:
+Marketplace exchanges usually trade in various types of commodities. Each type of commodity may have its own trading hours, rules for quotation, price format, etc. All exchange classes are named after exchange (NASDAQ, NYSE, etc.) and extend *Exchange* abstract class which implements the general *Exchange* Interface. Exchange classes are located in a dedicated directory for a type of traded commodity and handle responses about market hours, trading days and traded instruments. Example:
 ```text
 Service/Exchange/Equities/NASDAQ.php
 ```
 
 
 #### Price History Component
-Prices for instruments are downloaded from third party APIs and are handled via PriceProvider and PriceAdapter classes. 
-PriceProvider handles a particular price provider, while PriceAdapter handles translation of API responses into this 
-system's representation. For example, for the generic price provider Yahoo, interaction with its API may be implemented
-by several third-party packages. Responses from the third party package are handled via adapter first, and then passed
-on to the Price Provider.
+Prices for instruments are downloaded from third party APIs and are handled via PriceProvider and PriceAdapter classes. PriceProvider handles a particular price provider (Yahoo), while PriceAdapter handles translation of API responses into this system's representation. For example, for the generic price provider Yahoo, interaction with its API may be implemented by several third-party packages. Responses from the third party package are handled via adapter first, and then passed on to the Price Provider.
 
 
 
@@ -155,7 +151,7 @@ docker build \
 --build-arg=DATA_REMOTE=aws-mgwebgroup \
 --build-arg=BUCKET_NAME=tradehelperonline \
 -t tradehelperonline:test \
---secret id=datastore,src=~/.config/rclone/rclone.conf \
+--secret id=datastore,src=$HOME/.config/rclone/rclone.conf \
 .
 ```
 
@@ -232,7 +228,7 @@ docker build \
 ```
 
 2. Import production database and create container cluster:
-This script will map copy of your production database saved as *backups/TO_BE_PROD_DB.sql* to the apache service. Run it and use symfony's doctrine:database:import command to import copy of the production database. After that you can bring up all containers normally.
+This script will map copy of your production database saved as *backups/TO_BE_PROD_DB.sql* to the *apache* service. Run it and use symfony's __doctrine:database:import__ command to import copy of the production database. After that you can bring up all containers normally.
 ```shell script
 docker-compose -f docker-compose.prod.yml run --rm -v $(pwd)/backups:/var/www/html/akay -w /var/www/html apache dockerize -wait tcp4://mariadb:3306 bin/console doctrine:database:import backups/TO_BE_PROD_DB.sql 
 docker-compose -f docker-compose.prod.yml up -d
