@@ -1,0 +1,40 @@
+version: '3'
+networks:
+  app_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.24.1.0/24"
+
+services:
+  mariadb:
+    image: 'bitnami/mariadb:10.2'
+    container_name: mariadb
+    depends_on:
+      - apache
+    environment:
+      - MARIADB_ROOT_USER=root
+      - MARIADB_ROOT_PASSWORD=rootpass
+      - ALLOW_EMPTY_PASSWORD=no
+      - MARIADB_DATABASE=TRADEHELPERONLINE_TEST
+      - MARIADB_USER=user
+      - MARIADB_PASSWORD=mypassword
+    volumes:
+      - mariadb_local:/bitnami/mariadb
+    networks:
+      app_net:
+        ipv4_address: 172.24.1.3
+
+  apache:
+    image: 'tradehelperonline:test'
+    container_name: apache
+#    environment:
+#      APP_ENV: 'dev'
+    networks:
+      app_net:
+        ipv4_address: 172.24.1.2
+
+volumes:
+  mariadb_local:
+    driver: local
+
