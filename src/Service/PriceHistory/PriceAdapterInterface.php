@@ -21,7 +21,7 @@ interface PriceAdapterInterface
      * @param \DateTime $fromDate
      * @param \DateTime $toDate
      * @param array $options
-     * @return App\Entity\OHLCVHistory[]
+     * @return App\Entity\OHLCV\History[]
      */
     public function getHistoricalData($instrument, $fromDate, $toDate, $options);
 

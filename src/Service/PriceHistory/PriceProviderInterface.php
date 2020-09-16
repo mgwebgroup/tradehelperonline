@@ -122,7 +122,7 @@ interface PriceProviderInterface
 	 * Retrieves latest closing price from price history
 	 * @param App\Entity\Instrument
 	 * @return App\Entity\<History Entity> compatible with chosen storage format (Doctrine Entities, csv records, etc.
-     * I.e. App\Entity\OHLCVHistory) | null if history for an instrument does not exist in database
+     * I.e. App\Entity\OHLCV\History) | null if history for an instrument does not exist in database
 	 */
 	public function retrieveClosingPrice($instrument);
 

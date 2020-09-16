@@ -12,7 +12,7 @@
 namespace App\Command;
 
 use App\Entity\Instrument;
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use League\Csv\Reader;
 use League\Csv\Statement;
 use League\Csv\Writer;
@@ -197,7 +197,7 @@ EOT
         }
 
         $records = $statement->process($csv);
-            $priceRepository = $this->em->getRepository(OHLCVHistory::class);
+            $priceRepository = $this->em->getRepository(History::class);
             foreach ($records as $key => $record) {
                 $instrument = $repository->findOneBySymbol($record['Symbol']);
                 $logMsg = sprintf('%s: ', $record['Symbol']);

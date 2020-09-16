@@ -10,7 +10,7 @@
 
 namespace App\Tests\Service\ExpressionHandler\OHLCV;
 
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use App\Exception\PriceHistoryException;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -44,13 +44,13 @@ class CalculatorTest extends KernelTestCase
         $this->em = self::$container->get('doctrine')->getManager();
         $this->instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol('FB');
 
-        $result = $this->em->getRepository(OHLCVHistory::class)->findBy(
+        $result = $this->em->getRepository(History::class)->findBy(
           ['instrument' => $this->instrument],
           ['timestamp' => 'desc'],
           1
         );
-        $OHLCVHistory = array_shift($result);
-        $this->latestDate = clone $OHLCVHistory->getTimestamp();
+        $history = array_shift($result);
+        $this->latestDate = clone $history->getTimestamp();
     }
 
     /**

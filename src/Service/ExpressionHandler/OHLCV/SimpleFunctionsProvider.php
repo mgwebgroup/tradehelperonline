@@ -97,7 +97,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
 
             $offsetDate = $this->figureOffsetDate($tradingCalendar, $interval, $offset);
 
-            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h
+            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
                 join h.instrument i
                 where i.id =  :id and
                 date_format(h.timestamp, \'%%Y-%%m-%%d\') = :date and
@@ -110,7 +110,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             $query->setParameter('interval', $interval);
 
             // to ignore dates use a limit statement
-//            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h
+//            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
 //                join h.instrument i
 //                where i.id = :id and
 //                date_format(h.timestamp, \'%%Y-%%m-%%d\') <= :date and
@@ -153,7 +153,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
 
             // not using avg(h.%s) aggregate function, because it will mask error if number of records present is less
             // than $period
-            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h
+            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
                 join h.instrument i
                 where i.id = :id and
                 date_format(h.timestamp, \'%%Y-%%m-%%d\') > :date and
@@ -166,7 +166,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             $query->setParameter('interval', $interval);
 
             // to ignore dates use limit statement:
-//            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h
+//            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
 //                join h.instrument i
 //                where i.id = :id and
 //                date_format(h.timestamp, \'%%Y-%%m-%%d\') <= :date and

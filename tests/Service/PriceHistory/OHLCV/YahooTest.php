@@ -5,7 +5,7 @@ namespace App\Tests\Service\PriceHistory\OHLCV;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use App\Entity\Instrument;
 use App\Entity\OHLCVQuote;
 use App\Exception\PriceHistoryException;
@@ -86,7 +86,7 @@ class YahooTest extends KernelTestCase
         $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
         $this->assertGreaterThanOrEqual(4, count($history));
         foreach ($history as $item) {
-            $this->assertInstanceOf(OHLCVHistory::class, $item);
+            $this->assertInstanceOf(History::class, $item);
         }
         $firstElement = array_shift($history);
         $lastElement = array_pop($history);
@@ -98,7 +98,7 @@ class YahooTest extends KernelTestCase
         $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
         $this->assertGreaterThanOrEqual(4, count($history));
         foreach ($history as $item) {
-            $this->assertInstanceOf(OHLCVHistory::class, $item);
+            $this->assertInstanceOf(History::class, $item);
         }
         $firstElement = array_shift($history);
         $lastElement = array_pop($history);
@@ -110,7 +110,7 @@ class YahooTest extends KernelTestCase
         $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
         $this->assertGreaterThanOrEqual(4, count($history));
         foreach ($history as $item) {
-            $this->assertInstanceOf(OHLCVHistory::class, $item);
+            $this->assertInstanceOf(History::class, $item);
         }
         $firstElement = array_shift($history);
         $lastElement = array_pop($history);
@@ -319,7 +319,7 @@ class YahooTest extends KernelTestCase
         // $this->em->getConnection()->commit();
 
         // check
-        $OHLCVRepository = $this->em->getRepository(OHLCVHistory::class);
+        $OHLCVRepository = $this->em->getRepository(History::class);
 
         $qb = $OHLCVRepository->createQueryBuilder('o');
         $qb->where('o.instrument = :instrument')
@@ -370,7 +370,7 @@ class YahooTest extends KernelTestCase
         $this->SUT->addHistory($instrument, $addedHistory);
 
         // check
-        $OHLCVRepository = $this->em->getRepository(OHLCVHistory::class);
+        $OHLCVRepository = $this->em->getRepository(History::class);
 
         $qb = $OHLCVRepository->createQueryBuilder('o');
         $qb->where('o.instrument = :instrument')
@@ -417,7 +417,7 @@ class YahooTest extends KernelTestCase
         $history = $this->SUT->retrieveHistory($instrument, $startDate, $endDate, $options);
 
         // check
-        $OHLCVRepository = $this->em->getRepository(OHLCVHistory::class);
+        $OHLCVRepository = $this->em->getRepository(History::class);
 
         $qb = $OHLCVRepository->createQueryBuilder('o');
         $qb->where('o.instrument = :instrument')
@@ -737,7 +737,7 @@ class YahooTest extends KernelTestCase
 
         $this->assertTrue($newHistory);
 
-        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $repository = $this->em->getRepository(History::class);
         $startDate = new \DateTime('2018-05-14');
         $today = new \DateTime('2018-05-19');
         $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
@@ -767,7 +767,7 @@ class YahooTest extends KernelTestCase
 
         $this->assertTrue($newHistory);
 
-        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $repository = $this->em->getRepository(History::class);
         $startDate = new \DateTime('2018-05-14');
         $today = new \DateTime('2018-05-21 23:59:59');
         $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
@@ -833,7 +833,7 @@ class YahooTest extends KernelTestCase
 
         $this->assertNull($newHistory);
 
-        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $repository = $this->em->getRepository(History::class);
         $startDate = new \DateTime('2018-05-14');
         $today = new \DateTime('2018-05-18 23:59:59');
         $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
@@ -859,7 +859,7 @@ class YahooTest extends KernelTestCase
 
         $this->assertNull($newHistory);
 
-        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $repository = $this->em->getRepository(History::class);
         $startDate = new \DateTime('2018-05-14');
         $today = new \DateTime('2018-05-18 23:59:59');
         $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
@@ -885,7 +885,7 @@ class YahooTest extends KernelTestCase
 
         $this->assertNull($newHistory);
 
-        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $repository = $this->em->getRepository(History::class);
         $startDate = new \DateTime('2018-05-14');
         $today = new \DateTime('2018-05-22 16:00:00');
         $history = $repository->retrieveHistory($instrument, $interval, $startDate, $today, $this->SUT::PROVIDER_NAME);
@@ -1030,7 +1030,7 @@ class YahooTest extends KernelTestCase
 
         $closingPrice = $this->SUT->downloadClosingPrice($this->instrument);
 
-        $this->assertInstanceOf(\App\Entity\OHLCVHistory::class, $closingPrice);
+        $this->assertInstanceOf(\App\Entity\OHLCV\History::class, $closingPrice);
         $this->assertSame($closingPrice->getTimeStamp()->format('Ymd'), $today->format('Ymd'));
     }
 
@@ -1045,7 +1045,7 @@ class YahooTest extends KernelTestCase
 
         $closingPrice = $this->SUT->downloadClosingPrice($this->instrument);
 
-        $this->assertInstanceOf(\App\Entity\OHLCVHistory::class, $closingPrice);
+        $this->assertInstanceOf(\App\Entity\OHLCV\History::class, $closingPrice);
         $this->assertSame($closingPrice->getTimeStamp()->format('Ymd'), $prevT->format('Ymd'));
     }
 
@@ -1059,7 +1059,7 @@ class YahooTest extends KernelTestCase
         $interval = new \DateInterval('P1D');
         list($instrument, $saved) = $this->createMockHistory($startDate, $numberOfRecords = 5, $interval);
 
-        /** @var App\Entity\OHLCVHistory $closingPrice */
+        /** @var App\Entity\OHLCV\History $closingPrice */
         $closingPrice = $this->SUT->retrieveClosingPrice($instrument);
         $lastSaved = array_pop($saved);
 
@@ -1079,7 +1079,7 @@ class YahooTest extends KernelTestCase
         $this->em->persist($instrument);
         $this->em->flush($instrument);
 
-        /** @var App\Entity\OHLCVHistory $closingPrice */
+        /** @var App\Entity\OHLCV\History $closingPrice */
         $closingPrice = $this->SUT->retrieveClosingPrice($instrument);
 
         $this->assertNull($closingPrice);
@@ -1097,7 +1097,7 @@ class YahooTest extends KernelTestCase
         $history = $this->createSimulatedDownload($this->instrument, $startDate, $numberOfRecords = 5, $interval);
 
         $endDate = (clone $startDate)->sub($interval);
-        $closingPrice = new OHLCVHistory();
+        $closingPrice = new History();
         $closingPrice->setInstrument($this->instrument);
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($endDate);
@@ -1161,7 +1161,7 @@ class YahooTest extends KernelTestCase
         list($instrument, $saved) = $this->createMockHistory($startDate, $numberOfRecords = 5, $interval);
 
         $date = (clone $startDate)->sub($interval);
-        $closingPrice = new OHLCVHistory();
+        $closingPrice = new History();
         $closingPrice->setInstrument($instrument);
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
@@ -1179,7 +1179,7 @@ class YahooTest extends KernelTestCase
         $expected = $saved;
         array_pop($expected);
 
-        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $repository = $this->em->getRepository(History::class);
         $history = $repository->retrieveHistory(
             $instrument,
             $interval,
@@ -1194,7 +1194,7 @@ class YahooTest extends KernelTestCase
 
         // closingPrice is on nextT no gap
         $date = new \DateTime('2018-05-21');
-        $closingPrice = new OHLCVHistory();
+        $closingPrice = new History();
         $closingPrice->setInstrument($instrument);
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
@@ -1224,7 +1224,7 @@ class YahooTest extends KernelTestCase
 
         // closingPrice is on nextT with gap
         $date = new \DateTime('2018-05-23');
-        $closingPrice = new OHLCVHistory();
+        $closingPrice = new History();
         $closingPrice->setInstrument($instrument);
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
@@ -1241,7 +1241,7 @@ class YahooTest extends KernelTestCase
 
         // closingPrice earlier than history or within the history but the last record
         $date = new \DateTime('2018-05-14');
-        $closingPrice = new OHLCVHistory();
+        $closingPrice = new History();
         $closingPrice->setInstrument($instrument);
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
@@ -1273,7 +1273,7 @@ class YahooTest extends KernelTestCase
         $interval = new \DateInterval('P1D');
 
         $date = new \DateTime('2018-05-14');
-        $closingPrice = new OHLCVHistory();
+        $closingPrice = new History();
         $closingPrice->setInstrument($instrument);
         $closingPrice->setProvider($this->SUT::PROVIDER_NAME);
         $closingPrice->setTimestamp($date);
@@ -1288,7 +1288,7 @@ class YahooTest extends KernelTestCase
 
         $this->assertTrue($newHistory);
 
-        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $repository = $this->em->getRepository(History::class);
         $history = $repository->retrieveHistory(
             $instrument,
             $interval,
@@ -1350,7 +1350,7 @@ class YahooTest extends KernelTestCase
         $this->em->persist($instrument);
 
         for ($i = 0; $i < $numberOfRecords; $i++, $startDate->add($interval)) {
-            $record = new OHLCVHistory();
+            $record = new History();
             $record->setInstrument($instrument);
             $record->setProvider($this->SUT::PROVIDER_NAME);
             $record->setTimestamp(clone $startDate);
@@ -1375,7 +1375,7 @@ class YahooTest extends KernelTestCase
     {
         $out = [];
         for ($i = 0; $i < $numberOfRecords; $i++, $startDate->add($interval)) {
-            $record = new OHLCVHistory();
+            $record = new History();
             $record->setInstrument($instrument);
             $record->setProvider($this->SUT::PROVIDER_NAME);
             $record->setTimestamp(clone $startDate);
@@ -1391,7 +1391,7 @@ class YahooTest extends KernelTestCase
         return $out;
     }
 
-    private function computeControlSum(OHLCVHistory $ohlcvHistory)
+    private function computeControlSum(History $ohlcvHistory)
     {
         return $ohlcvHistory->getOpen() + $ohlcvHistory->getHigh() + $ohlcvHistory->getLow() + $ohlcvHistory->getClose(
             ) + $ohlcvHistory->getVolume();

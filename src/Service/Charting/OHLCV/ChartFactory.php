@@ -10,7 +10,7 @@
 
 namespace App\Service\Charting\OHLCV;
 
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 
 /**
  * Wrapper class on top of the old Chart class

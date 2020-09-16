@@ -10,7 +10,7 @@
 
 namespace App\Service\PriceHistory\OHLCV;
 
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use App\Exception\PriceHistoryException;
 use App\Entity\OHLCVQuote;
 use App\Entity\Instrument;
@@ -47,7 +47,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     ];
 
     /**
-     * Dedicated adapter which converts its entities into app entities: quotes and OHLCVhistory.
+     * Dedicated adapter which converts its entities into app entities: quotes and OHLCV\History.
      * Price adapter is written to adapt data from Scheb's API provider, into our format.
      * @var App\Service\PriceHistory\PriceAdapter_Scheb
      */
@@ -92,7 +92,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
      * @param $fromDate
      * @param $toDate
      * @param array $options ['interval' => 'P1M|P1W|P1D' ]
-     * @return \App\Entity\OHLCVHistory[]
+     * @return \App\Entity\OHLCV\History[]
      * @throws PriceHistoryException
      * @throws \Scheb\YahooFinanceApi\Exception\ApiException
      */
@@ -175,7 +175,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     {
         if (!empty($history)) {
             // delete existing OHLCV History for the given instrument from history start date to current date
-            $OHLCVRepository = $this->em->getRepository(OHLCVHistory::class);
+            $OHLCVRepository = $this->em->getRepository(History::class);
             // var_dump(get_class($OHLCVRepository)); exit();
             $fromDate = $history[0]->getTimestamp();
             $interval = $history[0]->getTimeinterval();
@@ -219,7 +219,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
             $interval = new \DateInterval('P1D');
         }
 
-        $OHLCVRepository = $this->em->getRepository(OHLCVHistory::class);
+        $OHLCVRepository = $this->em->getRepository(History::class);
 
         return $OHLCVRepository->retrieveHistory($instrument, $interval, $fromDate, $toDate, self::PROVIDER_NAME);
     }
@@ -269,7 +269,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 
     /**
      * @param $quote App\Entity\OHLCVQuote
-     * @param $history App\Entity\OHLCVHistory[]
+     * @param $history App\Entity\OHLCV\History[]
      * {@inheritDoc}
      * @throws PriceHistoryException
      */
@@ -294,7 +294,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
         if ($exchange->isOpen($today)) {
             if (empty($history)) {
                 // is there history in storage?
-                $repository = $this->em->getRepository(OHLCVHistory::class);
+                $repository = $this->em->getRepository(History::class);
                 $history = $repository->retrieveHistory(
                     $instrument,
                     $quoteInterval,
@@ -444,12 +444,12 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     /**
      * {@inheritDoc}
      * @param Instrument $instrument
-     * @return App\Entity\OHLCVHistory | null
+     * @return App\Entity\OHLCV\History | null
      */
     public function retrieveClosingPrice($instrument)
     {
         /** @var App\Repository\OHLCVHistoryRepository $repository */
-        $repository = $this->em->getRepository(OHLCVHistory::class);
+        $repository = $this->em->getRepository(History::class);
 
         $closingPrice = $repository->findOneBy(
             ['instrument' => $instrument, 'provider' => self::PROVIDER_NAME],
@@ -460,7 +460,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     }
 
     /**
-     * @param App\Entity\OHLCVHistory $closingPrice
+     * @param App\Entity\OHLCV\History $closingPrice
      * @param array $history | null
      * @return array $history | false | null
      * @throws PriceHistoryException
@@ -552,7 +552,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
 
     /**
      * Orders history elements from oldest date to the latest
-     * @param App\Entity\OHLCVHistory[] $history
+     * @param App\Entity\OHLCV\History[] $history
      */
     private function sortHistory(&$history)
     {
@@ -586,13 +586,13 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     }
 
     /**
-     * Converts OHLCVQuote object to OHLCVHistory Object
+     * Converts OHLCVQuote object to OHLCV\History Object
      * @param OHLCVQuote $quote
-     * @return OHLCVHistory $element
+     * @return OHLCV\History $element
      */
     public function castQuoteToHistory($quote)
     {
-        $element = new OHLCVHistory();
+        $element = new History();
         $element->setInstrument($quote->getInstrument());
         $element->setProvider(self::PROVIDER_NAME);
         $element->setTimeinterval($quote->getTimeinterval());

@@ -11,7 +11,7 @@
 namespace App\Tests\Service\Charts;
 
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use App\Entity\Instrument;
 use App\Service\Charting\OHLCV\ChartFactory;
 use App\Service\Charting\OHLCV\Style;

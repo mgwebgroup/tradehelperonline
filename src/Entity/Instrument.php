@@ -43,7 +43,7 @@ class Instrument
     private $description;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\OHLCVHistory", mappedBy="instrument", orphanRemoval=true, cascade={"detach"})
+     * @ORM\OneToMany(targetEntity="App\Entity\OHLCV\History", mappedBy="instrument", orphanRemoval=true, cascade={"detach"})
      */
     private $oHLCVHistories;
 

@@ -10,7 +10,7 @@
 
 namespace App\DataFixtures;
 
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -191,11 +191,11 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
      * @param float $movement as percent of $open
      * @param float $upperTail
      * @param $volume
-     * @return \App\Entity\OHLCVHistory $candle
+     * @return \App\Entity\OHLCV\History $candle
      */
     public function generateCandle($provider, $date, $instrument, $interval, $open, $size, $bodySize, $tail, $volume)
     {
-        $p = new OHLCVHistory();
+        $p = new History();
 
         $p->setProvider($provider);
         $p->setTimestamp(clone $date);
@@ -229,11 +229,11 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
 //     * Hollow hammer: $movement < 0
 //     * @param float $movement as percent of $open
 //     * @param $volume
-//     * @return \App\Entity\OHLCVHistory $candle
+//     * @return \App\Entity\OHLCV\History $candle
 //     */
 //    public function generateHammer($provider, $date, $instrument, $interval, $open, $size, $movement, $volume)
 //    {
-//        $p = new OHLCVHistory();
+//        $p = new History();
 //
 //        $p->setProvider($provider);
 //        $p->setTimestamp($date);
