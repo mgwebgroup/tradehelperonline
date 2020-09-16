@@ -33,7 +33,7 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
      * [size (absolute length from high to low), bodySize (percent), tail (absolute length from closing price to
      * high/low, volume)]
      * For FB all items in a sequence go in reverse chronological order, i.e. most recent candlesticks first.
-     * For LIN, I use real csv datadfdf
+     * For LIN, I use real csv data
      * @param ObjectManager $manager
      * @throws \Exception
      */
