@@ -12,7 +12,7 @@ namespace App\Service\PriceHistory\OHLCV;
 
 use App\Entity\OHLCV\History;
 use App\Exception\PriceHistoryException;
-use App\Entity\OHLCVQuote;
+use App\Entity\OHLCV\Quote;
 use App\Entity\Instrument;
 use App\Service\Exchange\Catalog;
 use App\Service\Exchange\Equities\TradingCalendar;
@@ -268,7 +268,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     }
 
     /**
-     * @param $quote App\Entity\OHLCVQuote
+     * @param $quote App\Entity\OHLCV\Quote
      * @param $history App\Entity\OHLCV\History[]
      * {@inheritDoc}
      * @throws PriceHistoryException
@@ -543,7 +543,7 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
      * Retrieve several quotes from Price Provider in one request
      * Does not check if market is open or closed.
      * @param App\Entity\Instrument[] $list
-     * @return \App\Service\PriceHistory\App\Entity\OHLCVQuote[] | null
+     * @return \App\Service\PriceHistory\App\Entity\OHLCV\Quote[] | null
      */
     public function getQuotes($list)
     {
@@ -586,11 +586,11 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
     }
 
     /**
-     * Converts OHLCVQuote object to OHLCV\History Object
-     * @param OHLCVQuote $quote
-     * @return OHLCV\History $element
+     * Converts OHLCV\Quote object to OHLCV\History Object
+     * @param Quote $quote
+     * @return History $element
      */
-    public function castQuoteToHistory($quote)
+    public function castQuoteToHistory(Quote $quote)
     {
         $element = new History();
         $element->setInstrument($quote->getInstrument());

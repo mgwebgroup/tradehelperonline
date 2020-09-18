@@ -12,7 +12,7 @@ namespace App\Service\PriceHistory\OHLCV;
 
 
 use App\Entity\OHLCV\History;
-use App\Entity\OHLCVQuote;
+use App\Entity\OHLCV\Quote;
 use App\Exception\PriceHistoryException;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
@@ -106,7 +106,7 @@ class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterf
     /**
      * Extracts values from Scheb API Quote object into this App's Quote object
      * @param Scheb\YahooFinanceApi\Results\Quote $providerQuote
-     * @return OHLCVQuote $quote
+     * @return Quote $quote
      * @throws \Exception
      */
     private function castProviderQuoteToAppQuote($providerQuote)
@@ -116,7 +116,7 @@ class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterf
         $instrument = $this->instrumentRepository->findOneBySymbol($providerQuote->getSymbol());
 
         if ($instrument) {
-            $quote = new OHLCVQuote();
+            $quote = new Quote();
             $quote->setInstrument($instrument);
             $quote->setProvider(Yahoo::PROVIDER_NAME);
             $quote->setTimestamp($providerQuote->getRegularMarketTime());

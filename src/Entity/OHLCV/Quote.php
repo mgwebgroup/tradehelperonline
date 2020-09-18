@@ -1,14 +1,16 @@
 <?php
 // TO DO: Quote Entity should extend from a more generic interface.
 
-namespace App\Entity;
+namespace App\Entity\OHLCV;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Instrument;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\OHLCVQuoteRepository")
+ * @ORM\Table(name="ohlcvquote")
  */
-class OHLCVQuote
+class Quote
 {
     /**
      * @ORM\Id()

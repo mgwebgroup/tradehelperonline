@@ -7,7 +7,7 @@ use Doctrine\Common\Collections\Criteria;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\OHLCV\History;
 use App\Entity\Instrument;
-use App\Entity\OHLCVQuote;
+use App\Entity\OHLCV\Quote;
 use App\Exception\PriceHistoryException;
 use App\Service\Exchange\Equities\NYSE;
 
@@ -67,8 +67,6 @@ class YahooTest extends KernelTestCase
 
     public function testIntro()
     {
-//        $reflection = new \ReflectionClass($this->SUT);
-//    	fwrite(STDOUT, sprintf('Testing %s\%s', $reflection->getNamespaceName(), $reflection->getName()) . PHP_EOL);
         $this->assertTrue(true);
     }
 
@@ -453,7 +451,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2019-05-20 09:30:01'; // Monday, May 20, 2019
         $quote = $this->SUT->downloadQuote($this->instrument);
 
-        $this->assertInstanceOf(OHLCVQuote::class, $quote);
+        $this->assertInstanceOf(Quote::class, $quote);
 
         // market is closed:
         // null is returned for quote
@@ -474,7 +472,7 @@ class YahooTest extends KernelTestCase
         $interval = new \DateInterval('P1D');
         // $interval = 'P1D';
 
-        $OHLCVQuoteRepository = $this->em->getRepository(OHLCVQuote::class);
+        $OHLCVQuoteRepository = $this->em->getRepository(Quote::class);
 
         $qb = $OHLCVQuoteRepository->createQueryBuilder('q');
         $qb->delete()->where('q.instrument = :instrument')->setParameter('instrument', $this->instrument);
@@ -482,7 +480,7 @@ class YahooTest extends KernelTestCase
         $query->execute();
         $this->instrument->unsetOHLCVQuote();
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($date);
@@ -497,7 +495,7 @@ class YahooTest extends KernelTestCase
         $this->em->persist($this->instrument);
         $this->em->flush();
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($date);
@@ -527,7 +525,7 @@ class YahooTest extends KernelTestCase
         $interval = new \DateInterval('P1D');
         // $interval = 'P1D';
 
-        $OHLCVQuoteRepository = $this->em->getRepository(OHLCVQuote::class);
+        $OHLCVQuoteRepository = $this->em->getRepository(Quote::class);
 
         $qb = $OHLCVQuoteRepository->createQueryBuilder('q');
         $qb->delete()->where('q.instrument = :instrument')->setParameter('instrument', $this->instrument);
@@ -535,7 +533,7 @@ class YahooTest extends KernelTestCase
         $query->execute();
         $this->instrument->unsetOHLCVQuote();
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($date);
@@ -561,7 +559,7 @@ class YahooTest extends KernelTestCase
         $date = new \DateTime($_SERVER['TODAY']);
         $interval = new \DateInterval('P1D');
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($date);
@@ -574,7 +572,7 @@ class YahooTest extends KernelTestCase
 
         $this->SUT->saveQuote($this->instrument, $quote);
 
-        $OHLCVQuoteRepository = $this->em->getRepository(OHLCVQuote::class);
+        $OHLCVQuoteRepository = $this->em->getRepository(Quote::class);
         $results = $OHLCVQuoteRepository->findBy(['instrument' => $this->instrument]);
         $this->assertCount(1, $results);
 
@@ -599,7 +597,7 @@ class YahooTest extends KernelTestCase
 
         // Quote is the same date as last date in history
         $today = new \DateTime($_SERVER['TODAY']);
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -667,7 +665,7 @@ class YahooTest extends KernelTestCase
         // Quote is the same date as last date in history
         $endDate = $startDate->sub($interval); // will be 2018-05-18
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($this->instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($endDate);
@@ -722,7 +720,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2018-05-18 09:30:01';
         $today = new \DateTime($_SERVER['TODAY']);
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -752,7 +750,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2018-05-21 09:30:01';
         $today = new \DateTime($_SERVER['TODAY']);
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -780,7 +778,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2018-05-23 09:30:01';
         $today = new \DateTime($_SERVER['TODAY']);
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -818,7 +816,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2018-05-18 16:00:00';
         $today = new \DateTime($_SERVER['TODAY']);
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -844,7 +842,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2018-05-21 16:00:00';
         $today = new \DateTime($_SERVER['TODAY']);
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -870,7 +868,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2018-05-22 16:00:00';
         $today = new \DateTime($_SERVER['TODAY']);
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -919,7 +917,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2018-05-18 09:30:01';
         $today = new \DateTime($_SERVER['TODAY']);
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -957,7 +955,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2018-05-18 16:00:00';
         $today = new \DateTime($_SERVER['TODAY']);
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -991,7 +989,7 @@ class YahooTest extends KernelTestCase
         $_SERVER['TODAY'] = '2018-05-18 09:30:01';
         $today = new \DateTime($_SERVER['TODAY']);
 
-        $quote = new OHLCVQuote();
+        $quote = new Quote();
         $quote->setInstrument($instrument);
         $quote->setProvider($this->SUT::PROVIDER_NAME);
         $quote->setTimestamp($today);
@@ -1317,7 +1315,7 @@ class YahooTest extends KernelTestCase
 
         // check that each has a date and values for the price as well as the volume
         foreach ($quotes as $quote) {
-            $this->assertInstanceOf(OHLCVQuote::class, $quote);
+            $this->assertInstanceOf(Quote::class, $quote);
             $this->assertTrue(in_array($quote->getInstrument(), $instrumentList));
             $this->assertInternalType('float', $quote->getClose());
             $this->assertInternalType('float', $quote->getVolume());
@@ -1397,7 +1395,7 @@ class YahooTest extends KernelTestCase
             ) + $ohlcvHistory->getVolume();
     }
 
-    private function computeControlSum2(OHLCVQuote $quote)
+    private function computeControlSum2(Quote $quote)
     {
         return $quote->getOpen() + $quote->getHigh() + $quote->getLow() + $quote->getClose() + $quote->getVolume();
     }
@@ -1411,5 +1409,7 @@ class YahooTest extends KernelTestCase
         $query->execute();
 
         $this->em->close();
+
+        unset($_SERVER['TODAY']);
     }
 }
