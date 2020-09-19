@@ -65,11 +65,6 @@ class YahooTest extends KernelTestCase
         $this->em = self::$container->get('doctrine')->getManager();
     }
 
-    public function testIntro()
-    {
-        $this->assertTrue(true);
-    }
-
     /**
      * test downloadHistory:
      * Check if downloads at least 4 historical records for an instrument

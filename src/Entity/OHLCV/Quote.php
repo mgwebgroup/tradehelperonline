@@ -1,5 +1,4 @@
 <?php
-// TO DO: Quote Entity should extend from a more generic interface.
 
 namespace App\Entity\OHLCV;
 
