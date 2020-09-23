@@ -8,21 +8,27 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Service\Scanner\OHLCV;
+namespace App\Service\ExpressionHandler\OHLCV;
 
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use App\Service\Exchange\Catalog;
 
 /**
- * Class ScannerExpression
- * Registers simple functions used in scanners, like Close, High, etc.
+ * Class Calculator
+ * Registers simple functions used in scanners and watchlists, like Close, High, etc.
  * @package App\Service\Scanner\OHLCV
  */
-class ScannerExpression extends ExpressionLanguage
+class Calculator extends ExpressionLanguage
 {
+    /**
+     * @var \Doctrine\Common\Persistence\ObjectManager
+     */
     protected $em;
 
+    /**
+     * @var Catalog
+     */
     protected $catalog;
 
     public function __construct(
@@ -32,7 +38,7 @@ class ScannerExpression extends ExpressionLanguage
     {
         $this->em = $registry->getManager();
         $this->catalog = $catalog;
-        $this->registerProvider(new ScannerSimpleFunctionsProvider($this->em, $catalog));
+        $this->registerProvider(new SimpleFunctionsProvider($this->em, $catalog));
 
         parent::__construct();
     }

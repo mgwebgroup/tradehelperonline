@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use App\Entity\Instrument;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
@@ -18,7 +18,7 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
 {
     public function __construct(RegistryInterface $registry)
     {
-        parent::__construct($registry, OHLCVHistory::class);
+        parent::__construct($registry, History::class);
     }
 
     /**
@@ -29,7 +29,7 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
      * @param \DateTime $fromDate | null
      * @param \DateTime $toDate | null
      * @param string $provider if no provider supplied price records for all providers will be retrieved
-     * @return App\Entity\OHLCVHistory[]
+     * @return App\Entity\OHLCV\History[]
      * @throws PriceHistoryException
      */
     public function retrieveHistory($instrument, $interval, $fromDate = null, $toDate = null, $provider = null)

@@ -5,11 +5,12 @@ namespace App\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use App\Service\ExpressionHandler\OHLCV\Calculator as Calculator;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repository\InstrumentListRepository")
+ * @ORM\Entity(repositoryClass="App\Repository\WatchlistRepository")
  */
-class InstrumentList
+class Watchlist
 {
     /**
      * @ORM\Id()
@@ -34,6 +35,11 @@ class InstrumentList
     private $instruments;
 
     /**
+     * @ORM\ManyToMany(targetEntity="App\Entity\Formula")
+     */
+    private $formulas;
+
+    /**
      * @ORM\Column(type="datetime")
      */
     private $created_at;
@@ -43,9 +49,16 @@ class InstrumentList
      */
     private $updated_at;
 
+    /**
+     * @var array
+     */
+    private $values;
+
     public function __construct()
     {
         $this->instruments = new ArrayCollection();
+        $this->formulas = new ArrayCollection();
+        $this->values = [];
     }
 
     public function getId(): ?int
@@ -125,5 +138,60 @@ class InstrumentList
         $this->updated_at = $updated_at;
 
         return $this;
+    }
+
+    /**
+     * @return Collection|Formula[]
+     */
+    public function getFormulas(): Collection
+    {
+        return $this->formulas;
+    }
+
+    public function addFormula(Formula $formula): self
+    {
+        if (!$this->formulas->contains($formula)) {
+            $this->formulas[] = $formula;
+        }
+
+        return $this;
+    }
+
+    public function removeFormula(Formula $formula): self
+    {
+        if ($this->formulas->contains($formula)) {
+            $this->formulas->removeElement($formula);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Calculates associated formulas for associated instruments. Result is stored in unmapped $values property
+     * @param Calculator $calculator
+     * @param \DateTime | null $date
+     */
+    public function update(Calculator $calculator, $date = null)
+    {
+        foreach ($this->instruments as $instrument) {
+            $value = [];
+            foreach ($this->formulas as $formula) {
+                $data = [
+                  'instrument' => $instrument,
+                  'interval' => $formula->getTimeInterval(),
+                ];
+                if ($date) {
+                    $data['date'] = $date;
+                }
+
+                $value[$formula->getName()] = $calculator->evaluate($formula->getContent(), $data);
+            }
+            $this->values[$instrument->getSymbol()] = $value;
+        }
+    }
+
+    public function getValues()
+    {
+        return $this->values;
     }
 }

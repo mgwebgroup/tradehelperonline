@@ -15,7 +15,6 @@ use App\Service\Exchange\Equities\NASDAQ;
 use App\Service\Exchange\Equities\NYSE;
 use App\Service\UtilityServices;
 use League\Csv\Statement;
-use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -23,6 +22,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use League\Csv\Reader;
+use League\Csv\Writer;
+use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
 class ImportInstruments extends Command
 {
@@ -38,6 +40,16 @@ class ImportInstruments extends Command
      */
     const NASDAQ_FILE = 'data/source/nasdaqlisted.csv';
     const NYSE_FILE = 'data/source/otherlisted.csv';
+
+    /**
+     * Used to save symbol in temporary csv file
+     */
+    const TEMP_FILE = 'var/cache/temp.csv';
+
+    /**
+     * All symbols must have a name to them. This is the default name if --name option is absent
+     */
+    const SYMBOL_NAME = 'Default Symbol name';
 
     /**
      * @var Doctrine\ORM\EntityManager
@@ -71,16 +83,38 @@ class ImportInstruments extends Command
      */
     private $utilities;
 
+    /**
+     * @var string
+     */
+    private $path;
+
+    /**
+     * @var string
+     */
+    private $symbol;
+
+    /**
+     * @var string
+     */
+    private $name;
+
+    /**
+     * @var Symfony\Component\Filesystem\Filesystem
+     */
+    private $filesystem;
+
     public function __construct(
       RegistryInterface $doctrine,
       UtilityServices $utilities,
       NASDAQ $NASDAQ,
-      NYSE $NYSE
+      NYSE $NYSE,
+      Filesystem $filesystem
     ) {
         $this->utilities = $utilities;
         $this->em = $doctrine->getManager();
         $this->NASDAQ = $NASDAQ;
         $this->NYSE = $NYSE;
+        $this->filesystem = $filesystem;
 
         parent::__construct();
     }
@@ -93,30 +127,37 @@ class ImportInstruments extends Command
 
         $this->setHelp(
           <<<'EOT'
-This command uses several files to import stock symbols. The main file with list of all instruments on which this app 
-operates is called y_universe. It is saved in data/source/ directory. Each instrument is traded on either NASDAQ or 
-NYSE. Two additional files are saved for each exchange individually in the same directory as y_universe. They are 
-called nasdaqlisted.csv and otherlisted.csv. They will be consulted to determine which exchange the instrument trades 
-at. If an instrument is listed on several exchanges, last one imported will prevail. It is rarely that stocks are 
-dually listed. If you find a one that is listed on a wrong exchange after import, you can manually change a record in
- the instruments table. Main file data/source/y_universe.csv must have the following headers:
-Symbol,Name,Industry. Order of columns is not important. Other two files that designate exchange must have only one 
-column titled Symbol.
+You must have nasdaqlisted.csv and otherlisted.csv files saved in data/source directory in order to be able to use 
+this command! These files specify every stock symbol that is traded either on NYSE or NASDAQ exchange. See 
+data/source/README.md file to see how to update them.  
+In the first form of this command instruments to import are taken from the y_universe file. It simply serves as a 
+source list to work on. It is saved in data/source/ directory. You can use other file, just make sure it has the 
+following headers: 
+ Symbol,Name,Industry. 
+Order of columns is not important.
+In the second form you don't specify the symbols list, but only one individual symbol. y_universe file is not 
+necessary to exist, however the 2 exchange files must be present. Name of the traded company will be searched in 
+these lists. If you specify --name option, name of the traded company will be overwritten.
 EOT
         );
 
         $this->addUsage('[-v] [--clear-db=false] [--overwrite=false] [data/source/y_universe.csv]');
+        $this->addUsage('[-v] [--clear-db=false] [--overwrite=false] --symbol=TST [--name="Test symbol"]');
 
-        $this->addArgument('path', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on',
-                           self::MAIN_FILE);
+        $this->addArgument('path', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on', self::MAIN_FILE);
         $this->addOption('clear-db',null, InputOption::VALUE_OPTIONAL, 'Will clear all instruments from database before import', false);
         $this->addOption('overwrite', null, InputOption::VALUE_OPTIONAL, 'If instrument is already imported will override its values', false);
+        $this->addOption('symbol', null, InputOption::VALUE_REQUIRED, 'Import one symbol. It must be listed in one of the exchange data files: nasdaqlisted.csv or otherlisted.csv');
+        $this->addOption('name', null, InputOption::VALUE_REQUIRED, 'Symbol name', null);
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->clearDb = $input->getOption('clear-db') ? true : false;
         $this->overwrite = $input->getOption('overwrite') ? true : false;
+        $this->path = $input->getArgument('path');
+        $this->symbol = $input->getOption('symbol')? : null;
+        $this->name = $input->getOption('name')? : null;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -129,9 +170,18 @@ EOT
             $repository->deleteInstruments();
         }
 
-        $csvMainFile = $input->getArgument('path');
-
         try {
+            if ($this->symbol) {
+                $csvWriter = Writer::createFromPath(self::TEMP_FILE, 'w');
+                $header = ['Symbol', 'Name'];
+                $record = [$this->symbol, $this->name];
+                $csvWriter->insertOne($header);
+                $csvWriter->insertOne($record);
+                $csvMainFile = self::TEMP_FILE;
+            } else {
+                $csvMainFile = $this->path;
+            }
+
             $csvMainReader = Reader::createFromPath($csvMainFile, 'r');
             $csvMainReader->setHeaderOffset(0);
             $records = $csvMainReader->getRecords();
@@ -147,7 +197,6 @@ EOT
                 // ...
 
                 $statement = Statement::create(function($value, $key, $iterator) use ($record) {
-                    // $value is line in nasdaq or nyse reader. Numerically indexed.
                     return $value[0] == $record['Symbol'];
                 });
                 $inNasdaq = $statement->process($nasdaqReader);
@@ -158,6 +207,26 @@ EOT
                     $exchange = $this->NYSE;
                 } else {
                     $exchange = null;
+                }
+
+                if (empty($record['Name'])) {
+                    $statement = Statement::create(function($value, $key, $iterator) use ($record) {
+                        if ($value[0] == $record['Symbol']) {
+                            return $value;
+                        }
+                    });
+
+                    $exchangeLists = [$nyseReader, $nasdaqReader];
+                    foreach ($exchangeLists as $exchangeList) {
+                        $resultSet = $statement->process($exchangeList);
+                        foreach ($resultSet as $line) {
+                            $record['Name'] = $line[1];
+                            break;
+                        }
+                    }
+                    if (empty($record['Name'])) {
+                        $record['Name'] = self::SYMBOL_NAME;
+                    }
                 }
 
                 if ($exchange) {
@@ -189,6 +258,10 @@ EOT
                 $this->utilities->logAndSay($output, $logMsg, $screenMsg);
             }
             $this->em->flush();
+
+            if ($this->symbol) {
+                $this->filesystem->remove(self::TEMP_FILE);
+            }
         } catch (\Exception $e) {
             $logMsg = $e->getMessage();
             $screenMsg = $logMsg;

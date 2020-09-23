@@ -11,8 +11,7 @@
 namespace App\Command;
 
 use App\Entity\Instrument;
-use App\Entity\OHLCVHistory;
-//use App\Service\Exchange\DailyIterator;
+use App\Entity\OHLCV\History;
 use App\Service\UtilityServices;
 use League\Csv\Reader;
 use League\Csv\Statement;
@@ -238,7 +237,7 @@ EOT
         $this->utilities->pronounceStart($this, $output);
 
         $instrumentRepository = $this->em->getRepository(Instrument::class);
-        $priceRepository = $this->em->getRepository(OHLCVHistory::class);
+        $priceRepository = $this->em->getRepository(History::class);
 
         $csv = Reader::createFromPath($this->listFile, 'r');
         $csv->setHeaderOffset(0);

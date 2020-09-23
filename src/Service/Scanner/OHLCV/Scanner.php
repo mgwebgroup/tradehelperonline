@@ -26,13 +26,13 @@ use App\Service\Scanner\ExpressionValue;
 class Scanner implements ScannerInterface
 {
     /**
-     * @var \App\Service\Scanner\OHLCV\ScannerExpression
+     * @var \App\Service\ExpressionHandler\OHLCV\Calculator
      */
     protected $expr;
 
 
     public function __construct(
-      \App\Service\Scanner\OHLCV\ScannerExpression $expr
+      \App\Service\ExpressionHandler\OHLCV\Calculator $expr
     )
     {
         $this->expr = $expr;

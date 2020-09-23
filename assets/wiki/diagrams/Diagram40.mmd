@@ -1,0 +1,32 @@
+classDiagram
+  class ExpressionLanguage{
+    -cache;
+    -lexer;
+    -parser;
+    -compiler;
+    __construct(CacheItemPoolInterface $cache = null, array $providers = []);
+    +compile($expression, $names = []);
+    +evaluate($expression, $values = []);
+    +parse($expression, $names);
+    +register($name, callable $compiler, callable $evaluator);
+    +addFunction(ExpressionFunction $function);
+    +registerProvider(ExpressionFunctionProviderInterface $provider);
+    -registerFunctions();
+    -getLexer();
+    -getParser();
+    -getCompiler();
+  }
+  class Calculator{
+    -em;
+    -catalog;
+    __construct(RegistryInterface $registry, Catalog $catalog);
+  }
+  Catalog -- Calculator : DI
+  RegistryInterface -- Calculator : DI
+  class SimpleFunctionsProvider{
+    -em;
+    -catalog;
+    +getFunctions()
+  }
+  SimpleFunctionsProvider --* Calculator
+  ExpressionLanguage --|> Calculator

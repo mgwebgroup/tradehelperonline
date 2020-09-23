@@ -1,14 +1,15 @@
 <?php
-// TO DO: Quote Entity should extend from a more generic interface.
 
-namespace App\Entity;
+namespace App\Entity\OHLCV;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Instrument;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repository\OHLCVQuoteRepository")
+ * @ORM\Entity(repositoryClass="App\Repository\OHLCVHistoryRepository")
+ * @ORM\Table(name="ohlcvhistory")
  */
-class OHLCVQuote
+class History
 {
     /**
      * @ORM\Id()
@@ -18,32 +19,38 @@ class OHLCVQuote
     private $id;
 
     /**
-     * @ORM\Column(type="float", nullable=true)
+     * @ORM\Column(type="float")
      */
     private $open;
 
     /**
-     * @ORM\Column(type="float", nullable=true)
+     * @ORM\Column(type="float")
      */
     private $high;
 
     /**
-     * @ORM\Column(type="float", nullable=true)
+     * @ORM\Column(type="float")
      */
     private $low;
 
     /**
-     * @ORM\Column(type="float", nullable=true)
+     * @ORM\Column(type="float")
      */
     private $close;
 
     /**
-     * @ORM\Column(type="float", nullable=true)
+     * @ORM\Column(type="integer", nullable=true)
      */
     private $volume;
 
     /**
-     * @ORM\Column(type="dateinterval", nullable=true)
+     * @ORM\ManyToOne(targetEntity="App\Entity\Instrument", inversedBy="oHLCVHistories", cascade={"detach"})
+     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE")
+     */
+    private $instrument;
+
+    /**
+     * @ORM\Column(type="dateinterval")
      */
     private $timeinterval;
 
@@ -57,12 +64,6 @@ class OHLCVQuote
      */
     private $provider;
 
-    /**
-     * @ORM\OneToOne(targetEntity="App\Entity\Instrument", inversedBy="oHLCVQuote")
-     * @ORM\JoinColumn(nullable=false, onDelete="CASCADE")
-     */
-    private $instrument;
-
     public function getId(): ?int
     {
         return $this->id;
@@ -73,9 +74,9 @@ class OHLCVQuote
         return $this->open;
     }
 
-    public function setOpen(?float $open): self
+    public function setOpen(float $open): self
     {
-        $this->open = round($open, 2);
+        $this->open = round($open,2);
 
         return $this;
     }
@@ -85,9 +86,9 @@ class OHLCVQuote
         return $this->high;
     }
 
-    public function setHigh(?float $high): self
+    public function setHigh(float $high): self
     {
-        $this->high = round($high, 2);
+        $this->high = round($high,2);
 
         return $this;
     }
@@ -99,7 +100,7 @@ class OHLCVQuote
 
     public function setLow(float $low): self
     {
-        $this->low = round($low, 2);
+        $this->low = round($low,2);
 
         return $this;
     }
@@ -109,21 +110,33 @@ class OHLCVQuote
         return $this->close;
     }
 
-    public function setClose(?float $close): self
+    public function setClose(float $close): self
     {
         $this->close = round($close, 2);
 
         return $this;
     }
 
-    public function getVolume(): ?float
+    public function getVolume(): ?int
     {
         return $this->volume;
     }
 
-    public function setVolume(?float $volume): self
+    public function setVolume(?int $volume): self
     {
         $this->volume = $volume;
+
+        return $this;
+    }
+
+    public function getInstrument(): ?Instrument
+    {
+        return $this->instrument;
+    }
+
+    public function setInstrument(?Instrument $instrument): self
+    {
+        $this->instrument = $instrument;
 
         return $this;
     }
@@ -133,7 +146,7 @@ class OHLCVQuote
         return $this->timeinterval;
     }
 
-    public function setTimeinterval(?\DateInterval $timeinterval): self
+    public function setTimeinterval(\DateInterval $timeinterval): self
     {
         $this->timeinterval = $timeinterval;
 
@@ -160,19 +173,6 @@ class OHLCVQuote
     public function setProvider(?string $provider): self
     {
         $this->provider = $provider;
-
-        return $this;
-    }
-
-    public function getInstrument(): ?Instrument
-    {
-        return $this->instrument;
-    }
-
-    public function setInstrument(Instrument $instrument): self
-    {
-        $this->instrument = $instrument;
-        // $instrument->setOHLCVQuote($this);
 
         return $this;
     }

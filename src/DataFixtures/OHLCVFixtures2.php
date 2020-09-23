@@ -10,7 +10,7 @@
 
 namespace App\DataFixtures;
 
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 use League\Csv\Reader;
@@ -53,7 +53,7 @@ class OHLCVFixtures2 extends Fixture implements FixtureGroupInterface
         $csv = Reader::createFromPath('src/DataFixtures/LIN_d.csv');
         $csv->setHeaderOffset(0);
         foreach ($csv->getRecords() as $key => $line) {
-            $p = new OHLCVHistory();
+            $p = new History();
 
             $p->setProvider($provider);
             $p->setTimestamp(new \DateTime($line['Date']));

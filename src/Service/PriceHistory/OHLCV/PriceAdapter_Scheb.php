@@ -11,8 +11,8 @@
 namespace App\Service\PriceHistory\OHLCV;
 
 
-use App\Entity\OHLCVHistory;
-use App\Entity\OHLCVQuote;
+use App\Entity\OHLCV\History;
+use App\Entity\OHLCV\Quote;
 use App\Exception\PriceHistoryException;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
@@ -61,17 +61,17 @@ class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterf
         array_walk(
             $history,
             function (&$v, $k, $data) {
-                $OHLCVHistory = new OHLCVHistory();
-                $OHLCVHistory->setOpen($v->getOpen());
-                $OHLCVHistory->setHigh($v->getHigh());
-                $OHLCVHistory->setLow($v->getLow());
-                $OHLCVHistory->setClose($v->getClose());
-                $OHLCVHistory->setVolume($v->getVolume());
-                $OHLCVHistory->setTimestamp($v->getDate());
-                $OHLCVHistory->setInstrument($data[0]);
-                $OHLCVHistory->setTimeinterval($data[1]);
-                $OHLCVHistory->setProvider(Yahoo::PROVIDER_NAME);
-                $v = $OHLCVHistory;
+                $History = new History();
+                $History->setOpen($v->getOpen());
+                $History->setHigh($v->getHigh());
+                $History->setLow($v->getLow());
+                $History->setClose($v->getClose());
+                $History->setVolume($v->getVolume());
+                $History->setTimestamp($v->getDate());
+                $History->setInstrument($data[0]);
+                $History->setTimeinterval($data[1]);
+                $History->setProvider(Yahoo::PROVIDER_NAME);
+                $v = $History;
             },
             [$instrument, $interval]
         );
@@ -106,7 +106,7 @@ class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterf
     /**
      * Extracts values from Scheb API Quote object into this App's Quote object
      * @param Scheb\YahooFinanceApi\Results\Quote $providerQuote
-     * @return OHLCVQuote $quote
+     * @return Quote $quote
      * @throws \Exception
      */
     private function castProviderQuoteToAppQuote($providerQuote)
@@ -116,7 +116,7 @@ class PriceAdapter_Scheb implements \App\Service\PriceHistory\PriceAdapterInterf
         $instrument = $this->instrumentRepository->findOneBySymbol($providerQuote->getSymbol());
 
         if ($instrument) {
-            $quote = new OHLCVQuote();
+            $quote = new Quote();
             $quote->setInstrument($instrument);
             $quote->setProvider(Yahoo::PROVIDER_NAME);
             $quote->setTimestamp($providerQuote->getRegularMarketTime());

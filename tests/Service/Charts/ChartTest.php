@@ -11,7 +11,7 @@
 namespace App\Tests\Service\Charts;
 
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use App\Entity\Instrument;
 use App\Service\Charting\OHLCV\ChartFactory;
 use App\Service\Charting\OHLCV\Style;
@@ -24,6 +24,8 @@ class ChartTest extends KernelTestCase
 
     private $catalog;
 
+    private $styleLibrary;
+
     /**
      * Details on how to access services in tests:
      * https://symfony.com/blog/new-in-symfony-4-1-simpler-service-testing
@@ -35,6 +37,7 @@ class ChartTest extends KernelTestCase
         $this->em = self::$container->get('doctrine')->getManager();
         $this->instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol('LIN');
         $this->catalog = self::$container->get('App\Service\Exchange\Catalog');
+        $this->styleLibrary = self::$container->get('App\Service\Charting\OHLCV\StyleLibrary');
     }
 
     public function testDefaultStyle10()
@@ -52,7 +55,8 @@ class ChartTest extends KernelTestCase
 
         $priceProvider = null;
         $history = $OHLCVHistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
-        $style = new Style();
+
+        $style = $this->styleLibrary->getStyle('default');
 
         $chart = ChartFactory::create($style, $history);
         $chart->save_chart();
@@ -74,31 +78,8 @@ class ChartTest extends KernelTestCase
         $priceProvider = null;
         $history = $OHLCVHistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
 
-
-        $style = new Style('small');
-        $style->width = 300;
-        $style->height = 200;
-        $style->y_axis['print_offset_major'] = 2;
-        $style->y_axis['show_minor_values'] = false;
-        $style->y_axis['minor_interval_count'] = 5;
-        $style->y_axis['show_minor_grid'] = false;
-        $style->y_axis['font_size'] = 8;
-        $style->y_axis['major_tick_size'] = 2;
-        $style->y_axis['minor_tick_size'] = 0;
-        $style->y_axis['precision'] = 0;
-        $style->chart_path = 'src/Studies/MyStudy/chart_small.png';
+        $style = $this->styleLibrary->getStyle('small');
         $style->symbol = $this->instrument->getSymbol();
-        $style->percent_chart_area = 70;
-        $style->x_axis['min'] = -1;
-        $style->x_axis['max'] = 55;
-        $style->x_axis['y_intersect'] = 55;
-        $style->x_axis['major_interval'] = 5;
-        $style->x_axis['minor_interval_count'] = 5;
-        $style->x_axis['font_size'] = 8;
-        $style->x_axis['major_tick_size'] = 2;
-        $style->x_axis['minor_tick_size'] = 0;
-        $style->x_axis['print_offset_major'] = 14;
-        $style->x_axis['show_major_grid'] = FALSE;
         $style->categories = array_map(function($p) { return $p->getTimestamp()->format('d'); }, $history);
 
         $keys = array_keys($history);
@@ -136,31 +117,8 @@ class ChartTest extends KernelTestCase
         $priceProvider = null;
         $history = $OHLCVHistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
 
-
-        $style = new Style('medium');
-        $style->width = 800;
-        $style->height = 600;
-        $style->y_axis['print_offset_major'] = 2;
-        $style->y_axis['show_minor_values'] = false;
-        $style->y_axis['minor_interval_count'] = 5;
-        $style->y_axis['show_minor_grid'] = false;
-        $style->y_axis['font_size'] = 8;
-        $style->y_axis['major_tick_size'] = 4;
-        $style->y_axis['minor_tick_size'] = 0;
-        $style->y_axis['precision'] = 0;
-        $style->chart_path = 'src/Studies/MyStudy/chart_medium.png';
+        $style = $this->styleLibrary->getStyle('medium');
         $style->symbol = $this->instrument->getSymbol();
-        $style->percent_chart_area = 70;
-        $style->x_axis['min'] = -1;
-        $style->x_axis['max'] = 105;
-        $style->x_axis['y_intersect'] = 105;
-        $style->x_axis['major_interval'] = 5;
-        $style->x_axis['minor_interval_count'] = 5;
-        $style->x_axis['font_size'] = 8;
-        $style->x_axis['major_tick_size'] = 2;
-        $style->x_axis['minor_tick_size'] = 0;
-        $style->x_axis['print_offset_major'] = 32;
-        $style->x_axis['show_major_grid'] = FALSE;
         $style->categories = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $history);
 
         $keys = array_keys($history);
@@ -198,33 +156,9 @@ class ChartTest extends KernelTestCase
         $priceProvider = null;
         $history = $OHLCVHistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
 
-        $style = new Style('medium_b&b');
-        $style->width = 800;
-        $style->height = 600;
-        $style->y_axis['print_offset_major'] = 2;
-        $style->y_axis['show_minor_values'] = false;
-        $style->y_axis['minor_interval_count'] = 5;
-        $style->y_axis['show_minor_grid'] = false;
-        $style->y_axis['font_size'] = 8;
-        $style->y_axis['major_tick_size'] = 4;
-        $style->y_axis['minor_tick_size'] = 0;
-        $style->y_axis['precision'] = 0;
-        $style->chart_path = 'src/Studies/MyStudy/chart_medium_b&b.png';
+        $style = $this->styleLibrary->getStyle('medium_b&b');
         $style->symbol = $this->instrument->getSymbol();
-        $style->percent_chart_area = 70;
-        $style->x_axis['min'] = -1;
-        $style->x_axis['max'] = 105;
-        $style->x_axis['y_intersect'] = 105;
-        $style->x_axis['major_interval'] = 5;
-        $style->x_axis['minor_interval_count'] = 5;
-        $style->x_axis['font_size'] = 8;
-        $style->x_axis['major_tick_size'] = 2;
-        $style->x_axis['minor_tick_size'] = 0;
-        $style->x_axis['print_offset_major'] = 32;
-        $style->x_axis['show_major_grid'] = FALSE;
         $style->categories = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $history);
-        $style->color_up = 'blue';
-        $style->color_down = 'black';
 
         $keys = array_keys($history);
         $lastPriceHistoryKey = array_pop($keys);

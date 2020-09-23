@@ -10,7 +10,7 @@
 
 namespace App\Command;
 
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use App\Service\UtilityServices;
 use League\Csv\Reader;
 use League\Csv\Statement;
@@ -249,18 +249,18 @@ EOT
         $lines = $ohlcvReader->getRecords();
 
         foreach ($lines as $number => $line) {
-            $OHLCVHistory = new OHLCVHistory();
-            $OHLCVHistory->setTimestamp(new \DateTime($line['Date']));
-            $OHLCVHistory->setOpen($line['Open']);
-            $OHLCVHistory->setHigh($line['High']);
-            $OHLCVHistory->setLow($line['Low']);
-            $OHLCVHistory->setClose($line['Close']);
-            $OHLCVHistory->setVolume((int)$line['Volume']);
-            $OHLCVHistory->setInstrument($instrument);
-            $OHLCVHistory->setTimeinterval($period);
-            $OHLCVHistory->setProvider($provider);
+            $History = new History();
+            $History->setTimestamp(new \DateTime($line['Date']));
+            $History->setOpen($line['Open']);
+            $History->setHigh($line['High']);
+            $History->setLow($line['Low']);
+            $History->setClose($line['Close']);
+            $History->setVolume((int)$line['Volume']);
+            $History->setInstrument($instrument);
+            $History->setTimeinterval($period);
+            $History->setProvider($provider);
 
-            $this->em->persist($OHLCVHistory);
+            $this->em->persist($History);
         }
         $this->em->flush();
 

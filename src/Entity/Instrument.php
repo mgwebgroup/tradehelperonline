@@ -1,9 +1,9 @@
 <?php
 /**
- * A note on relations between instrument, OHLCVHistory and OHLCVQuote:
- *  OHLCVHistory is supposed to have a lot of data. Having it as a collection
+ * A note on relations between instrument, OHLCV\History and OHLCV\Quote:
+ *  OHLCV\History is supposed to have a lot of data. Having it as a collection
  *  property on instrument is going to affect performance. Having collections
- *  has its benefits in ease of access. Therefore, only OHLCVQuotes are 
+ *  has its benefits in ease of access. Therefore, only OHLCV\Quote[] are
  *  accessible via collection prop on instruments, because only one quote 
  *  per instrument is supposed to be stored.
  */
@@ -13,6 +13,8 @@ namespace App\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\OHLCV\History;
+use App\Entity\OHLCV\Quote;
 
 /**
  * @ORM\Table(name="instruments")
@@ -43,7 +45,7 @@ class Instrument
     private $description;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\OHLCVHistory", mappedBy="instrument", orphanRemoval=true, cascade={"detach"})
+     * @ORM\OneToMany(targetEntity="App\Entity\OHLCV\History", mappedBy="instrument", orphanRemoval=true, cascade={"detach"})
      */
     private $oHLCVHistories;
 
@@ -53,7 +55,8 @@ class Instrument
     private $exchange;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\OHLCVQuote", mappedBy="instrument", cascade={"persist", "remove", "refresh"})
+     * @ORM\OneToOne(targetEntity="App\Entity\OHLCV\Quote", mappedBy="instrument", cascade={"persist", "remove",
+     *     "refresh"})
      */
     private $oHLCVQuote;
 
@@ -106,14 +109,14 @@ class Instrument
     }
 
     /**
-     * @return Collection|OHLCVHistory[]
+     * @return Collection|OHLCV\History[]
      */
     public function getOHLCVHistories(): Collection
     {
         return $this->oHLCVHistories;
     }
 
-    public function addOHLCVHistory(OHLCVHistory $oHLCVHistory): self
+    public function addOHLCVHistory(History $oHLCVHistory): self
     {
         if (!$this->oHLCVHistories->contains($oHLCVHistory)) {
             $this->oHLCVHistories[] = $oHLCVHistory;
@@ -123,7 +126,7 @@ class Instrument
         return $this;
     }
 
-    public function removeOHLCVHistory(OHLCVHistory $oHLCVHistory): self
+    public function removeOHLCVHistory(History $oHLCVHistory): self
     {
         if ($this->oHLCVHistories->contains($oHLCVHistory)) {
             $this->oHLCVHistories->removeElement($oHLCVHistory);
@@ -148,12 +151,12 @@ class Instrument
         return $this;
     }
 
-    public function getOHLCVQuote(): ?OHLCVQuote
+    public function getOHLCVQuote(): ?Quote
     {
         return $this->oHLCVQuote;
     }
 
-    public function setOHLCVQuote(OHLCVQuote $oHLCVQuote): self
+    public function setOHLCVQuote(Quote $oHLCVQuote): self
     {
         $this->oHLCVQuote = $oHLCVQuote;
 

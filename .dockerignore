@@ -1,0 +1,20 @@
+# Lines below * indicate which files and folders are included
+*
+!assets
+!bin
+!config
+!data
+!public
+!src
+!templates
+!tests
+!.env.dist
+!composer.json
+!composer.lock
+!deploy_app
+!package.json
+!package-lock.json
+!phpunit.xml.dist
+!symfony.lock
+!webpack.config.js
+!yarn.lock

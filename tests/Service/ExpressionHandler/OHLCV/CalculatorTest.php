@@ -8,19 +8,19 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Tests\Service\Scanner\OHLCV;
+namespace App\Tests\Service\ExpressionHandler\OHLCV;
 
-use App\Entity\OHLCVHistory;
+use App\Entity\OHLCV\History;
 use App\Exception\PriceHistoryException;
+use App\Service\ExpressionHandler\OHLCV\Calculator;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use \App\Entity\Instrument;
-use \App\Service\Scanner\OHLCV\ScannerExpression;
-use Symfony\Component\ExpressionLanguage\SyntaxError;
+use App\Entity\Instrument;
+use App\Service\Scanner\OHLCV\ScannerExpression;
 
-class ScannerExpressionTest extends KernelTestCase
+class CalculatorTest extends KernelTestCase
 {
     /**
-     * @var \App\Service\Scanner\OHLCV\ScannerExpression
+     * @var \App\Service\Formula\OHLCV\Calculator
      */
     private $SUT;
 
@@ -40,17 +40,17 @@ class ScannerExpressionTest extends KernelTestCase
     protected function setUp(): void
     {
         self::bootKernel();
-        $this->SUT = self::$container->get(ScannerExpression::class);
+        $this->SUT = self::$container->get(Calculator::class);
         $this->em = self::$container->get('doctrine')->getManager();
         $this->instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol('FB');
 
-        $result = $this->em->getRepository(OHLCVHistory::class)->findBy(
+        $result = $this->em->getRepository(History::class)->findBy(
           ['instrument' => $this->instrument],
           ['timestamp' => 'desc'],
           1
         );
-        $OHLCVHistory = array_shift($result);
-        $this->latestDate = clone $OHLCVHistory->getTimestamp();
+        $history = array_shift($result);
+        $this->latestDate = clone $history->getTimestamp();
     }
 
     /**

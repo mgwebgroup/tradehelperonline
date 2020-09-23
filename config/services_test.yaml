@@ -11,7 +11,7 @@ services:
   App\Service\Scanner\OHLCV\Scanner:
     public: true
     autowire: true
-  App\Service\Scanner\OHLCV\ScannerExpression:
+  App\Service\ExpressionHandler\OHLCV\Calculator:
       public: true
       autowire: true
   App\Service\Exchange\DailyIterator:
@@ -23,9 +23,17 @@ services:
   App\Service\Exchange\MonthlyIterator:
     public: true
     autowire: true
-  App\Service\Charts\Chart:
+  App\Service\Charting\OHLCV\Chart:
     public: true
     autowire: true
   App\Service\Exchange\Catalog:
     public: true
     autowire: true
+  App\Service\Charting\OHLCV\StyleLibrary:
+    public: true
+    autowire: true
+  App\Service\Watchlist\Factory:
+    public: true
+    autowire: true
+
+

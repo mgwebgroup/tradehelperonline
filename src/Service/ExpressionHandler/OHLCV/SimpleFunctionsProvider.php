@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Service\Scanner\OHLCV;
+namespace App\Service\ExpressionHandler\OHLCV;
 
 use App\Exception\PriceHistoryException;
 use App\Service\Exchange\MonthlyIterator;
@@ -20,7 +20,7 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\NoResultException;
 use App\Service\Exchange\Catalog;
 
-class ScannerSimpleFunctionsProvider implements ExpressionFunctionProviderInterface
+class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
 {
     /**
      * @var \Doctrine\ORM\EntityManager
@@ -77,6 +77,13 @@ class ScannerSimpleFunctionsProvider implements ExpressionFunctionProviderInterf
             ];
     }
 
+    /**
+     * @param sting $column name in ohlcvhistory table
+     * @param integer $offset
+     * @param array $arguments
+     * @return mixed
+     * @throws PriceHistoryException
+     */
     protected function getValue($column, $offset, $arguments)
     {
         $column = strtolower($column);
@@ -84,102 +91,105 @@ class ScannerSimpleFunctionsProvider implements ExpressionFunctionProviderInterf
             $instrument = $this->getInstrument($arguments);
             $interval = $this->getInterval($arguments);
             $today = $this->getToday($arguments);
-//            $exchange = $this->catalog->getExchangeFor($instrument);
-//            $tradingCalendar = $exchange->getTradingCalendar();
-//            $tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
-//
-//            $offsetDate = $this->figureOffsetDate($tradingCalendar, $interval, $offset);
-//
-//            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h
-//                join h.instrument i
-//                where i.id =  :id and
-//                date_format(h.timestamp, \'%%Y-%%m-%%d\') = :date and
-//                h.timeinterval = :interval',
-//                           $column);
-//
-//            $query = $this->em->createQuery($dql);
-//            $query->setParameter('id', $instrument->getId());
-//            $query->setParameter('date', $offsetDate->format('Y-m-d'));
-//            $query->setParameter('interval', $interval);
+            $exchange = $this->catalog->getExchangeFor($instrument);
+            $tradingCalendar = $exchange->getTradingCalendar();
+            $tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
 
-            // faster alternative is to use a limit statement
-            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h 
-                join h.instrument i 
-                where i.id = :id and 
-                date_format(h.timestamp, \'%%Y-%%m-%%d\') <= :date and 
-                h.timeinterval = :interval 
-                order by h.timestamp desc',
+            $offsetDate = $this->figureOffsetDate($tradingCalendar, $interval, $offset);
+
+            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
+                join h.instrument i
+                where i.id =  :id and
+                date_format(h.timestamp, \'%%Y-%%m-%%d\') = :date and
+                h.timeinterval = :interval',
                            $column);
-            $query = $this->em->createQuery($dql)->setFirstResult($offset)->setMaxResults(1);
+
+            $query = $this->em->createQuery($dql);
             $query->setParameter('id', $instrument->getId());
-            $query->setParameter('date', $today->format('Y-m-d'));
+            $query->setParameter('date', $offsetDate->format('Y-m-d'));
             $query->setParameter('interval', $interval);
 
+            // to ignore dates use a limit statement
+//            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
+//                join h.instrument i
+//                where i.id = :id and
+//                date_format(h.timestamp, \'%%Y-%%m-%%d\') <= :date and
+//                h.timeinterval = :interval
+//                order by h.timestamp desc',
+//                           $column);
+//            $query = $this->em->createQuery($dql)->setFirstResult($offset)->setMaxResults(1);
+//            $query->setParameter('id', $instrument->getId());
+//            $query->setParameter('date', $today->format('Y-m-d'));
+//            $query->setParameter('interval', $interval);
 
-//            $result = $query->getSingleResult();
             $result = $query->getArrayResult();
-
-//            return $result[$column];
             if (empty($result)) {
                 throw new NoResultException();
             }
             return $result[0][$column];
         } catch (NoResultException $e) {
-            throw new PriceHistoryException(sprintf('Could not find value for `Close(%d)`', $offset));
+            throw new PriceHistoryException(sprintf('Could not find value for `Close(%d)`', $offset), 0);
         }
     }
 
+    /**
+     * @param sting $column name in ohlcvhistory table
+     * @param integer $offset
+     * @param array $arguments
+     * @return mixed
+     * @throws PriceHistoryException
+     */
     protected function getAverage($column, $period, $arguments) {
         $column = strtolower($column);
         try {
             $instrument = $this->getInstrument($arguments);
             $interval = $this->getInterval($arguments);
             $today = $this->getToday($arguments);
-//            $exchange = $this->catalog->getExchangeFor($instrument);
-//            $tradingCalendar = $exchange->getTradingCalendar();
-//            $tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
-//
-//            $offsetDate = $this->figureOffsetDate($tradingCalendar, $interval, $period);
+            $exchange = $this->catalog->getExchangeFor($instrument);
+            $tradingCalendar = $exchange->getTradingCalendar();
+            $tradingCalendar->getInnerIterator()->setStartDate($today)->setDirection(-1);
+
+            $offsetDate = $this->figureOffsetDate($tradingCalendar, $interval, $period);
 
             // not using avg(h.%s) aggregate function, because it will mask error if number of records present is less
             // than $period
-//            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h
+            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
+                join h.instrument i
+                where i.id = :id and
+                date_format(h.timestamp, \'%%Y-%%m-%%d\') > :date and
+                h.timeinterval = :interval
+                order by h.timestamp desc',
+                           $column);
+            $query = $this->em->createQuery($dql);
+            $query->setParameter('id', $instrument->getId());
+            $query->setParameter('date', $offsetDate->format('Y-m-d'));
+            $query->setParameter('interval', $interval);
+
+            // to ignore dates use limit statement:
+//            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
 //                join h.instrument i
 //                where i.id = :id and
-//                date_format(h.timestamp, \'%%Y-%%m-%%d\') > :date and
+//                date_format(h.timestamp, \'%%Y-%%m-%%d\') <= :date and
 //                h.timeinterval = :interval
 //                order by h.timestamp desc',
 //                           $column);
-//            $query = $this->em->createQuery($dql);
+//            $query = $this->em->createQuery($dql)->setMaxResults($period);
 //            $query->setParameter('id', $instrument->getId());
-//            $query->setParameter('date', $offsetDate->format('Y-m-d'));
+//            $query->setParameter('date', $today->format('Y-m-d'));
 //            $query->setParameter('interval', $interval);
-
-            // faster alternative would be to use limit statement:
-            $dql = sprintf('select h.%s from \App\Entity\OHLCVHistory h 
-                join h.instrument i 
-                where i.id = :id and 
-                date_format(h.timestamp, \'%%Y-%%m-%%d\') <= :date and 
-                h.timeinterval = :interval 
-                order by h.timestamp desc',
-                           $column);
-            $query = $this->em->createQuery($dql)->setMaxResults($period);
-            $query->setParameter('id', $instrument->getId());
-            $query->setParameter('date', $today->format('Y-m-d'));
-            $query->setParameter('interval', $interval);
 
             $result = $query->getResult();
 
             if (count($result) < $period) {
-                throw new PriceHistoryException(sprintf('Not enough values for `Average(%s, %d)`', $column, $period));
+                throw new PriceHistoryException(sprintf('Not enough values for `Average(%s, %d)`', $column, $period), 3);
             } elseif (count($result) > $period) {
                 throw new PriceHistoryException(sprintf('Error in getting accurate result for `Average(%s, %d)`',
-                                                        $column, $period));
+                                                        $column, $period), 2);
             }
 
             return array_sum(array_map(function($v) use ($column)  {return $v[$column];}, $result)) / count($result);
         } catch (NoResultException $e) {
-            throw new PriceHistoryException(sprintf('Could not find value for `Average(%s, %d)`', $column, $period));
+            throw new PriceHistoryException(sprintf('Could not find value for `Average(%s, %d)`', $column, $period), 1);
         }
     }
 

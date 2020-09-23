@@ -21,21 +21,21 @@ interface PriceAdapterInterface
      * @param \DateTime $fromDate
      * @param \DateTime $toDate
      * @param array $options
-     * @return App\Entity\OHLCVHistory[]
+     * @return App\Entity\OHLCV\History[]
      */
     public function getHistoricalData($instrument, $fromDate, $toDate, $options);
 
     /**
      * Downloads price quote
      * @param App\Entity\Instrument $instrument
-     * @return App\Entity\OHLCVQuote $quote
+     * @return App\Entity\OHLCV\Quote $quote
      */
     public function getQuote($instrument);
 
     /**
      * Downloads several price quotes
      * @param App\Entity\Instrument[] $list
-     * @return App\Entity\OHLCVQuote[]
+     * @return App\Entity\OHLCV\Quote[]
      */
     public function getQuotes($list);
 }

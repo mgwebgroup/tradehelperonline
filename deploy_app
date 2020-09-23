@@ -3,50 +3,86 @@ while (( "$#" > 0 )) ; do
   case $1 in
     bare)
       echo 'will perform bare install'
-      cp .env.test .env
+      if [ ! -f  .env ]; then
+        cp .env.dist .env;
+      fi
       # prep variables for the .env file
+      echo "APP_SECRET=$(openssl rand -base64 12)" >> .env
       echo "APP_ENV=$APP_ENV" >> .env
       echo "DATABASE_URL=\"$DATABASE_CONNECTOR\"" >> .env
       composer install
+      yarn install
+      sudo chown -R :www-data var/cache
+      sudo chmod -R g+w var/cache
+      sudo chmod -R g+w var/log
+      bin/console cache:clear
       ;;
-    database)
-      echo 'will create blank database and perform migrations'
-      bin/console doctrine:database:create
-      bin/console doctrine:migrations:migrate --no-interaction
+    assets)
+      echo 'will install assets managed by webpack'
+      rclone --config=/run/secrets/datastore copy $DATA_REMOTE:$BUCKET_NAME/assets /var/www/html/assets
+      bin/console cache:clear
+      yarn encore production
       ;;
-    fixtures)
-      # include check for non-prod environment here
-      # ...
-      echo 'will clear out existing database and add fixtures'
-#      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
-      bin/console doctrine:fixtures:load --group=Instruments --no-interaction
-      bin/console doctrine:fixtures:load --group=OHLCV1 --append --no-interaction
-      bin/console doctrine:fixtures:load --group=OHLCV2 --append --no-interaction
-      ;;
-    tests)
-      echo 'will run unit tests'
-      bin/phpunit tests/Service/Exchange/DailyIteratorTest.php
-      bin/phpunit tests/Service/Exchange/WeeklyIteratorTest.php
-      bin/phpunit tests/Service/Exchange/MonthlyIteratorTest.php
-      bin/phpunit tests/Service/Exchange/Equities
-      bin/phpunit tests/Service/PriceHistory/OHLCV
-      bin/phpunit tests/Service/Scanner/OHLCV
+    settings)
+#      echo 'will transfer application settings'
+       # rclone --config=/run/secrets/datastore copy $DATA_REMOTE:$BUCKET_NAME:config/services.yaml /var/www/html/config
+      echo 'no settings to transfer'
       ;;
     data)
       echo 'will copy application data from aws'
-      rclone --config=$RCLONE_CONFIG copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
-      bin/console instruments:import -v --clear-db=true
-      bin/console price:import -v --provider=YAHOO
+      rclone --config=/run/secrets/datastore copy $DATA_REMOTE:$BUCKET_NAME/data/source/ohlcv /var/www/html/data/source/ohlcv
+#      bin/console instruments:import -v --clear-db=true
+#      bin/console price:import -v --provider=YAHOO
+#      echo 'run audits on data'
+#      bin/console price:audit -v --provider=YAHOO
       ;;
-    audits)
-      echo 'run audits on data'
-      bin/console price:audit -v --provider=YAHOO
+    database)
+      echo 'create empty database'
+      bin/console doctrine:database:create
+      ;;
+    migrations)
+      echo 'will perform migrations'
+      if [ "$APP_ENV" != 'prod' ]; then
+        bin/console doctrine:migrations:migrate --no-interaction
+      else
+        echo 'refuse to perform database migrations in prod environment'
+        exit 1
+      fi
+      ;;
+    fixtures)
+      # loading of fixtures can only be done in test environment into a dedicated database
+      if [ "$APP_ENV" == 'test' ]; then
+        if [ ! -f .env.test ]; then
+          echo "KERNEL_CLASS='App\Kernel'" >> .env.test
+          echo "DATABASE_URL=\"$DATABASE_CONNECTOR\"" >> .env.test
+        fi
+        echo 'will clear out existing database and add fixtures'
+        bin/console doctrine:database:create
+        bin/console doctrine:fixtures:load --group=Instruments --no-interaction
+        bin/console doctrine:fixtures:load --group=OHLCV1 --append --no-interaction
+        bin/console doctrine:fixtures:load --group=OHLCV2 --append --no-interaction
+      else
+          echo 'Application is not in test environment. Deployment of fixtures will not be performed'
+          exit 1
+      fi
+      ;;
+    tests)
+      if [ "$APP_ENV" == 'test' ]; then
+        echo 'will run unit tests'
+        bin/phpunit tests/Service/Exchange/DailyIteratorTest.php
+        bin/phpunit tests/Service/Exchange/WeeklyIteratorTest.php
+        bin/phpunit tests/Service/Exchange/MonthlyIteratorTest.php
+        bin/phpunit tests/Service/Exchange/Equities
+        bin/phpunit tests/Service/PriceHistory/OHLCV
+        bin/phpunit tests/Service/Scanner/OHLCV
+        bin/phpunit tests/Service/Formula/OHLCV
+      else
+        echo 'Application is not in test or dev environment. Testing will not be performed'
+        exit 1
+      fi
       ;;
     *) echo "invalid directive $1"
       ;;
   esac
   shift
 done
-
-## Include bash scripts to formulate y_universe and lists for nyse, amex, and nasdaq
-## ...

@@ -39,7 +39,8 @@ class SyncPrice extends Command
 
     const START_DATE = '2011-01-01';
 
-    const MAX_DELAY = 10;
+    const MIN_DELAY = 3;
+    const MAX_DELAY = 12;
 
     /**
      * @var Doctrine\ORM\EntityManager
@@ -331,10 +332,11 @@ EOT
                 $logMsg .= $e->getMessage();
                 switch ($e->getCode()) {
                     case 1:
-                        $screenMsg .= 'Missing exchange name';
+                        $screenMsg .= 'Missing exchange name ';
                         break;
                     case 2:
-                        $screenMsg .= 'API_fail';
+                    case 3:
+                        $screenMsg .= 'API_fail ';
                         break;
                     default:
                         $screenMsg .= $e->getMessage();
@@ -407,7 +409,7 @@ EOT
         if ($this->delay > 0) {
             sleep($this->delay);
         } elseif ($this->delay < 0) {
-            sleep(rand(0,self::MAX_DELAY));
+            sleep(rand(self::MIN_DELAY,self::MAX_DELAY));
         }
 
         $history = $this->priceProvider->downloadHistory($instrument, $fromDate, $today, $options);
