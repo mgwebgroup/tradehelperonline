@@ -19,4 +19,4 @@
 /.bash_history
 .~lock.*
 /data/source
-
+/node_modules
