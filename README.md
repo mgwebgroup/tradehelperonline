@@ -103,7 +103,7 @@ docker build \
 --build-arg=DB_USER=user \
 --build-arg=DB_PASSWORD=mypassword \
 --build-arg=DB_HOST=172.24.1.3 \
--t calendar-p4t:prod \
+-t tradehelperonline:prod \
 --secret id=datastore,src=$HOME/.config/rclone/rclone.conf \
 .
 ```
