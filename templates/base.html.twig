@@ -2,11 +2,18 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>{% block title %}Welcome to TradeHelper!{% endblock %}</title>
-        {% block stylesheets %}{% endblock %}
+        <title>{% block title %}Trade Helper{% endblock %}</title>
+        {% block stylesheets %}
+            {{ encore_entry_link_tags('app')  }}
+        {% endblock %}
+        {% block head_js %}{% endblock %}
     </head>
     <body>
-        {% block body %}{% endblock %}
-        {% block javascripts %}{% endblock %}
+        {% block body %}
+            <div><h3>Welcome to Trade Helper!</h3>Install a study to begin.</div>
+        {% endblock %}
+        {% block javascripts %}
+            {{ encore_entry_script_tags('app') }}
+        {% endblock %}
     </body>
 </html>
