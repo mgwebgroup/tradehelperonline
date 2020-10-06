@@ -1,3 +1,8 @@
+/akay/*
+/.idea/*
+/.bash_history
+.~lock.*
+/data/source
 
 ###> symfony/framework-bundle ###
 .env
@@ -14,11 +19,6 @@
 /phpunit.xml
 ###< symfony/phpunit-bridge ###
 
-/akay/*
-/.idea/*
-/.bash_history
-.~lock.*
-/data/source
 
 ###> symfony/webpack-encore-bundle ###
 /node_modules/
