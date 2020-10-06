@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block body %}
+        <div>Some info goes here</div>
+{% endblock %}
+{% block javascripts %}
+    {{ parent() }}
+    {{ encore_entry_script_tags('page1') }}
+{% endblock %}
+</html>

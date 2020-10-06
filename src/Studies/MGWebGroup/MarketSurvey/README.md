@@ -39,3 +39,13 @@ return [
     App\Studies\MGWebGroup\MarketSurvey\MarketSurveyBundle::class => ['all' => true],
 ];
 ```
+
+### Step 3: Install and Compile Bundle Assets
+Copy this bundle's assets as symlinks into *public/bundle/marketsurvey* folder 
+```console
+$ bin/console assets:install public --symlink --relative
+```
+This bundle's file *webpack.config.js* is already set to compile app's general assets (normally compiled with **npm run dev**). So you just need to compile this bundle's assets: 
+```console
+$ npx encore dev --config src/Studies/MGWebGroup/MarketSurvey/webpack.config.js
+```

@@ -11,11 +11,13 @@
 namespace App\Studies\MGWebGroup\MarketSurvey\Controller;
 
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
-class Controller
+class Controller extends AbstractController
 {
     public function index()
     {
-        return new Response('test');
+//        return new Response('test');
+        return $this->render('@MarketSurvey/base.html.twig', []);
     }
 }
