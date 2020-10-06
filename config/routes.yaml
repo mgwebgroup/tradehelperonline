@@ -1,2 +1,5 @@
+index:
+    path: /
+    controller: App\Controller\DefaultController::index
 mgwebgroup_market_survey:
   resource: '@MarketSurveyBundle/Resources/config/routes.yaml'

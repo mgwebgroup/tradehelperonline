@@ -11,7 +11,7 @@ while (( "$#" > 0 )) ; do
       echo "APP_ENV=$APP_ENV" >> .env
       echo "DATABASE_URL=\"$DATABASE_CONNECTOR\"" >> .env
       composer install
-      yarn install
+      npm install
       sudo chown -R :www-data var/cache
       sudo chmod -R g+w var/cache
       sudo chmod -R g+w var/log
