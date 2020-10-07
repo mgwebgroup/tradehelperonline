@@ -1,0 +1,26 @@
+{% extends "base.html.twig" %}
+
+{% block body %}
+    <div class="container outer">
+        {% block status %}
+            <section class="row">
+                <div class="col-sm bg-primary">.bg-primary</div><div class="col-sm bg-secondary">.bg-secondary</div><div class="col-sm bg-light">.bg-light</div><div class="col-sm bg-dark">.bg-dark</div>
+            </section>
+        {% endblock %}
+        {% block main_menu %}
+            <section class="row">
+                <div>menu</div>
+            </section>
+        {% endblock %}
+        {% block content %}
+            <section class="row">
+                <div>content</div>
+            </section>
+        {% endblock %}
+        {% block footer %}
+            <section class="row">
+                <div class="col-sm bg-success">.bg-success</div><div class="col-sm bg-danger">.bg-danger</div><div class="col-sm bg-warning">.bg-warning</div><div class="col-sm bg-info">.bg-info</div>
+            </section>
+        {% endblock %}
+    </div>
+{% endblock %}
