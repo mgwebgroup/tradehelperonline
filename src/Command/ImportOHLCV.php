@@ -91,7 +91,7 @@ class ImportOHLCV extends Command
 
     protected function configure()
     {
-        $this->setName('price:import');
+        $this->setName('th:price:import');
 
         $this->setDescription(
           'Imports daily and weekly OHLCV price data from .csv files into database'

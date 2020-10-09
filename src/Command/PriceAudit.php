@@ -119,7 +119,7 @@ class PriceAudit extends Command
 
     protected function configure()
     {
-        $this->setName('price:audit');
+        $this->setName('th:price:audit');
 
         $this->setDescription(
           'Performs price audits for gaps, old price data, etc.'

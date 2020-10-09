@@ -107,7 +107,7 @@ class SyncPrice extends Command
 
     protected function configure()
     {
-        $this->setName('price:sync');
+        $this->setName('th:price:sync');
 
         $this->setDescription('Syncs up prices for a list of stocks from a price provider');
 
