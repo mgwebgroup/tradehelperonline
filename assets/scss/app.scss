@@ -1,0 +1,17 @@
+@font-face { font-family: "Cabin-Regular"; src: url("../fonts/cabin/Cabin-Regular.ttf"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Cabin-Bold"; src: url("../fonts/cabin/Cabin-Bold.ttf"); font-weight: 900; font-style: normal; }
+@font-face { font-family: "Cabin-Italic"; src: url("../fonts/cabin/Cabin-Italic.ttf"); font-weight: 400; font-style: italic; }
+@font-face { font-family: "Cabin-Medium"; src: url("../fonts/cabin/Cabin-Medium.ttf"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Cabin-SemiBold"; src: url("../fonts/cabin/Cabin-SemiBold.ttf"); font-weight: 600; font-style: normal; }
+@font-face { font-family: "DroidSans"; src: url("../fonts/droidsans/DroidSans.ttf"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "DroidSans-Bold"; src: url("../fonts/droidsans/DroidSans-Bold.ttf"); font-weight: 900; font-style: normal; }
+
+$font-family-base: Cabin-Regular;
+$headings-font-family: DroidSans;
+
+$body-color: #495057; // gray-700
+
+// Or use alternate detailed loading from https://getbootstrap.com/docs/4.5/getting-started/theming
+@import "../../node_modules/bootstrap/scss/bootstrap";
+
+

@@ -19,6 +19,7 @@ use App\Service\Exchange\MonthlyIterator;
 use App\Service\Exchange\WeeklyIterator;
 use App\Service\Exchange\Equities\TradingCalendar;
 use App\Service\Exchange\DailyIterator;
+use App\Entity\Instrument;
 
 
 class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
@@ -43,7 +44,7 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
 
         $tradingCalendar = new TradingCalendar(new DailyIterator());
 
-        $instrumentRepository = $manager->getRepository(\App\Entity\Instrument::class);
+        $instrumentRepository = $manager->getRepository(Instrument::class);
         $instrument = $instrumentRepository->findOneBySymbol('FB');
         $provider = null;
         $interval = [
@@ -68,7 +69,7 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
           [10, .1, 0.05, 1006],
           [10, .9, 0.05, 1007],
           [10, -.9, 0.05, 1008],
-          [10, -.1, 0.05, 1009],
+          [3.5, -.1, 0.05, 1009],
           [5, .5, 0.01, 1010],
         ];
         $gradient = 1;
@@ -77,8 +78,6 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
             array_push($data, $open);
             $data = array_merge($data, $parameters);
 
-//            $func = 'generate' . \ucwords($name);
-//            $ohlcv = call_user_func([$this, $func], ...$data);
             $ohlcv = $this->generateCandle(...$data);
 
             $manager->persist($ohlcv);
@@ -119,8 +118,6 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
             array_push($data, $open);
             $data = array_merge($data, $parameters);
 
-//            $func = 'generate' . \ucwords($name);
-//            $ohlcv = call_user_func([$this, $func], ...$data);
             $ohlcv = $this->generateCandle(...$data);
 
             $manager->persist($ohlcv);
@@ -159,8 +156,6 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
             array_push($data, $open);
             $data = array_merge($data, $parameters);
 
-//            $func = 'generate' . \ucwords($name);
-//            $ohlcv = call_user_func([$this, $func], ...$data);
             $ohlcv = $this->generateCandle(...$data);
 
             $manager->persist($ohlcv);
@@ -175,6 +170,40 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
 
         // yearly
         // ...
+
+
+        // daily typical shapes:
+        $date = new \DateTime('2020-02-21'); // 21-February-2020 Friday
+        $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
+        $tradingCalendar->getInnerIterator()->rewind();
+
+        $open = 100;
+        $sequence = [
+            // daily inside bar and and up
+            [5, 1, 0, 1001],
+            [11, .9, 0.05, 1002],
+            // bullish engulphing
+//            [],
+
+        ];
+        $gradient = 0;
+        $data = [$provider, $date, $instrument, $interval['daily']];
+        foreach ($sequence as $name => $parameters) {
+            array_push($data, $open);
+            $data = array_merge($data, $parameters);
+
+            $ohlcv = $this->generateCandle(...$data);
+
+            $manager->persist($ohlcv);
+            $manager->flush();
+
+            $open += $gradient;
+            $tradingCalendar->next();
+            $data[1] = $tradingCalendar->current();
+            $data = array_splice($data, 0, 4);
+        }
+
+        $output->writeln(sprintf('Imported daily prices for %s', $instrument->getSymbol()));
 
     }
 
@@ -205,6 +234,12 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
         $movement = $size * $bodySize;
         $close = $open + $movement;
         $p->setClose($close);
+//        if ($movement > 0) {
+//
+//        } else {}
+
+
+
         if ($movement > 0) {
             $p->setHigh($close + $tail);
             $p->setLow($p->getHigh() - $size);

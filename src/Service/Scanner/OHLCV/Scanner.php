@@ -14,6 +14,7 @@ use App\Service\Scanner\ScannerInterface;
 use Doctrine\Common\Collections\Expr\ClosureExpressionVisitor;
 use Doctrine\Common\Collections\Expr\Comparison;
 use App\Service\Scanner\ExpressionValue;
+use App\Service\ExpressionHandler\OHLCV\Calculator;
 
 /**
  * Class Scanner
@@ -32,7 +33,7 @@ class Scanner implements ScannerInterface
 
 
     public function __construct(
-      \App\Service\ExpressionHandler\OHLCV\Calculator $expr
+      Calculator $expr
     )
     {
         $this->expr = $expr;

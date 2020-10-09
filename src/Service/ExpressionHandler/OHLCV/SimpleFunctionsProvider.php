@@ -15,7 +15,7 @@ use App\Service\Exchange\MonthlyIterator;
 use App\Service\Exchange\WeeklyIterator;
 use Symfony\Component\ExpressionLanguage\ExpressionFunction;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
-use Symfony\Component\ExpressionLanguage\SyntaxError;
+//use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\NoResultException;
 use App\Service\Exchange\Catalog;
@@ -128,7 +128,9 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             }
             return $result[0][$column];
         } catch (NoResultException $e) {
-            throw new PriceHistoryException(sprintf('Could not find value for `Close(%d)`', $offset), 0);
+            throw new PriceHistoryException(sprintf('Could not find value for `Close(%d)` symbol `%s`', $offset,
+                                                    $instrument->getSymbol()),
+                                            0);
         }
     }
 
@@ -181,29 +183,30 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             $result = $query->getResult();
 
             if (count($result) < $period) {
-                throw new PriceHistoryException(sprintf('Not enough values for `Average(%s, %d)`', $column, $period), 3);
+                throw new PriceHistoryException(sprintf('Not enough values for `Average(%s, %d)` symbol `%s`',
+                                                        $column, $period, $instrument->getSymbol()), 3);
             } elseif (count($result) > $period) {
-                throw new PriceHistoryException(sprintf('Error in getting accurate result for `Average(%s, %d)`',
-                                                        $column, $period), 2);
+                throw new PriceHistoryException(sprintf('Error in getting accurate result for `Average(%s, %d)` symbol `%s`',$column, $period, $instrument->getSymbol()), 2);
             }
 
             return array_sum(array_map(function($v) use ($column)  {return $v[$column];}, $result)) / count($result);
         } catch (NoResultException $e) {
-            throw new PriceHistoryException(sprintf('Could not find value for `Average(%s, %d)`', $column, $period), 1);
+            throw new PriceHistoryException(sprintf('Could not find value for `Average(%s, %d)` symbol ``', $column,
+                                                    $period, $instrument->getSymbol()), 1);
         }
     }
 
     /**
      * @param array $arguments
      * @return \App\Entity\Instrument
-     * @throws SyntaxError
+     * @throws \App\Exception\PriceHistoryException
      */
     private function getInstrument($arguments)
     {
         if (isset($arguments['instrument']) && $arguments['instrument'] instanceof \App\Entity\Instrument) {
             $instrument = $arguments['instrument'];
         } else {
-            throw new SyntaxError('Need to pass instrument object as part of the data part');
+            throw new PriceHistoryException('Need to pass instrument object as part of the data part');
         }
 
         return $instrument;
@@ -252,7 +255,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
      * @param integer $interval
      * @param integer $offset
      * @return \DateTime
-     * @throws \Exception
+     * @throws \App\Exception\PriceHistoryException
      */
     private function figureOffsetDate($tradingCalendar, $interval, $offset)
     {
@@ -265,7 +268,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             $monthlyIterator = new MonthlyIterator($tradingCalendar);
             $limitIterator = new \LimitIterator($monthlyIterator, $offset, 1);
         } else {
-            throw new SyntaxError(sprintf('Undefined interval %s', $interval));
+            throw new PriceHistoryException(sprintf('Undefined interval %s', $interval));
         }
         $limitIterator->rewind();
 
