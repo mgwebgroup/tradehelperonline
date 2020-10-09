@@ -237,13 +237,12 @@ class CalculatorTest extends KernelTestCase
 
     /**
      * Period: daily
-     * Test expression
+     * Test multi-member expression
      */
     public function testExpression10()
     {
         $_SERVER['TODAY'] = $this->latestDate->format('Y-m-d');
         $period = 'P1D';
-        $expression = 'Avg("Open", 2)';
         $data = [
           'instrument' => $this->instrument,
           'interval' => new \DateInterval($period),
@@ -251,5 +250,10 @@ class CalculatorTest extends KernelTestCase
         $expression = 'Open(0)+High(1)+Low(2)+Close(3)';
         $result = $this->SUT->evaluate($expression, $data);
         $this->assertEquals(405, $result);
+    }
+
+    public function tearDown()
+    {
+        unset($_SERVER['TODAY']);
     }
 }

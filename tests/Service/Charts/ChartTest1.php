@@ -14,7 +14,6 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\OHLCV\History;
 use App\Entity\Instrument;
 use App\Service\Charting\OHLCV\ChartFactory;
-use App\Service\Charting\OHLCV\Style;
 
 class ChartTest extends KernelTestCase
 {
@@ -43,7 +42,7 @@ class ChartTest extends KernelTestCase
     public function testDefaultStyle10()
     {
         $interval = new \DateInterval('P1D');
-        $OHLCVHistoryRepository = $this->em->getRepository(OHLCVHistory::class);
+        $OHLCVHistoryRepository = $this->em->getRepository(History::class);
 
         $tradingCalendar  = $this->catalog->getExchangeFor($this->instrument)->getTradingCalendar();
         $today = new \DateTime('2020-05-15');
