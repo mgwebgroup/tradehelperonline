@@ -203,7 +203,7 @@ class OHLCVFixtures1 extends Fixture implements FixtureGroupInterface
             $data = array_splice($data, 0, 4);
         }
 
-        $output->writeln(sprintf('Imported daily prices for %s', $instrument->getSymbol()));
+        $output->writeln(sprintf('Imported more daily prices for %s', $instrument->getSymbol()));
 
     }
 
