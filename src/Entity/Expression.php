@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\ExpressionRepository")
@@ -18,6 +19,7 @@ class Expression
 
     /**
      * @ORM\Column(type="datetime")
+     * @Assert\NotNull
      */
     private $created_at;
 
@@ -33,6 +35,8 @@ class Expression
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\Length(min = 1, max = 255)
+     * @Assert\Regex("/[[:alnum:]&*_ ()\-]+/i")
      */
     private $name;
 
@@ -44,6 +48,7 @@ class Expression
     /**
      * Formula written in Expression Language, i.e. '(Low(0) - Low(1))'
      * @ORM\Column(type="text")
+     * @Assert\Length(max = 65535)
      */
     private $formula;
 
@@ -87,9 +92,21 @@ class Expression
         return $this->timeinterval;
     }
 
-    public function setTimeinterval(\DateInterval $timeinterval): self
+    public function setTimeinterval(string $timeinterval): self
     {
-        $this->timeinterval = $timeinterval;
+        switch (strtolower($timeinterval)) {
+            case 'daily':
+                $this->timeinterval = new \DateInterval('P1D');
+                break;
+            case 'weekly':
+                $this->timeinterval = new \DateInterval('P7D');
+                break;
+            case 'monthly':
+                $this->timeinterval = new \DateInterval('P1M');
+                break;
+            default:
+                throw new \Exception(sprintf('Unknown interval `%s`.', $timeinterval));
+        }
 
         return $this;
     }

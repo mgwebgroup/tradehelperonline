@@ -19,6 +19,19 @@ class ExpressionRepository extends ServiceEntityRepository
         parent::__construct($registry, Expression::class);
     }
 
+    public static function createExpression($interval, $name, $formula, $criterion, $description = null)
+    {
+        $expression = new Expression();
+        $expression->setCreatedAt(new \DateTime())
+          ->setTimeinterval($interval)
+          ->setName($name)
+          ->setFormula($formula)
+          ->setCriteria($criterion)
+          ->setDescription($description)
+        ;
+        return $expression;
+    }
+
     // /**
     //  * @return Expression[] Returns an array of Expression objects
     //  */
