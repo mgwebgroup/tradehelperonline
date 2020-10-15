@@ -75,7 +75,7 @@ In the second form the csv file must have the following columns (heading include
 criterion, description.
 Criterion field must have a comparison operator and a value separated by space, like '> 0'. Same convention applies 
 to criterion specified in the third form.
-For the list of available comparison operators see Doctrine\Common\Collections\Expr.
+For the list of available comparison operators see Doctrine\Common\Collections\Expr\Comparison.
 Shell splits input into arguments using spaces. Therefore you must enclose entire argument in single quotes to avoid 
 splitting by shell as well as to avoid shell expansion. 
 Example: th:expression:import daily my_formula 'Close(0)-Close(1)' '> 0'.

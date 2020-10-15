@@ -154,6 +154,11 @@ class Expression
 
     public function setCriteria(?array $criteria): self
     {
+        if (is_numeric($criteria[1])) {
+            $criteria[1] = (float) $criteria[1];
+        } elseif ('true' == $criteria[1] || 'false' == $criteria[1]) {
+            $criteria[1] = (bool) $criteria[1];
+        }
         $this->criteria = $criteria;
 
         return $this;
