@@ -121,7 +121,7 @@ class ImportInstruments extends Command
 
     protected function configure()
     {
-        $this->setName('instruments:import');
+        $this->setName('th:instruments:import');
 
         $this->setDescription('Imports list of instruments into database');
 

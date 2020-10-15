@@ -10,11 +10,11 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20190525215650 extends AbstractMigration
+final class Version20201009163837 extends AbstractMigration
 {
     public function getDescription() : string
     {
-        return 'Added onDelete cascade directive for OHLCVHistory. I.e. when an instrument gets deleted, its associated OHLCV History will be gone as well.';
+        return '';
     }
 
     public function up(Schema $schema) : void
@@ -22,8 +22,7 @@ final class Version20190525215650 extends AbstractMigration
         // this up() migration is auto-generated, please modify it to your needs
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
-        $this->addSql('ALTER TABLE ohlcvhistory DROP FOREIGN KEY FK_B5D82CD6CF11D9C');
-        $this->addSql('ALTER TABLE ohlcvhistory ADD CONSTRAINT FK_B5D82CD6CF11D9C FOREIGN KEY (instrument_id) REFERENCES instruments (id) ON DELETE CASCADE');
+        $this->addSql('CREATE TABLE expression (id INT AUTO_INCREMENT NOT NULL, created_at DATETIME NOT NULL, updated_at DATETIME DEFAULT NULL, timeinterval VARCHAR(255) NOT NULL COMMENT \'(DC2Type:dateinterval)\', name VARCHAR(255) NOT NULL, description LONGTEXT DEFAULT NULL, formula LONGTEXT NOT NULL, criteria LONGTEXT DEFAULT NULL COMMENT \'(DC2Type:array)\', PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB');
     }
 
     public function down(Schema $schema) : void
@@ -31,7 +30,6 @@ final class Version20190525215650 extends AbstractMigration
         // this down() migration is auto-generated, please modify it to your needs
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
-        $this->addSql('ALTER TABLE ohlcvhistory DROP FOREIGN KEY FK_B5D82CD6CF11D9C');
-        $this->addSql('ALTER TABLE ohlcvhistory ADD CONSTRAINT FK_B5D82CD6CF11D9C FOREIGN KEY (instrument_id) REFERENCES instruments (id)');
+        $this->addSql('DROP TABLE expression');
     }
 }

@@ -87,7 +87,7 @@ class ExportOHLCV extends Command
 
     protected function configure()
     {
-        $this->setName('price:export');
+        $this->setName('th:price:export');
 
         $this->setDescription('Exports prices stored on OHLCV format from database into csv files');
 

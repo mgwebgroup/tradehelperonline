@@ -35,9 +35,9 @@ class Watchlist
     private $instruments;
 
     /**
-     * @ORM\ManyToMany(targetEntity="App\Entity\Formula")
+     * @ORM\ManyToMany(targetEntity="App\Entity\Expression")
      */
-    private $formulas;
+    private $expressions;
 
     /**
      * @ORM\Column(type="datetime")
@@ -57,7 +57,7 @@ class Watchlist
     public function __construct()
     {
         $this->instruments = new ArrayCollection();
-        $this->formulas = new ArrayCollection();
+        $this->expressions = new ArrayCollection();
         $this->values = [];
     }
 
@@ -93,7 +93,7 @@ class Watchlist
     /**
      * @return Collection|instruments[]
      */
-    public function getinstruments(): Collection
+    public function getInstruments(): Collection
     {
         return $this->instruments;
     }
@@ -141,33 +141,33 @@ class Watchlist
     }
 
     /**
-     * @return Collection|Formula[]
+     * @return Collection|expression[]
      */
-    public function getFormulas(): Collection
+    public function getExpressions(): Collection
     {
-        return $this->formulas;
+        return $this->expressions;
     }
 
-    public function addFormula(Formula $formula): self
+    public function addExpression(Expression $expression): self
     {
-        if (!$this->formulas->contains($formula)) {
-            $this->formulas[] = $formula;
+        if (!$this->expressions->contains($expression)) {
+            $this->expressions[] = $expression;
         }
 
         return $this;
     }
 
-    public function removeFormula(Formula $formula): self
+    public function removeExpression(Expression $expression): self
     {
-        if ($this->formulas->contains($formula)) {
-            $this->formulas->removeElement($formula);
+        if ($this->expressions->contains($expression)) {
+            $this->expressions->removeElement($expression);
         }
 
         return $this;
     }
 
     /**
-     * Calculates associated formulas for associated instruments. Result is stored in unmapped $values property
+     * Calculates associated expressions for associated instruments. Result is stored in unmapped $values property
      * @param Calculator $calculator
      * @param \DateTime | null $date
      */
@@ -175,16 +175,16 @@ class Watchlist
     {
         foreach ($this->instruments as $instrument) {
             $value = [];
-            foreach ($this->formulas as $formula) {
+            foreach ($this->expressions as $expression) {
                 $data = [
                   'instrument' => $instrument,
-                  'interval' => $formula->getTimeInterval(),
+                  'interval' => $expression->getTimeInterval(),
                 ];
                 if ($date) {
                     $data['date'] = $date;
                 }
 
-                $value[$formula->getName()] = $calculator->evaluate($formula->getContent(), $data);
+                $value[$expression->getName()] = $calculator->evaluate($expression->getFormula(), $data);
             }
             $this->values[$instrument->getSymbol()] = $value;
         }

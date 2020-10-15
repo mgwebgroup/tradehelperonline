@@ -19,32 +19,13 @@ class WatchlistRepository extends ServiceEntityRepository
         parent::__construct($registry, Watchlist::class);
     }
 
-    // /**
-    //  * @return Watchlist[] Returns an array of Watchlist objects
-    //  */
-    /*
-    public function findByExampleField($value)
+    public static function createWatchlist($name, $description = null)
     {
-        return $this->createQueryBuilder('i')
-            ->andWhere('i.exampleField = :val')
-            ->setParameter('val', $value)
-            ->orderBy('i.id', 'ASC')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult()
+        $expression = new Watchlist();
+        $expression->setCreatedAt(new \DateTime())
+          ->setName($name)
+          ->setDescription($description)
         ;
+        return $expression;
     }
-    */
-
-    /*
-    public function findOneBySomeField($value): ?Watchlist
-    {
-        return $this->createQueryBuilder('i')
-            ->andWhere('i.exampleField = :val')
-            ->setParameter('val', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
-    }
-    */
 }

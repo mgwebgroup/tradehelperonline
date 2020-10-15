@@ -129,8 +129,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             return $result[0][$column];
         } catch (NoResultException $e) {
             throw new PriceHistoryException(sprintf('Could not find value for `Close(%d)` symbol `%s`', $offset,
-                                                    $instrument->getSymbol()),
-                                            0);
+                                                    $instrument->getSymbol()), 0);
         }
     }
 
