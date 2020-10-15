@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.0-experimental
+# syntax=docker/dockerfile:experimental
 # This file documetns CI/CD pipeline
 ##################################################################
 # This stage deploys code base and settings unique to a client.

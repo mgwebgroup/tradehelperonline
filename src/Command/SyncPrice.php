@@ -39,8 +39,8 @@ class SyncPrice extends Command
 
     const START_DATE = '2011-01-01';
 
-    const MIN_DELAY = 3;
-    const MAX_DELAY = 12;
+    const MIN_DELAY = 5;
+    const MAX_DELAY = 25;
 
     /**
      * @var Doctrine\ORM\EntityManager
@@ -337,6 +337,8 @@ EOT
                     case 2:
                     case 3:
                         $screenMsg .= 'API_fail ';
+                        // API maybe refusing connection in this case.
+//                        $this->delay = rand(15,30);
                         break;
                     default:
                         $screenMsg .= $e->getMessage();
