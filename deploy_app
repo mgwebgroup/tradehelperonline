@@ -76,6 +76,7 @@ while (( "$#" > 0 )) ; do
         bin/phpunit tests/Service/ExpressionHandler/OHLCV
         bin/phpunit tests/Service/Scanner/OHLCV
         bin/phpunit tests/Service/Charts
+        bin/phpunit tests/Command
       else
         echo 'Application is not in test or dev environment. Testing will not be performed'
         exit 1

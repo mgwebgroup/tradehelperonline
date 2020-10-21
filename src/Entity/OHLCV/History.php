@@ -4,6 +4,7 @@ namespace App\Entity\OHLCV;
 
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\Instrument;
+use App\Exception\PriceHistoryException;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\OHLCVHistoryRepository")
@@ -11,6 +12,12 @@ use App\Entity\Instrument;
  */
 class History
 {
+    const INTERVAL_DAILY = 'daily';
+    const INTERVAL_WEEKLY = 'weekly';
+    const INTERVAL_MONTHLY = 'monthly';
+    const INTERVAL_QUARTERLY = 'quarterly';
+    const INTERVAL_YEARLY = 'yearly';
+
     /**
      * @ORM\Id()
      * @ORM\GeneratedValue()
@@ -175,5 +182,41 @@ class History
         $this->provider = $provider;
 
         return $this;
+    }
+
+    /**
+     * Standardizes generation of supported time interval objects
+     * @param string $interval
+     * @return \DateInterval $interval
+     * @throws PriceHistoryException
+     */
+    public static function getOHLCVInterval(String $interval): \DateInterval
+    {
+        switch($interval) {
+            case self::INTERVAL_DAILY:
+                return new \DateInterval('P1D');
+            case self::INTERVAL_WEEKLY:
+                return new \DateInterval('P7D');
+            case self::INTERVAL_MONTHLY:
+                return new \DateInterval('P1M');
+            case self::INTERVAL_QUARTERLY:
+                return new \DateInterval('P3M');
+            case self::INTERVAL_YEARLY:
+                return new \DateInterval('P1Y');
+            default:
+                throw new PriceHistoryException('Unsupported time interval');
+        }
+    }
+
+    /**
+     * Expands candle for superlative time frame given a daily candle
+     * @param History $dailyItem
+     */
+    public function expandCandle($dailyItem)
+    {
+        $this->setHigh(max($this->getHigh(), $dailyItem->getHigh()));
+        $this->setLow(min($this->getLow(), $dailyItem->getLow()));
+        $this->setVolume($this->getVolume() + $dailyItem->getVolume());
+        $this->setClose($dailyItem->getClose());
     }
 }
