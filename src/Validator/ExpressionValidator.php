@@ -76,7 +76,12 @@ class ExpressionValidator extends ConstraintValidator
         );
 
         $latestRecord = array_shift($priceHistory);
-        $date = clone $latestRecord->getTimestamp();
+        if ($latestRecord) {
+            $date = clone $latestRecord->getTimestamp();
+        } else {
+            throw new \Exception(sprintf('No price data for `%s` and interval %s', $instrument->getSymbol(),
+                                         $value->getTimeinterval()->format('P%Y%M%DT%Imin%Ss')));
+        }
 
         try {
             $result = $this->calculator->evaluate($value->getFormula(), [

@@ -30,11 +30,6 @@ class DailyIteratorTest extends KernelTestCase
     }
 
 
-    public function testIntro()
-    {
-        $this->assertTrue(true);
-    }
-
     /**
      * Test that iterator returns dates
      */

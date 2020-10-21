@@ -20,6 +20,7 @@ use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ServerException;
 use League\Csv\Writer;
 use Symfony\Bridge\Doctrine\RegistryInterface;
+use Scheb\YahooFinanceApi\Exception\ApiException;
 
 /**
  * Class Yahoo
@@ -151,6 +152,8 @@ class Yahoo implements \App\Service\PriceHistory\PriceProviderInterface
                 } catch (ClientException $e) {
                     throw new PriceHistoryException($e->getMessage(), $code = 2);
                 } catch (ServerException $e) {
+                    throw new PriceHistoryException($e->getMessage(), $code = 3);
+                } catch (ApiException $e) {
                     throw new PriceHistoryException($e->getMessage(), $code = 3);
                 }
             } else {
