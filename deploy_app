@@ -58,7 +58,7 @@ while (( "$#" > 0 )) ; do
           echo "DATABASE_URL=\"$DATABASE_CONNECTOR\"" >> .env.test
         fi
         echo 'will clear out existing database and add fixtures'
-        bin/console doctrine:database:create
+#        bin/console doctrine:database:create
         bin/console doctrine:fixtures:load --group=Instruments --no-interaction
         bin/console doctrine:fixtures:load --group=OHLCV1 --append --no-interaction
         bin/console doctrine:fixtures:load --group=OHLCV2 --append --no-interaction
