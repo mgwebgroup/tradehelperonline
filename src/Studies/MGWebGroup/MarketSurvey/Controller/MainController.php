@@ -12,11 +12,23 @@ namespace App\Studies\MGWebGroup\MarketSurvey\Controller;
 
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Studies\MGWebGroup\MarketSurvey\Entity\Study;
 
 class MainController extends AbstractController
 {
     public function index()
     {
-        return $this->render('@MarketSurvey/base.html.twig', []);
+        $today = new \DateTime();
+
+        $studyRepository = $this->getDoctrine()->getRepository(Study::class);
+        $study = $studyRepository->findBy(['timestamp' => $today], ['timestamp' => 'desc']);
+
+        if (empty($study)) {
+            // run a scan for y_universe
+        } else {
+            // pick the latest
+        }
+
+        return $this->render('@MarketSurvey/main.html.twig', []);
     }
 }

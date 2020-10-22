@@ -49,3 +49,26 @@ This bundle's file *webpack.config.js* is already set to compile app's general a
 ```console
 $ npx encore dev --config src/Studies/MGWebGroup/MarketSurvey/webpack.config.js
 ```
+
+### Step 4: Import Study symbols, watchlists and formulas
+The study utilizes common symbols that are already imported into the main system. If they are not already imported, use the following command:
+```bash
+bin/console -v th:instruments:import
+```
+It will take the main index file (default: data/source/y_universe.csv) and together with data/source/nasdaqlisted.csv and data/source/otherlisted.csv, which area necessary for determination which stock exchange they belong to, will import all instruments.
+
+It is assumed that price data on all instruments is current, or at least present for each imported symbol. Besides the daily prices, the study uses weekly, monthly, quarterly and yearly time frames. They should be present in the price history and saved in database (table ohlcvhistory). If not, run this command to create them:
+```bash
+bin/console -v th:convert-ohlcv --weekly --monthly --quarterly data/source/y_universe.csv
+```
+
+Import the study formulas:
+```bash
+bin/console -v th:expression:import --file data/studies/mgwebgroup/formulas/sitb.csv
+```
+
+The watchlists for the study in csv format are already present in studies/mgwebgroup/watchlists/ folder and must be imported with the following command:
+```bash
+bin/console -v th:watchlist:import data/studies/mgwebgroup/watchlists/y_universe.csv y_universe
+```
+Watchlist named **y_universe** contains formulas necessary for market scoring (market survey).

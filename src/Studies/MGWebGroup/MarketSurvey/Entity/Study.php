@@ -3,6 +3,7 @@
 namespace App\Studies\MGWebGroup\MarketSurvey\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use App\Service\Scanner\OHLCV\Scanner;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\Studies\MGWebGroup\MarketSurvey\Entity\StudyRepository")
@@ -57,6 +58,4 @@ class Study
 
         return $this;
     }
-
-
 }
