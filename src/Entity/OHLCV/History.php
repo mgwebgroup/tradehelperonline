@@ -46,7 +46,7 @@ class History
     private $close;
 
     /**
-     * @ORM\Column(type="integer", nullable=true)
+     * @ORM\Column(type="bigint", nullable=true)
      */
     private $volume;
 
