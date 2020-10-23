@@ -59,15 +59,19 @@ class ExpressionValidator extends ConstraintValidator
         }
 
         // check if Expression's formula is valid
-        $repository = $this->em->getRepository(Instrument::class);
-        $nasdaqInstruments = $repository->findByExchange('NASDAQ');
-        $nyseInstruments = $repository->findByExchange('NYSE');
-        $list = array_merge($nasdaqInstruments, $nyseInstruments);
-        if (empty($list)) {
-            throw new \Exception('Could not find any instruments');
-        }
+        if ($constraint->payload) {
+            $instrument = $constraint->payload;
+        } else {
+            $repository = $this->em->getRepository(Instrument::class);
+            $nasdaqInstruments = $repository->findByExchange('NASDAQ');
+            $nyseInstruments = $repository->findByExchange('NYSE');
+            $list = array_merge($nasdaqInstruments, $nyseInstruments);
+            if (empty($list)) {
+                throw new \Exception('Could not find any instruments');
+            }
 
-        $instrument = $list[array_rand($list)];
+            $instrument = $list[array_rand($list)];
+        }
 
         $priceHistory = $this->em->getRepository(History::class)->findBy(
           ['instrument' => $instrument, 'timeinterval' => $value->getTimeinterval()],
