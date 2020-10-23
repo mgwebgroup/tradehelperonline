@@ -145,11 +145,11 @@ EOT
             $records = $this->csvReader->getRecords();
             foreach ($records as $value) {
                 $this->expression = ExpressionRepository::createExpression(
-                  $value['interval'],
-                  $value['name'],
-                  $value['formula'],
-                  explode(' ', $value['criterion']),
-                  $value['description']
+                  $value['Interval'],
+                  $value['Name'],
+                  $value['Formula'],
+                  explode(' ', $value['Criterion']),
+                  $value['Description']
                 );
                 if ($this->isValidExpression($this->expression, $output)) {
                     $this->em->persist($this->expression);

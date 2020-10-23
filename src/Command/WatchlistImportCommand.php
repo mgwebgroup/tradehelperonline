@@ -53,7 +53,8 @@ class WatchlistImportCommand extends Command
 Takes a csv file and imports all symbols into a watchlist under NAME. All symbols must be already imported into the 
 system via `th:instruments:import` command. If a watchlist is missing, it will be created. If symbol already exists in a 
 watchlist, it will be overwritten with new expressions from the csv file. 
-The watchlist file must have the following columns: symbol, expression_names.
+The watchlist file must have the following columns: Symbol, Expression Names.
+Note the case on the columns and use of space in `Expression Names`. It must match exactly as shown here.
 Column `expression_names` can be null or can be a column-delimited list of expression_names to evaluate against 
 the symbol. If expressions are already associated in a given watchlist with a symbol, new expressions will be added, 
 and old ones will remain.
@@ -91,11 +92,11 @@ EOT
         $records = $this->csvReader->getRecords();
         foreach ($records as $value) {
             // find instrument
-            $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $value['symbol']]);
+            $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $value['Symbol']]);
             if($instrument) {
                 $watchlist->addInstrument($instrument);
                 // determine if expressions exist
-                foreach (explode(':', $value['expression_names']) as $exprName) {
+                foreach (explode(':', $value['Expression Names']) as $exprName) {
                     $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $exprName]);
                     if ($expression) {
                         $watchlist->addExpression($expression);
