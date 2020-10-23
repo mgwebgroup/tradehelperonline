@@ -13,6 +13,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 Use App\Entity\OHLCV\History;
 use App\Entity\Instrument;
+use League\Csv\Statement;
 
 class ConvertOhlcvCommand extends Command
 {
@@ -43,6 +44,19 @@ class ConvertOhlcvCommand extends Command
      */
     protected $targetFrames;
 
+    /**
+     * Offset in list file to start from. Header offset = 0
+     * @var integer
+     */
+    protected $offset;
+
+    /**
+     * Number of records to go over in the list file
+     * @var integer
+     */
+    protected $chunk;
+
+
     public function __construct(
       RegistryInterface $doctrine,
       UtilityServices $utilities
@@ -64,13 +78,15 @@ whereas a list must be specified as argument with a path to file relative to pro
 EOT
         );
         $this
-            ->setDescription('Converts daily ohlcv data stored in database to weekly, monthly, quartely and yearly')
+            ->setDescription('Converts daily ohlcv data stored in database to weekly, monthly, quarterly and yearly')
             ->addArgument('file', InputArgument::OPTIONAL, 'Index file with symbols to use')
             ->addOption('weekly', 'w', InputOption::VALUE_NONE, 'Convert from daily to weekly')
             ->addOption('monthly', 'm', InputOption::VALUE_NONE, 'Convert from daily to monthly')
             ->addOption('quarterly', null, InputOption::VALUE_NONE, 'Convert from daily to quarterly')
             ->addOption('yearly', 'y', InputOption::VALUE_NONE, 'Convert from daily to yearly')
             ->addOption('symbol', 's', InputOption::VALUE_REQUIRED, 'Work on a symbol, instead of the index file')
+            ->addOption('offset', null, InputOption::VALUE_REQUIRED, 'Starting offset, which includes header count. Header has offset=0')
+            ->addOption('chunk', null, InputOption::VALUE_REQUIRED, 'Number of records to process in one chunk')
         ;
     }
 
@@ -102,6 +118,16 @@ EOT
             if ($input->getOption('yearly')) {
                 $this->targetFrames[] = 'yearly';
             }
+            if ($input->getOption('offset')) {
+                $this->offset = $input->getOption('offset');
+            } else {
+                $this->offset = 0;
+            }
+            if ($input->getOption('chunk')) {
+                $this->chunk = $input->getOption('chunk');
+            } else {
+                $this->chunk = -1;
+            }
         } catch(\Exception $e) {
             $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
             exit(1);
@@ -111,7 +137,15 @@ EOT
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if ($this->csvReader) {
-            $records = $this->csvReader->getRecords();
+            $statement = new Statement();
+            if ($this->offset > 0) {
+                $statement = $statement->offset($this->offset - 1);
+            }
+            if ($this->chunk > 0) {
+                $statement = $statement->limit($this->chunk);
+            }
+            $records = $statement->process($this->csvReader);
+//            $records = $this->csvReader->getRecords();
             foreach ($records as $value) {
                 $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $value['Symbol']]);
                 if ($instrument) {
