@@ -20,7 +20,7 @@ use App\Service\Scanner\OHLCV\ScannerExpression;
 class CalculatorTest extends KernelTestCase
 {
     /**
-     * @var \App\Service\Formula\OHLCV\Calculator
+     * @var App\Service\ExpressionHandler\OHLCV\Calculator
      */
     private $SUT;
 
