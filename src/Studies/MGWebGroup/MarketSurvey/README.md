@@ -72,3 +72,21 @@ The watchlists for the study in csv format are already present in studies/mgwebg
 bin/console -v th:watchlist:import data/studies/mgwebgroup/watchlists/y_universe.csv y_universe
 ```
 Watchlist named **y_universe** contains formulas necessary for market scoring (market survey).
+
+
+Definitions
+===========
+
+1. Watchlist Survey
+Run a count for each formula and criterion in a watchlist to see how many instruments match. Result of the survey is an array:
+```php
+$survey = [
+    'Ins D & Up' => [$instrument1, $instrument2],
+]
+```
+
+2. Watchlist Score (Market Score)
+Assigns weights to each formula. 
+
+3. Market Breadth
+Watchlist Survey and Watchlist Score combined in one array.

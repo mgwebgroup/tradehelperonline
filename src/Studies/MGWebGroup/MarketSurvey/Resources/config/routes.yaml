@@ -1,3 +1,7 @@
 market_survey_main:
+  path: market-survey/{date}
+  controller: App\Studies\MGWebGroup\MarketSurvey\Controller\MainController::index
+  requirements:
+    date: '^(19|20)\d\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$'
   path: market-survey
   controller: App\Studies\MGWebGroup\MarketSurvey\Controller\MainController::index

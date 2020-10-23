@@ -36,15 +36,32 @@ class StudyRepository extends ServiceEntityRepository
      * @param \DateTime $date
      * @param \App\Entity\Watchlist $watchlist
      * @param array $metric Score values assigned to each type of expression
-     * @return array[$marketSurvey, $score]
+     * @return array [array $marketSurvey, float $score]. $marketSurvey has arrays if Instruments indexed by formula
      */
-    public function calculateMarketScore($date, $watchlist, $metric)
+    public function getMarketBreadth($date, $watchlist, $metric)
     {
         // perform scan of y_universe for each formula
+        $survey = $this->getSurvey($date, $watchlist);
+
+        // score results
+        $score = $survey;
+        array_walk($score, function(&$v, $k, $metric) { $v = count($v) * $metric[$k]; }, $metric );
+        return [$survey, array_sum($score)];
+    }
+
+    /**
+     * Takes watchlist and a date and runs scans for each formula and symbol in watchlist returning summary of
+     * instruments matching each formula and criterion.
+     * @param $date
+     * @param $watchlist
+     * @return array $survey
+     */
+    public function getSurvey($date, $watchlist)
+    {
         $expressions = $watchlist->getExpressions();
-        $marketSurvey = [];
+        $survey = [];
         foreach ($expressions as $expression) {
-            $marketSurvey[$expression->getName()] = $this->scanner->scan(
+            $survey[$expression->getName()] = $this->scanner->scan(
               $watchlist->getInstruments(),
               $expression->getFormula(),
               $expression->getCriteria(),
@@ -53,10 +70,7 @@ class StudyRepository extends ServiceEntityRepository
             );
         }
 
-        // score results
-        $score = $marketSurvey;
-        array_walk($score, function(&$v, $k, $metric) { $v = count($v) * $metric[$k]; } );
-        return [$marketSurvey, array_sum($score)];
+        return $survey;
     }
 
     /**
@@ -82,6 +96,7 @@ class StudyRepository extends ServiceEntityRepository
 
     /**
      * Will select top 10 symbols from each actionable signals column
+     * @param array $marketSurvey
      */
     public function buildActionSymbolsWatchilst($marketSurvey)
     {

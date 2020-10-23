@@ -2,6 +2,9 @@
 
 namespace App\Studies\MGWebGroup\MarketSurvey\Tests;
 
+use App\Entity\Expression;
+use App\Repository\WatchlistRepository;
+use App\Service\Exchange\Equities\NASDAQ;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Service\Scanner\OHLCV\Scanner;
@@ -37,6 +40,26 @@ class StudyTest extends KernelTestCase
     private $calculator;
 
     /**
+     * @var array
+     */
+    private $metric;
+
+    /**
+     * @var App\Repository\Studies\MGWebGroup\MarketSurvey\Entity\StudyRepository
+     */
+    private $studyRepository;
+
+    /**
+     * @var App\Repository\WatchlistRepository
+     */
+    private $watchlistRepository;
+
+    /**
+     * @var App\Service\Exchange\Equities\Exchange
+     */
+    private $exchange;
+
+    /**
      * Details on how to access services in tests:
      * https://symfony.com/blog/new-in-symfony-4-1-simpler-service-testing
      */
@@ -46,45 +69,50 @@ class StudyTest extends KernelTestCase
         $this->em = self::$container->get('doctrine')->getManager();
         $this->scanner = self::$container->get(Scanner::class);
 
-        $this->watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => 'y_universe']);
+        $this->watchlistRepository = $this->em->getRepository(Watchlist::class);
+        $this->watchlist = $this->watchlistRepository->findOneBy(['name' => 'y_universe']);
         $UTX = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => 'UTX']);
         $this->watchlist->removeInstrument($UTX);
         $RTN = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => 'RTN']);
         $this->watchlist->removeInstrument($RTN);
 
         $this->calculator = self::$container->get(Calculator::class);
+        $this->metric = self::$container->getParameter('market-score');
+        $this->studyRepository = $this->em->getRepository(Study::class);
+        $this->exchange = self::$container->get(NASDAQ::class);
     }
 
-    public function testCreateStudy_15May2020_ShapesCount()
+    public function testMarketBreadth_15May2020_MarketScore()
     {
         $date = new \DateTime('2020-05-15');
 
-        $metric = [
-          'Ins D & Up' => 2,
-          'Ins Wk & Up' => 2.5,
-          'Ins Mo & Up' => 2.75,
-          'Ins D' => 0,
-          'Ins Wk' => 0,
-          'Ins Mo' => 0,
-          'Ins D & Dwn' => -2,
-          'Ins Wk & Dwn' => -2.5,
-          'Ins Mo & Dwn' => -2.75,
-          'D Hammer' => 3,
-          'Wk Hammer' => 3.5,
-          'Mo Hammer' => 4,
-          'D Shtng Star' => -3,
-          'Wk Shtng Star' => -3.5,
-          'Mo Shtng Star' => -4.,
-          'D Bullish Eng' => 1,
-          'Wk Bullish Eng' => 1.5,
-          'Mo Bullish Eng' => 2,
-          'D Bearish Eng' => -1,
-          'Wk Bearish Eng' => -1.5,
-          'Mo Bearish Eng' => -2,
-          'D Hammer & Up' => 3.75,
-          'D Shtng Star & Down' => -3.75
-        ];
+        $marketBreadth = $this->studyRepository->getMarketBreadth($date, $this->watchlist, $this->metric);
+    }
 
-        $score = $this->em->getRepository(Study::class)->calculateMarketScore($date, $this->watchlist, $metric);
+    public function testInsideBarBOBD_15May2020_BreakoutTable()
+    {
+        $date = new \DateTime('2020-05-15');
+
+        // see if Ins Bar watchlist was saved for the previous T
+        $prevT = $this->exchange->calcPreviousTradingDay($date);
+        $watchlistName = sprintf('ins_bar_bobd_%s', $prevT->format('ymd'));
+        $prevTInsBarWatchlist = $this->watchlistRepository->findOneBy(['name' => $watchlistName]);
+        if (!$prevTInsBarWatchlist) {
+            $expressionList = [ 'Ins D BO', 'Ins D BD', 'Pos on D', 'Neg on D', 'Ins Wk BO', 'Ins Wk BD', 'Pos on Wk',
+              'Neg on Wk', 'Ins Mo BO', 'Ins Mo BD', 'Pos on Mo', 'Neg on Mo'];
+            foreach ($expressionList as $exprName) {
+                $expressions[] = $this->em->getRepository(Expression::class)->findOneBy(['name' => $exprName]);
+            }
+
+            $prevTInsBarWatchlist = WatchlistRepository::createWatchlist($watchlistName, null, $expressions);
+        }
+
+
+        $breakoutTable = $this->studyRepository->figureInsideBarBOBD();
+    }
+
+    public function tearDown()
+    {
+
     }
 }
