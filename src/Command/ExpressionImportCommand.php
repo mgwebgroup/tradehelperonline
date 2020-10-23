@@ -14,6 +14,7 @@ use App\Service\ExpressionHandler\OHLCV\Calculator;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use App\Repository\ExpressionRepository;
 use App\Validator\Expression as ExpressionConstraint;
+use App\Entity\Instrument;
 
 class ExpressionImportCommand extends Command
 {
@@ -49,6 +50,11 @@ class ExpressionImportCommand extends Command
      */
     protected $calculator;
 
+    /**
+     * @var array
+     */
+    protected $validationOptions;
+
 
     public function __construct(
       RegistryInterface $doctrine,
@@ -71,16 +77,18 @@ class ExpressionImportCommand extends Command
 
         $this->setHelp(
           <<<EOT
-In the second form the csv file must have the following columns (heading included): interval, name, formula, 
-criterion, description.
+In the second form the csv file must have the following columns (heading included): Interval, Name, Formula, 
+Criterion, Description.
 Criterion field must have a comparison operator and a value separated by space, like '> 0'. Same convention applies 
 to criterion specified in the third form.
 For the list of available comparison operators see Doctrine\Common\Collections\Expr\Comparison.
 Shell splits input into arguments using spaces. Therefore you must enclose entire argument in single quotes to avoid 
 splitting by shell as well as to avoid shell expansion. 
 Example: th:expression:import daily my_formula 'Close(0)-Close(1)' '> 0'.
-If you get an error on invalid formula when using CLI, you may want to try again, as a random symbol chosen for 
-evaluation may not have valid historical data.
+All formulas get validated against price history for an instrument before import. If you don's specify --symbol 
+option, a random symbol will be picked from imported instruments, which may or may not have price history, thus 
+failing your import for the latter case. If you are not sure that all of your imported instruments have price history
+ with known time frames, select a symbol that does, like so: --symbol=LIN.
 EOT
         );
 
@@ -88,6 +96,7 @@ EOT
         $this->addUsage('daily|weekly|monthly \'name\' \'formula\' \'criterion\'');
 
         $this->addOption('file', null, InputOption::VALUE_REQUIRED, 'csv file to read expressions from');
+        $this->addOption('symbol', 's', InputOption::VALUE_REQUIRED, 'instrument to test the expression on');
 
         $this->addArgument('interval', InputArgument::OPTIONAL, 'Time Interval to apply the expression for')
           ->addArgument('name', InputArgument::OPTIONAL, 'Criterion for the formula')
@@ -99,6 +108,14 @@ EOT
     public function initialize(InputInterface $input, OutputInterface $output)
     {
         try {
+            if ($input->getOption('symbol')) {
+                $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $input->getOption('symbol')]);
+                if ($instrument) {
+                    $this->validationOptions = ['payload' => $instrument];
+                } else {
+                    throw new \Exception(sprintf('Specified instrument `%s` in --symbol option was not found', $input->getOption('symbol')));
+                }
+            }
             if ($input->getOption('file')) {
                 $this->csvReader = Reader::createFromPath($input->getOption('file'), 'r');
                 $this->csvReader->setHeaderOffset(0);
@@ -151,13 +168,13 @@ EOT
                   explode(' ', $value['Criterion']),
                   $value['Description']
                 );
-                if ($this->isValidExpression($this->expression, $output)) {
+                if ($this->isValidExpression($this->expression, $output, $this->validationOptions)) {
                     $this->em->persist($this->expression);
                     $counter++;
                 }
             }
         } else {
-            if ($this->isValidExpression($this->expression, $output)) {
+            if ($this->isValidExpression($this->expression, $output, $this->validationOptions)) {
                 $this->em->persist($this->expression);
                 $counter++;
             }
@@ -170,9 +187,9 @@ EOT
         $this->utilities->pronounceEnd($this, $output);
     }
 
-    protected function isValidExpression($expression, $output)
+    protected function isValidExpression($expression, $output, $options = null)
     {
-        $violations = $this->validator->validate($expression, new ExpressionConstraint());
+        $violations = $this->validator->validate($expression, new ExpressionConstraint($options));
         if ($violations->count() > 0) {
             foreach ($violations as $violation) {
                 $output->writeln(sprintf('<error>ERROR: </error>%s: %s', $expression->getName(),
