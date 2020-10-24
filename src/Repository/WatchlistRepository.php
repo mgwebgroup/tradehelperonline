@@ -19,7 +19,7 @@ class WatchlistRepository extends ServiceEntityRepository
         parent::__construct($registry, Watchlist::class);
     }
 
-    public static function createWatchlist($name, $description = null, $expressions = [])
+    public static function createWatchlist($name, $description = null, $expressions = [], $instruments = [])
     {
         $watchlist = new Watchlist();
         $watchlist->setCreatedAt(new \DateTime())
@@ -29,6 +29,10 @@ class WatchlistRepository extends ServiceEntityRepository
 
         foreach ($expressions as $expression) {
             $watchlist->addExpression($expression);
+        }
+
+        foreach ($instruments as $instrument) {
+            $watchlist->addInstrument($instrument);
         }
 
         return $watchlist;
