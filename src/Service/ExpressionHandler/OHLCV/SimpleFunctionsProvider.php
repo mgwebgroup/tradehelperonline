@@ -126,6 +126,14 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             if (empty($result)) {
                 throw new NoResultException();
             }
+
+            if (in_array($column, ['open', 'high', 'low', 'close'])) {
+                return (float) $result[0][$column];
+            }
+            if ('volume' == $column) {
+                return (int) $result[0][$column];
+            }
+
             return $result[0][$column];
         } catch (NoResultException $e) {
             throw new PriceHistoryException(sprintf('Could not find value for `Close(%d)` symbol `%s`', $offset,
