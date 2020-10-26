@@ -94,7 +94,7 @@ class ExpressionValidator extends ConstraintValidator
               'date' => $date
             ]);
 
-            if (is_float($result) || is_bool($result)) {
+            if (is_float($result) || is_bool($result) || is_integer($result)) {
                 return;
             } else {
                 $this->context->buildViolation($constraint->message)

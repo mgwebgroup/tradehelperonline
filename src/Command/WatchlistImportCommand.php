@@ -96,12 +96,15 @@ EOT
             if($instrument) {
                 $watchlist->addInstrument($instrument);
                 // determine if expressions exist
-                foreach (explode(':', $value['Expression Names']) as $exprName) {
-                    $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $exprName]);
-                    if ($expression) {
-                        $watchlist->addExpression($expression);
-                    } else {
-                        $output->writeln(sprintf('<error>ERROR: </error>Expression `%s` was not added to the watchlist because it is missing from the system', $exprName));
+                if (!empty($value['Expression Names'])) {
+                    $exprNames = explode(':', $value['Expression Names']);
+                    foreach ($exprNames as $exprName) {
+                        $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $exprName]);
+                        if ($expression) {
+                            $watchlist->addExpression($expression);
+                        } else {
+                            $output->writeln(sprintf('<error>ERROR: </error>Expression `%s` was not added to the watchlist because it is missing from the system', $exprName));
+                        }
                     }
                 }
             } else {

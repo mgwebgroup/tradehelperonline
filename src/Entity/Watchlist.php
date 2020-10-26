@@ -50,15 +50,16 @@ class Watchlist
     private $updated_at;
 
     /**
-     * @var array
+     * @ORM\Column(type="array", nullable=true)
      */
-    private $values;
+    private $calculated_formulas;
+
 
     public function __construct()
     {
         $this->instruments = new ArrayCollection();
         $this->expressions = new ArrayCollection();
-        $this->values = [];
+        $this->calculated_formulas = [];
     }
 
     public function getId(): ?int
@@ -167,9 +168,10 @@ class Watchlist
     }
 
     /**
-     * Calculates associated expressions for associated instruments. Result is stored in unmapped $values property
+     * Calculates associated expressions for associated instruments. Result is stored in $calculated_formulas property
      * @param Calculator $calculator
      * @param \DateTime | null $date
+     * @return $this
      */
     public function update(Calculator $calculator, $date = null)
     {
@@ -186,12 +188,33 @@ class Watchlist
 
                 $value[$expression->getName()] = $calculator->evaluate($expression->getFormula(), $data);
             }
-            $this->values[$instrument->getSymbol()] = $value;
+            $this->calculated_formulas[$instrument->getSymbol()] = $value;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Sorts symbols in $calculated_formulas property according to values in formulas. Can take up to 2 columns to sort by.
+     * @param String $columnName1
+     * @param Integer $order1 SORT_ASC | SORT_DESC
+     * @param String | null $columnName2
+     * @param Integer $order2 SORT_ASC | SORT_DESC
+     */
+    public function sortValuesBy($columnName1, $order1, $columnName2 = null, $order2 = SORT_ASC)
+    {
+        $column1 = array_column($this->calculated_formulas, $columnName1);
+
+        if ($columnName2) {
+            $column2 = array_column($this->calculated_formulas, $columnName1);
+            array_multisort($column1, $order1, $column2, $order2, $this->calculated_formulas);
+        } else {
+            array_multisort($column1, $order1, $this->calculated_formulas);
         }
     }
 
-    public function getValues()
+    public function getCalculatedFormulas()
     {
-        return $this->values;
+        return $this->calculated_formulas;
     }
 }
