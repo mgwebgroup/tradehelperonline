@@ -1,4 +1,6 @@
 Interval,Name,Formula,Criterion,Description
+daily,V,Volume(0),= true
+daily,P,Close(0),= true
 daily,Ins D & Up,(High(2) >= High(1)) and (Low(2) <= Low(1)) and (Close(0) >= High(1)),= true
 weekly,Ins Wk & Up,(High(2) >= High(1)) and (Low(2) <= Low(1)) and (Close(0) >= High(1)),= true
 monthly,Ins Mo & Up,(High(2) >= High(1)) and (Low(2) <= Low(1)) and (Close(0) >= High(1)),= true
@@ -22,7 +24,6 @@ weekly,Wk Bearish Eng,(Close(0) < Close(1) and Close(0) < Open(1)) and (Open(0) 
 monthly,Mo Bearish Eng,(Close(0) < Close(1) and Close(0) < Open(1)) and (Open(0) > Close(1) and Open(0) > Open(1)),= true
 daily,D Hammer & Up,(((High(1) - Low(1)) > 3 * (Open(1) - Close(1)) and ((Close(1) - Low(1)) / (0.001 + High(1) - Low(1)) > 0.6) and ((Open(1) - Low(1)) / (0.001 + High(1) - Low(1)) > 0.6))) and Close(0) > High(1),= true
 daily,D Shtng Star & Down,(((High(1) - Low(1)) > 3 * (Open(1) - Close(1)) and ((High(1) - Close(1)) / (0.001 + High(1) - Low(1)) > 0.6) and ((High(1)-Open(1)) / (0.001 + High(1) - Low(1)) > 0.6))) and Open(0) < High(1) and Close(0) < Low(1),= true
-daily,P,Close(0),= true
 daily,Ins D BO,Close(0)-High(1),> 0
 daily,Ins D BD,Close(0)-Low(1),< 0
 daily,Pos on D,Close(0)-Open(0),> 0
