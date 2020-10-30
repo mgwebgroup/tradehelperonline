@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Entity\StudyTextAttribute;
+use App\Entity\Study\TextAttribute;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
@@ -16,6 +16,6 @@ class StudyTextAttributeRepository extends ServiceEntityRepository
 {
     public function __construct(RegistryInterface $registry)
     {
-        parent::__construct($registry, StudyTextAttribute::class);
+        parent::__construct($registry, TextAttribute::class);
     }
 }

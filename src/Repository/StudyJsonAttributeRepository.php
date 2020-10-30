@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Entity\StudyJsonAttribute;
+use App\Entity\Study\JsonAttribute;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
@@ -16,6 +16,6 @@ class StudyJsonAttributeRepository extends ServiceEntityRepository
 {
     public function __construct(RegistryInterface $registry)
     {
-        parent::__construct($registry, StudyJsonAttribute::class);
+        parent::__construct($registry, JsonAttribute::class);
     }
 }
