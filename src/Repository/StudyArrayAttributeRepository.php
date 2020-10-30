@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Entity\StudyArrayAttribute;
+use App\Entity\Study\ArrayAttribute;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
@@ -16,6 +16,6 @@ class StudyArrayAttributeRepository extends ServiceEntityRepository
 {
     public function __construct(RegistryInterface $registry)
     {
-        parent::__construct($registry, StudyArrayAttribute::class);
+        parent::__construct($registry, ArrayAttribute::class);
     }
 }

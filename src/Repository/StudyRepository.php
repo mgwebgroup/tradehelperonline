@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Entity\Study;
+use App\Entity\Study\Study;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
