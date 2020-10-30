@@ -35,6 +35,6 @@ services:
   App\Service\Watchlist\Factory:
     public: true
     autowire: true
-  App\Studies\MGWebGroup\MarketSurvey\Entity\Manager\StudyManager:
+  App\Studies\MGWebGroup\MarketSurvey\StudyBuilder:
     public: true
     autowire: true

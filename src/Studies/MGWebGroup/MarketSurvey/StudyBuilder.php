@@ -1,8 +1,9 @@
 <?php
-namespace App\Studies\MGWebGroup\MarketSurvey\Entity\Manager;
+namespace App\Studies\MGWebGroup\MarketSurvey;
 
 use App\Entity\Expression;
 use App\Entity\Watchlist;
+use App\Entity\Study\Study;
 use App\Repository\WatchlistRepository;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
 use Symfony\Bridge\Doctrine\RegistryInterface;
@@ -12,7 +13,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Implements all calculations necessary for the Market Survey. Based on procedures of October 2018.
- * The survey has 6 areas:
+ * The Market Survey study has 6 areas:
  *   - Market Breadth table (is a basis for Inside Bar watchlists, Market Score and Actionable Symbols list)
  *   - Inside Bar Breakout/Breakdown table
  *   - Actionable Symbols list
@@ -21,7 +22,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   - Y-Universe scoring table
  *
  */
-class StudyManager
+class StudyBuilder
 {
     const INSIDE_BAR_DAY = 'Ins D';
     const INSIDE_BAR_WK = 'Ins Wk';
@@ -71,6 +72,11 @@ class StudyManager
      */
     private $calculator;
 
+    /**
+     * @var App\Entity\Study\Study
+     */
+    private $study;
+
 
     public function __construct(
         RegistryInterface $registry,
@@ -85,6 +91,17 @@ class StudyManager
         $this->calculator = $calculator;
     }
 
+    public function getStudy($date, $name)
+    {
+        $study = $this->em->getRepository(Study::class)->findOneBy(['date' => $date, 'name' => $name]);
+
+        if (!$this->study) {
+            $this->study = new Study();
+        }
+
+        return $this->study;
+    }
+
     /**
      * Calculates Market Score and returns Market Breadth table with instruments sorted by Price and Volume, suitable
      * for composition of Actionable Symbols Lists as well as inside bar watchlists.
@@ -95,13 +112,13 @@ class StudyManager
      * @return array $marketBreadth = [float $score, array $payload, array $survey]
      *   $payload is array of watchlists that are necessary for saving or using in other parts of the study.
      *   $payload = [
-     *      'Ins D' => App\Entity\Watchlist, $values property has symbols sorted by 'Volume'
+     *      'Ins D' => App\Entity\Watchlist, $calculated_formulas property has symbols sorted by 'Volume'
      *      'Ins Wk' => App\Entity\Watchlist,
      *      'Ins Mo' => App\Entity\Watchlist,
-     *      'Ins D & Up' => App\Entity\Watchlist, $values property has symbols sorted by 'Pos on D' and 'Volume' formulas
+     *      'Ins D & Up' => App\Entity\Watchlist, $calculated_formulas property has symbols sorted by 'Pos on D' and 'Volume' formulas
      *      'D Hammer' => App\Entity\Watchlist, same as above
      *      'D Hammer & Up' => App\Entity\Watchlist, same as above
-     *      'D Bullish Eng' => App\Entity\Watchlist, $values property has symbols sorted by 'Volume'
+     *      'D Bullish Eng' => App\Entity\Watchlist, $calculated_formulas property has symbols sorted by 'Volume'
      *      ...
      *      similar for the bearish (see constants of this class).
      *      ]

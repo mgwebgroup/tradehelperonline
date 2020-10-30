@@ -4,11 +4,11 @@ namespace App\Studies\MGWebGroup\MarketSurvey\Tests;
 
 use App\Entity\Instrument;
 use App\Entity\Watchlist;
+use App\Studies\MGWebGroup\MarketSurvey\StudyBuilder;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use App\Studies\MGWebGroup\MarketSurvey\Entity\Manager\StudyManager;
 use App\Service\Exchange\Equities\NASDAQ;
 
-class StudyManagerTest extends KernelTestCase
+class StudyBuilderTest extends KernelTestCase
 {
     /**
      * @var
@@ -30,10 +30,17 @@ class StudyManagerTest extends KernelTestCase
     protected function setUp(): void
     {
         self::bootKernel();
-        $this->SUT = self::$container->get(StudyManager::class);
+        $this->SUT = self::$container->get(StudyBuilder::class);
         $this->em = self::$container->get('doctrine')->getManager();
 
         $this->watchlistRepository = $this->em->getRepository(Watchlist::class);
+    }
+
+    public function testGetStudy_15May2020_newStudyObject()
+    {
+        $date = new \DateTime('2020-05-15');
+        $name = 'market_study';
+        $study = $this->SUT->getStudy($date, $name);
     }
 
     public function testMarketBreadth_15May2020_MarketBreadth()
