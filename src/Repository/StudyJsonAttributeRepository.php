@@ -18,4 +18,15 @@ class StudyJsonAttributeRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, JsonAttribute::class);
     }
+
+    public static function createJsonAttr($study, $name, $value)
+    {
+        $jsonAttr = new JsonAttribute();
+        $jsonAttr->setStudy($study);
+        $jsonAttr->setAttribute($name);
+        $jsonAttr->setValue($value);
+        $study->addJsonAttribute($jsonAttr);
+
+        return $jsonAttr;
+    }
 }

@@ -55,7 +55,8 @@ The study utilizes common symbols that are already imported into the main system
 ```bash
 bin/console -v th:instruments:import
 ```
-It will take the main index file (default: data/source/y_universe.csv) and together with data/source/nasdaqlisted.csv and data/source/otherlisted.csv, which area necessary for determination which stock exchange they belong to, will import all instruments.
+It will take the main index file (default: data/source/y_universe.csv) and together with data/source/nasdaqlisted.csv and data/source/otherlisted.csv will import all instruments. Additional files are necessary for determination which stock exchange they belong to.
+Importation of instruments is important not only for the study function, but also for testing. All data fixtures rely on the common instrument base as well as daily, weekly, monthly, quarterly and yearly price data.
 
 It is assumed that price data on all instruments is current, or at least present for each imported symbol. Besides the daily prices, the study uses weekly, monthly, quarterly and yearly time frames. They should be present in the price history and saved in database (table ohlcvhistory). If not, run this command to create them:
 ```bash
@@ -67,11 +68,23 @@ Import the study formulas:
 bin/console -v th:expression:import --file data/studies/mgwebgroup/formulas/sitb.csv
 ```
 
-The watchlists for the study in csv format are already present in studies/mgwebgroup/watchlists/ folder and must be imported with the following command:
+The watchlists for the study in csv format are already present in data/studies/mgwebgroup/watchlists/ folder and must be imported with the following command:
 ```bash
 bin/console -v th:watchlist:import data/studies/mgwebgroup/watchlists/y_universe.csv y_universe
 ```
 Watchlist named **y_universe** contains formulas necessary for market scoring (market survey).
+
+
+Testing
+=======
+
+Study tests rely on already imported instruments and their price data. Testing also must be done utilizing a separate database (i.e. TRADEHLEPERONLINE_TEST). Therefore make sure when running tests your database connection points to a test database. All of the instruments with their latest price data must already be imported and converted from daily into weekly, monthly, quarterly and monthly time frames. Running tests with data fixtures imported from the basic version of this package will not work. You must import instruments from the general instrument list and you must have at a bare minimum daily prices for the year 2020 for all instruments. General instrument list titled 'y_universe' is supplied with the basic version of this package and is located in data/source/y_universe.csv file. You may either import entire database with instruments and prices (the fastest way), or import instruments and prices using csv files and built in commands. Price files may come with the basic version of the package but it is not guaranteed.
+
+1. Import test watchlist
+```bash
+bin/console doctrine:fixtures:load --append --group=mgweb_watchlist
+```
+Option --append makes sure existing instruments and price data will not be purged.
 
 
 Definitions

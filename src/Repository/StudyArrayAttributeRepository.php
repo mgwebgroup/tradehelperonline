@@ -18,4 +18,15 @@ class StudyArrayAttributeRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, ArrayAttribute::class);
     }
+
+    public static function createArrayAttr($study, $name, $value)
+    {
+        $arrayAttr = new ArrayAttribute();
+        $arrayAttr->setStudy($study);
+        $arrayAttr->setAttribute($name);
+        $arrayAttr->setValue($value);
+        $study->addArrayAttribute($arrayAttr);
+
+        return $arrayAttr;
+    }
 }

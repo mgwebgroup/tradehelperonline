@@ -20,25 +20,21 @@ use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 
 class OHLCVFixtures2 extends Fixture implements FixtureGroupInterface
 {
+    const PATH = 'src/DataFixtures/LIN_d.csv';
+
     public static function getGroups(): array
     {
         return ['OHLCV2'];
     }
 
     /**
-     * Price data are imported as candlesticks of known characteristics. Candlesticks are described in $sequence arrays:
-     * [size (absolute length from high to low), bodySize (percent), tail (absolute length from closing price to
-     * high/low, volume)]
-     * For FB all items in a sequence go in reverse chronological order, i.e. most recent candlesticks first.
-     * For LIN, I use real csv datadfdf
+     * Imports real LIN ohlcv data from file src/DataFixtures/LIN_d.csv
      * @param ObjectManager $manager
      * @throws \Exception
      */
     public function load(ObjectManager $manager)
     {
         $output = new ConsoleOutput();
-
-//        $tradingCalendar = new TradingCalendar(new DailyIterator());
 
         $instrumentRepository = $manager->getRepository(\App\Entity\Instrument::class);
         $instrument = $instrumentRepository->findOneBySymbol('LIN');
@@ -50,7 +46,7 @@ class OHLCVFixtures2 extends Fixture implements FixtureGroupInterface
           'yearly' => new \DateInterval('P1Y'),
         ];
 
-        $csv = Reader::createFromPath('src/DataFixtures/LIN_d.csv');
+        $csv = Reader::createFromPath(self::PATH);
         $csv->setHeaderOffset(0);
         foreach ($csv->getRecords() as $key => $line) {
             $p = new History();
@@ -66,10 +62,6 @@ class OHLCVFixtures2 extends Fixture implements FixtureGroupInterface
             $p->setVolume($line['Volume']);
 
             $manager->persist($p);
-
-//            if ($key % 10 == 0) {
-//                $manager->flush();
-//            }
         }
         $manager->flush();
 

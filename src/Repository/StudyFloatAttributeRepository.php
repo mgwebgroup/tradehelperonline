@@ -18,4 +18,15 @@ class StudyFloatAttributeRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, FloatAttribute::class);
     }
+
+    public static function createFloatAttr($study, $name, $value)
+    {
+        $floatAttr = new FloatAttribute();
+        $floatAttr->setStudy($study);
+        $floatAttr->setAttribute($name);
+        $floatAttr->setValue($value);
+        $study->addFloatAttribute($floatAttr);
+
+        return $floatAttr;
+    }
 }

@@ -18,4 +18,15 @@ class StudyTextAttributeRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, TextAttribute::class);
     }
+
+    public static function createTextAttr($study, $name, $value)
+    {
+        $textAttr = new TextAttribute();
+        $textAttr->setStudy($study);
+        $textAttr->setAttribute($name);
+        $textAttr->setValue($value);
+        $study->addTextAttribute($textAttr);
+
+        return $textAttr;
+    }
 }
