@@ -14,4 +14,4 @@ import 'popper.js';
 import 'bootstrap';
 
 console.log('Hello Webpack Encore! Edit me in assets/js/app.js');
-$('div').addClass('test');
+// $('div').addClass('test');
