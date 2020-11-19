@@ -131,8 +131,8 @@ class StudyBuilderTest extends KernelTestCase
         $survey = $study->getArrayAttributes()->matching($getMarketBreadth)->first()->getValue();
         $this->assertCount(23, $survey);
 
-        $this->em->remove($study);
-        $this->em->flush();
+//        $this->em->remove($study);
+//        $this->em->flush();
     }
 
 

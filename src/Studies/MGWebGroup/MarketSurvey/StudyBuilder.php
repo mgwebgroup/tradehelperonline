@@ -120,7 +120,8 @@ class StudyBuilder
      *   'Ins Wk & Up' => App\Entity\Instrument[]
      *   ...
      * ]
-     * and saves it as 'market-breadth' array attribute in $this->study.
+     * and saves it as 'market-breadth' array attribute in $this->study. Sequence of the elements is determined by
+     * parameters in config/packages/mgweb.yaml.
      *
      * Calculates market score according to the metric stored in mgweb.yaml parameters, and saves it as 'market-score'
      * float attribute in $this->study.

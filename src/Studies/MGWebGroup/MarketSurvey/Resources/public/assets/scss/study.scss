@@ -1,0 +1,11 @@
+.survey {
+  .table-sm {
+    font-size: 0.75em;
+    th {
+      min-width: 6em;
+    }
+    th, td {
+      padding: 0.1em;
+    }
+  }
+}

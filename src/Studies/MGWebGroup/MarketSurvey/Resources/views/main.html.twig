@@ -1,10 +1,82 @@
-{% extends "base.html" %}
-
+{% extends "base.html.twig" %}
+{% block stylesheets %}
+    {{ parent() }}
+    {{ encore_entry_link_tags('page1')  }}
+{% endblock %}
 {% block body %}
-        <div>Some info goes here</div>
+    {% set ins_d_ct = 0 %}
+    {% set ins_wk_ct = 0 %}
+    {% set ins_mo_ct = 0 %}
+    {% set order_of_expr = ['Ins D & Up', 'Ins Wk & Up', 'Ins Mo & Up', 'Ins D', 'Ins D & Dwn', 'Ins Wk & Dwn', 'Ins Mo & Dwn', 'D Hammer', 'Wk Hammer', 'Mo Hammer', 'Ins Wk', 'D Shtng Star', 'Wk Shtng Star', 'Mo Shtng Star', 'Ins Mo', 'D Bullish Eng', 'D Bearish Eng', 'Wk Bullish Eng', 'Wk Bearish Eng', 'Mo Bullish Eng', 'Mo Bearish Eng', 'D Hammer & Up', 'D Shtng Star & Down'] %}
+    {% set highlighted_cols = ['Ins D', 'D Hammer', 'Wk Hammer', 'Mo Hammer', 'D Shtng Star', 'Wk Shtng Star', 'Mo Shtng Star', 'D Bullish Eng', 'D Bearish Eng', 'Wk Bullish Eng', 'Wk Bearish Eng', 'Mo Bullish Eng', 'Mo Bearish Eng'] %}
+    <div class="page-wrapper container-fluid">
+        <section class="announcements">
+            <div class="row"><div class="col"><h4>{{ date|date('M d, Y') }}</h4></div></div>
+        </section>
+
+        <section class="survey">
+            <div class="row">
+                <div class="col-2 ml-auto"><h5 class="text-right">Score: {{ score }}</h5></div>
+            </div>
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    {% for expression in order_of_expr if attribute(survey, expression) is defined %}
+                        {% if expression in highlighted_cols %}
+                            {% set add_class = 'table-warning' %}
+                        {% else %}
+                            {% set add_class = null %}
+                        {% endif %}
+                        <th scope="col" class="text-center {{ add_class }}">{{ expression }}</th>
+                            {% if 'Ins D' == expression %}
+                                {% set ins_d_ct = attribute(survey, expression)|length %}
+                            {% endif %}
+                            {% if 'Ins Wk' == expression %}
+                                {% set ins_wk_ct = attribute(survey, expression)|length %}
+                            {% endif %}
+                            {% if 'Ins Mo' == expression %}
+                                {% set ins_mo_ct = attribute(survey, expression)|length %}
+                            {% endif %}
+                    {% endfor %}
+                    {% set table_max_rows = max(ins_d_ct, ins_wk_ct, ins_mo_ct) %}
+                </tr>
+                <tr>
+                    {% for expression in order_of_expr if attribute(survey, expression) is defined %}
+                        {% if expression in highlighted_cols %}
+                            {% set add_class = 'table-warning' %}
+                        {% else %}
+                            {% set add_class = null %}
+                        {% endif %}
+                        <th scope="col" class="text-center {{ add_class }}">{{ attribute(survey, expression)|length }}</th>
+                    {% endfor %}
+                </tr>
+                </thead>
+                <tbody>
+                    {% for i in 0..table_max_rows %}
+                        <tr>
+                            {% for expression in order_of_expr if attribute(survey, expression) is defined %}
+                                {% set list = attribute(survey, expression) %}
+                                {% if expression in highlighted_cols %}
+                                    {% set add_class = 'table-warning' %}
+                                {% else %}
+                                    {% set add_class = null %}
+                                {% endif %}
+                                <td class="text-center {{ add_class }}">{{ list[i] is defined ? attribute(list[i], 'symbol') : '' }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+
+        </section>
+
+
+        <div class="row"></div>
+        <div class="row"></div>
+    </div>
 {% endblock %}
 {% block javascripts %}
     {{ parent() }}
     {{ encore_entry_script_tags('page1') }}
 {% endblock %}
-</html>

@@ -10,25 +10,45 @@
 
 namespace App\Studies\MGWebGroup\MarketSurvey\Controller;
 
-use Symfony\Component\HttpFoundation\Response;
+use Doctrine\Common\Collections\Criteria;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use App\Studies\MGWebGroup\MarketSurvey\Entity\Study;
+use App\Entity\Study\Study;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Validator\Constraints\Date as DateConstraint;
 
 class MainController extends AbstractController
 {
-    public function index()
+    public function index(Request $request, ValidatorInterface $validator)
     {
-        $today = new \DateTime();
+        $dateString = $request->attributes->get('date');
+
+        $errors = [];
+        if ($dateString) {
+            $violations = $validator->validate($dateString, new DateConstraint());
+            if ($violations->count() > 0) {
+                // formulate errors array here
+                // ...
+            } else {
+                $date = new \DateTime($dateString);
+            }
+        } else {
+            $date = new \DateTime();
+        }
 
         $studyRepository = $this->getDoctrine()->getRepository(Study::class);
-        $study = $studyRepository->findBy(['timestamp' => $today], ['timestamp' => 'desc']);
+        $study = $studyRepository->findOneBy(['date' => $date]);
 
         if (empty($study)) {
             // run a scan for y_universe
-        } else {
-            // pick the latest
         }
 
-        return $this->render('@MarketSurvey/main.html.twig', []);
+        $getMarketBreadth = new Criteria(Criteria::expr()->eq('attribute', 'market-breadth'));
+        $survey = $study->getArrayAttributes()->matching($getMarketBreadth)->first()->getValue();
+
+        $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
+        $score = $study->getFloatAttributes()->matching($getScore)->first()->getValue();
+
+        return $this->render('@MarketSurvey/main.html.twig', ['date' => $date, 'survey' => $survey, 'score' => $score]);
     }
 }

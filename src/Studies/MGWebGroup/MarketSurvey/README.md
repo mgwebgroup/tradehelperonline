@@ -6,7 +6,7 @@ Applications that use Symfony Flex
 
 Open a command console, enter your project directory and execute:
 
-```console
+```bash
 $ composer require mgwebgroup/market-survey
 ```
 
@@ -18,7 +18,7 @@ Applications that don't use Symfony Flex
 Open a command console, enter your project directory and execute the
 following command to download the latest stable version of this bundle:
 
-```console
+```bash
 $ composer require mgwebgroup/market-survey
 ```
 
@@ -42,11 +42,11 @@ return [
 
 ### Step 3: Install and Compile Bundle Assets
 Copy this bundle's assets as symlinks into *public/bundle/marketsurvey* folder 
-```console
+```bash
 $ bin/console assets:install public --symlink --relative
 ```
 This bundle's file *webpack.config.js* is already set to compile app's general assets (normally compiled with **npm run dev**). So you just need to compile this bundle's assets: 
-```console
+```bash
 $ npx encore dev --config src/Studies/MGWebGroup/MarketSurvey/webpack.config.js
 ```
 
@@ -95,7 +95,7 @@ Run a count for each formula and criterion in a watchlist to see how many instru
 ```php
 $survey = [
     'Ins D & Up' => [$instrument1, $instrument2],
-]
+];
 ```
 
 2. Watchlist Score (Market Score)
