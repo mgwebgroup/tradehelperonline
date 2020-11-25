@@ -131,10 +131,9 @@ class StudyBuilderTest extends KernelTestCase
         $survey = $study->getArrayAttributes()->matching($getMarketBreadth)->first()->getValue();
         $this->assertCount(23, $survey);
 
-//        $this->em->remove($study);
-//        $this->em->flush();
+        $this->em->remove($study);
+        $this->em->flush();
     }
-
 
     public function testFigureInsideBarBOBD_14May2020_BOBDTable()
     {
@@ -231,5 +230,145 @@ class StudyBuilderTest extends KernelTestCase
         $this->assertArraySubset($insMoBO, $bobdMonthly['survey'][StudyBuilder::INS_MO_BO]);
         $this->assertCount(count($insMoBD), $bobdMonthly['survey'][StudyBuilder::INS_MO_BD]);
         $this->assertArraySubset($insMoBD, $bobdMonthly['survey'][StudyBuilder::INS_MO_BD]);
+    }
+
+    public function testMarketScoreDelta()
+    {
+        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
+        $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
+
+        $date1 = new \DateTime('2020-05-14');
+        $this->SUT->getStudy()->setDate($date1);
+        fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
+        $this->SUT->calculateMarketBreadth($watchlist);
+        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        $pastStudy = $this->SUT->getStudy();
+        $pastScore = $pastStudy->getFloatAttributes()->matching($getScore)->first()->getValue();
+
+        $date2 = new \DateTime('2020-05-15');
+        $name = 'test_market_study';
+        $this->SUT->createStudy($date2, $name);
+
+        fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
+        $this->SUT->calculateMarketBreadth($watchlist);
+        fwrite(STDOUT, 'complete.'.PHP_EOL);
+
+        $this->SUT->calculateScoreDelta($pastStudy);
+
+        $currentStudy = $this->SUT->getStudy();
+        $currentScore = $currentStudy->getFloatAttributes()->matching($getScore)->first()->getValue();
+
+        $scoreDelta = $currentScore - $pastScore;
+
+        $getScoreDelta = new Criteria(Criteria::expr()->eq('attribute', 'score-delta'));
+        $actualScoreDelta = $currentStudy->getFloatAttributes()->matching($getScoreDelta)->first()->getValue();
+
+        $this->assertEquals($scoreDelta, $actualScoreDelta);
+    }
+
+    public function testActionableSymbolsWatchlist()
+    {
+        $date = new \DateTime('2020-05-15');
+        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
+
+        fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
+        $this->SUT->calculateMarketBreadth($watchlist);
+        fwrite(STDOUT, 'complete.'.PHP_EOL);
+
+        $this->SUT->buildActionSymbolsWatchlist();
+
+        $getASWatchilst = new Criteria(Criteria::expr()->eq('name', 'AS'));
+        $ASWatchlist = $this->SUT->getStudy()->getWatchlists()->matching($getASWatchilst)->first();
+        $ASInstruments = $ASWatchlist->getInstruments()->toArray();
+
+        $watchlistsOfInterestVolumeOnly = [StudyBuilder::INSIDE_BAR_DAY, StudyBuilder::D_BULLISH_ENG, StudyBuilder::D_BEARISH_ENG];
+        $getWatchlistsOfInterestVolumeOnly = new Criteria(Criteria::expr()->in('name', $watchlistsOfInterestVolumeOnly));
+        $watchlists = $this->SUT->getStudy()->getWatchlists()->matching($getWatchlistsOfInterestVolumeOnly);
+        foreach ($watchlists as $watchlist) {
+            $dataSet = [];
+            foreach ($watchlist->getInstruments() as $instrument) {
+                $dataSet['instrument'][] = $instrument;
+                list($h0, $h1, $h2) = $this->getDailyPrices($instrument, $date);
+                $dataSet['volume'][] = $h0->getVolume();
+            }
+            array_multisort($dataSet['volume'], SORT_DESC, $dataSet['instrument']);
+            $top10 = array_slice($dataSet['instrument'], 0, 10);
+            foreach ($top10 as $instrument) {
+                $this->assertContains($instrument, $ASInstruments);
+            }
+        }
+
+        $watchlistsOfInterestPAndVolume = [StudyBuilder::INS_D_AND_UP, StudyBuilder::D_HAMMER, StudyBuilder::D_HAMMER_AND_UP];
+        $getWatchlistsOfInterestPAndVolume = new Criteria(Criteria::expr()->in('name', $watchlistsOfInterestPAndVolume));
+        $watchlists = $this->SUT->getStudy()->getWatchlists()->matching($getWatchlistsOfInterestPAndVolume);
+        foreach ($watchlists as $watchlist) {
+            $dataSet = [];
+            foreach ($watchlist->getInstruments() as $instrument) {
+                $dataSet['instrument'][] = $instrument;
+                list($h0, $h1, $h2) = $this->getDailyPrices($instrument, $date);
+                $dataSet['Pos on D'][] = $h0->getClose() - $h0->getOpen();
+                $dataSet['volume'][] = $h0->getVolume();
+            }
+            array_multisort($dataSet['Pos on D'], SORT_DESC, $dataSet['volume'], SORT_DESC, $dataSet['instrument']);
+            $top10 = array_slice($dataSet['instrument'], 0, 10);
+            foreach ($top10 as $instrument) {
+                $this->assertContains($instrument, $ASInstruments);
+            }
+        }
+
+        $watchlistsOfInterestPAndVolume = [StudyBuilder::INS_D_AND_DWN, StudyBuilder::D_SHTNG_STAR, StudyBuilder::D_SHTNG_STAR_AND_DWN];
+        $getWatchlistsOfInterestPAndVolume = new Criteria(Criteria::expr()->in('name', $watchlistsOfInterestPAndVolume));
+        $watchlists = $this->SUT->getStudy()->getWatchlists()->matching($getWatchlistsOfInterestPAndVolume);
+        foreach ($watchlists as $watchlist) {
+            $dataSet = [];
+            foreach ($watchlist->getInstruments() as $instrument) {
+                $dataSet['instrument'][] = $instrument;
+                list($h0, $h1, $h2) = $this->getDailyPrices($instrument, $date);
+                $dataSet['Neg on D'][] = $h0->getClose() - $h0->getOpen();
+                $dataSet['volume'][] = $h0->getVolume();
+            }
+            array_multisort($dataSet['Neg on D'], SORT_ASC, $dataSet['volume'], SORT_DESC, $dataSet['instrument']);
+            $top10 = array_slice($dataSet['instrument'], 0, 10);
+            foreach ($top10 as $instrument) {
+                $this->assertContains($instrument, $ASInstruments);
+            }
+        }
+    }
+
+    public function testASBOBD()
+    {
+
+    }
+
+    public function testCreateFullStudy_15May2020_FullStudySaved()
+    {
+        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
+
+        $date1 = new \DateTime('2020-05-14');
+        $this->SUT->getStudy()->setDate($date1);
+        fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
+        $this->SUT->calculateMarketBreadth($watchlist);
+        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        $this->SUT->buildActionSymbolsWatchlist($watchlist);
+        $pastStudy = $this->SUT->getStudy();
+
+        $date2 = new \DateTime('2020-05-15');
+        $name = 'test_market_study';
+        $this->SUT->createStudy($date2, $name);
+        fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
+        $this->SUT->calculateMarketBreadth($watchlist);
+        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        $this->SUT->calculateScoreDelta($pastStudy);
+        $this->SUT->figureInsideBarBOBD($pastStudy, $date2);
+        $this->SUT->figureASBOBD($pastStudy, $date2);
+
+        // Figure current study's Actionable Symbols list
+        $this->SUT->buildActionSymbolsWatchlist();
+
+        // Create Market Score table for 21 days
+
+
+        $this->em->persist($this->SUT->getStudy());
+        $this->em->flush();
     }
 }

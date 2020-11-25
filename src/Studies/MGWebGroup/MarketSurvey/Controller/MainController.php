@@ -40,15 +40,36 @@ class MainController extends AbstractController
         $study = $studyRepository->findOneBy(['date' => $date]);
 
         if (empty($study)) {
-            // run a scan for y_universe
+            // error for now. Later to run a scan for y_universe
+            $errors[] = sprintf('Could not find study for date %s', $date->format('M d, Y'));
         }
 
-        $getMarketBreadth = new Criteria(Criteria::expr()->eq('attribute', 'market-breadth'));
-        $survey = $study->getArrayAttributes()->matching($getMarketBreadth)->first()->getValue();
+        if (empty($errors)) {
+            $getMarketBreadth = new Criteria(Criteria::expr()->eq('attribute', 'market-breadth'));
+            $survey = $study->getArrayAttributes()->matching($getMarketBreadth)->first()->getValue();
 
-        $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
-        $score = $study->getFloatAttributes()->matching($getScore)->first()->getValue();
+            $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
+            $score = $study->getFloatAttributes()->matching($getScore)->first()->getValue();
+            $getScoreDelta = new Criteria(Criteria::expr()->eq('attribute', 'score-delta'));
+            $scoreDelta = $study->getFloatAttributes()->matching($getScoreDelta)->first()->getValue();
 
-        return $this->render('@MarketSurvey/main.html.twig', ['date' => $date, 'survey' => $survey, 'score' => $score]);
+            $getInsDBOBD = new Criteria(Criteria::expr()->eq('attribute', 'bobd-daily'));
+            $getInsWkBOBD = new Criteria(Criteria::expr()->eq('attribute', 'bobd-weekly'));
+            $getInsMoBOBD = new Criteria(Criteria::expr()->eq('attribute', 'bobd-monthly'));
+            $insDBOBD = $study->getArrayAttributes()->matching($getInsDBOBD)->first()->getValue();
+            $insWkBOBD = $study->getArrayAttributes()->matching($getInsWkBOBD)->first()->getValue();
+            $insMoBOBD = $study->getArrayAttributes()->matching($getInsMoBOBD)->first()->getValue();
+
+            $getASBOBD = new Criteria(Criteria::expr()->eq('attribute', 'as-bobd'));
+            $ASBOBD = $study->getArrayAttributes()->matching($getASBOBD)->first()->getValue();
+
+
+            return $this->render('@MarketSurvey/main.html.twig', ['date' => $date, 'survey' => $survey, 'score' =>
+              $score, 'score_delta' => $scoreDelta, 'insd_bobd' => $insDBOBD, 'inswk_bobd' => $insWkBOBD, 'insmo_bobd' =>
+              $insMoBOBD, 'as_bobd' => $ASBOBD, 'errors' => $errors ]);
+
+        } else {
+            return $this->render('@MarketSurvey/main.html.twig', ['date' => $date, 'errors' => $errors]);
+        }
     }
 }

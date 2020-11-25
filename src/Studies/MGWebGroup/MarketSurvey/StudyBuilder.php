@@ -8,6 +8,7 @@ use App\Repository\StudyArrayAttributeRepository;
 use App\Repository\StudyFloatAttributeRepository;
 use App\Repository\WatchlistRepository;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
+use DateTime;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use App\Service\Scanner\ScannerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -126,9 +127,9 @@ class StudyBuilder
      * Calculates market score according to the metric stored in mgweb.yaml parameters, and saves it as 'market-score'
      * float attribute in $this->study.
      *
-     * Creates Inside Bar Daily, Weekly, Monthly watchlists. Also creates bullish and bearish actionable signals
-     * watchlists, which are later used in Inside Bar Breakouts/Breakdowns analysis as well as to build
-     * Actionable Symbols lists. These watchlists are added to $this->study into its $watchlists property.
+     * Creates Inside Bar Daily, Weekly, Monthly watchlists. Also creates bullish and bearish watchlists, which are
+     * later used in Inside Bar Breakouts/Breakdowns analysis as well as to build Actionable Symbols lists in
+     * other functions of the StudyBuilder. These watchlists are added to $this->study into its $watchlists property.
      *
      * @param \App\Entity\Watchlist $watchlist must have expressions for daily, weekly and monthly breakouts:
      *   Ins D BO:Ins D BD:Pos on D:Neg on D:Ins Wk BO:Ins Wk BD:Pos on Wk:Neg on Wk:Ins Mo BO:Ins Mo BD:Pos on Mo:Neg on Mo:V
@@ -177,6 +178,26 @@ class StudyBuilder
     }
 
     /**
+     * Takes 'market-score' attribute in the $pastStudy, figures delta from the current score in current study and
+     * saves this delta as 'score-delta' float attribute
+     * @param App\Entity\Study\Study $pastStudy past study which has its Market Score stored in float attribute
+     * 'market-score'
+     * @return StudyBuilder
+     */
+    public function calculateScoreDelta($pastStudy)
+    {
+        $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
+        $pastScore = $pastStudy->getFloatAttributes()->matching($getScore)->first()->getValue();
+
+        $score = $this->study->getFloatAttributes()->matching($getScore)->first()->getValue();
+
+        $scoreDelta = $score - $pastScore;
+        StudyFloatAttributeRepository::createFloatAttr($this->study, 'score-delta', $scoreDelta);
+
+        return $this;
+    }
+
+    /**
      * @param $survey = [ string exprName => App\Entity\Instrument[]]
      * @param $metric = [string exprName => float value]
      * @return float|int
@@ -191,7 +212,7 @@ class StudyBuilder
     /**
      * Takes a Watchlist entity and runs scans for each expression in $expressions returning summary of
      * instruments matching each.
-     * @param \DateTime $date Date for which to run the scan
+     * @param DateTime $date Date for which to run the scan
      * @param App\Entity\Watchlist $watchlist
      * @param array $expressions App\Entity\Expression[]
      * @return array $survey = [ string exprName => App\Entity\Instrument[], ...]
@@ -214,33 +235,25 @@ class StudyBuilder
 
 
     /**
-     * Retrieves $study for the supplied date. Scans its Inside Bar watchlists for Breakouts/Breakdowns (formula
-     * quartets) for the date in $this->study. Saves results as array attributes 'bobd-daily', 'bobd-weekly',
+     * Given the study, scans its Inside Bar watchlists for Breakouts/Breakdowns (formula
+     * quartets) for the $effectiveDate. Saves results as array attributes 'bobd-daily', 'bobd-weekly',
      * 'bobd-monthly' in $this->study.
-     * A formula quartet example for daily time frame is:
-     *   'Ins D BO', 'Ins D BD', 'Pos on D', 'Neg on D'
-     *  For weekly:
-     *   'Ins Wk BO', 'Ins Wk BD', 'Pos on Wk', 'Neg on Wk'
-     *  For monthly:
-     *   'Ins Mo BO', 'Ins Mo BD', 'Pos on Mo', 'Neg on Mo'
      *
      * @param App\Entity\Study\Study $study past study which has Inside Bar watchlists.
-     * @param \DateTime $effectiveDate date for which to run expressions on Inside Bar watchlists
+     * @param DateTime $effectiveDate date for which to run expressions on Inside Bar watchlists
      * @return StudyBuilder
      */
     public function figureInsideBarBOBD($study, $effectiveDate)
     {
-        $bobdTable = [];
-
         if ($study->getWatchlists() instanceof Doctrine\ORM\PersistentCollection ) {
             $study->getWatchlists()->initialize();
         }
+
         $comparison = Criteria::expr()->in('name', [self::INSIDE_BAR_DAY, self::INSIDE_BAR_WK, self::INSIDE_BAR_MO]);
         $insideBarWatchlistsCriterion = new Criteria($comparison);
         $insideBarWatchlists = $study->getWatchlists()->matching($insideBarWatchlistsCriterion);
         foreach ($insideBarWatchlists as $insideBarWatchlist) {
             $exprName = $insideBarWatchlist->getName();
-            $expressions = [];
             switch ($exprName) {
                 case self::INSIDE_BAR_DAY:
                     $exprList = [self::INS_D_BO, self::INS_D_BD, self::POS_ON_D, self::NEG_ON_D];
@@ -258,23 +271,83 @@ class StudyBuilder
                     $exprList = [];
                     $attribute = null;
             }
-            foreach ($exprList as $name) {
-                $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $name]);
-                $expressions[] = $expression;
-            }
-            $bobdTable['survey'] = $this->doScan($effectiveDate, $insideBarWatchlist, $expressions);
-            $bobdTable['count'] = $insideBarWatchlist->getInstruments()->count();
+
+            $bobdTable = $this->figureBOBD($effectiveDate, $insideBarWatchlist, $exprList);
 
             StudyArrayAttributeRepository::createArrayAttr($this->study, $attribute, $bobdTable);
         }
-
 
         return $this;
     }
 
     /**
-     * Takes specific watchlists already attached to the study and selects top 10 by price and in some cases volume
-     * to formulate the Actionable Symbols watchlist.
+     * Given the study, scans its Actionable Symbols (AS) watchlist for Breakouts/Breakdowns (formula
+     * quartets) for the $effectiveDate. Saves results as array attribute 'as-bobd' in $this->study.
+     * @param App\Entity\Study\Study $study past study which has Actionable Symbols watchlist.
+     * @param DateTime $effectiveDate date for which to run expressions on AS watchlist
+     * @return StudyBuilder
+     */
+    public function figureASBOBD($study, $effectiveDate)
+    {
+        if ($study->getWatchlists() instanceof Doctrine\ORM\PersistentCollection ) {
+            $study->getWatchlists()->initialize();
+        }
+
+        $comparison = Criteria::expr()->eq('name', 'AS');
+        $getASWatchlist = new Criteria($comparison);
+        $ASWatchlist = $study->getWatchlists()->matching($getASWatchlist)->first();
+
+        $exprList = [
+            self::INS_D_BO, self::INS_D_BD, self::POS_ON_D, self::NEG_ON_D,
+            self::INS_WK_BO, self::INS_WK_BD, self::POS_ON_WK, self::NEG_ON_WK,
+            self::INS_MO_BO, self::INS_MO_BD, self::POS_ON_MO, self::NEG_ON_MO
+        ];
+        $attribute = 'as-bobd';
+
+        $bobdTable = $this->figureBOBD($effectiveDate, $ASWatchlist, $exprList);
+
+        StudyArrayAttributeRepository::createArrayAttr($this->study, $attribute, $bobdTable);
+
+        return $this;
+    }
+
+    /**
+     * Figures Daily, Weekly, Monthly Breakouts and Breakdowns for a watchlist using standard formula quartets.
+     * A formula quartet for daily time frame is:
+     *   'Ins D BO', 'Ins D BD', 'Pos on D', 'Neg on D'
+     *  For weekly:
+     *   'Ins Wk BO', 'Ins Wk BD', 'Pos on Wk', 'Neg on Wk'
+     *  For monthly:
+     *   'Ins Mo BO', 'Ins Mo BD', 'Pos on Mo', 'Neg on Mo'
+     * @param DateTime $date
+     * @param App\Entity\Watchlist $watchlist
+     * @param array $exprList String[]
+     * @return array $bobdTable = [
+     *      'survey' => [
+     *          <exprName1> => App\Entity\Instrument[],
+     *          <exprName2> => App\Entity/Instrument[], ...
+     *      ],
+     *      'count' => integer
+     *   ]
+     */
+    private function figureBOBD($date, $watchlist, $exprList)
+    {
+        $bobdTable = [];
+        $expressions = [];
+        foreach ($exprList as $name) {
+            $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $name]);
+            $expressions[] = $expression;
+        }
+        $bobdTable['survey'] = $this->doScan($date, $watchlist, $expressions);
+        $bobdTable['count'] = $watchlist->getInstruments()->count();
+
+        return $bobdTable;
+    }
+
+    /**
+     * Takes specific watchlists already attached to the study and selects top 10 instruments from each by price and in
+     * some cases by price and volume to formulate the Actionable Symbols (AS) watchlist. This AS watchlist is
+     * attached to the study
      * @return StudyBuilder
      */
     public function buildActionSymbolsWatchlist()
@@ -307,13 +380,13 @@ class StudyBuilder
                     break;
                 default:
             }
-            $top10 = array_slice($watchlist->getCalculatedFormulas(), 1, 10);
-            foreach ($top10 as $symbol) {
+            $top10 = array_slice($watchlist->getCalculatedFormulas(), 0, 10);
+            foreach ($top10 as $symbol => $values) {
                 $actionableInstrumentsArray[] = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' =>
                   $symbol]);
             }
         }
-        $actionableSymbolsWatchlist = WatchlistRepository::createWatchlist('AS', null, null, $actionableInstrumentsArray);
+        $actionableSymbolsWatchlist = WatchlistRepository::createWatchlist('AS', null, [], $actionableInstrumentsArray);
         $this->study->addWatchlist($actionableSymbolsWatchlist);
 
         return $this;
@@ -328,29 +401,6 @@ class StudyBuilder
     {
 
     }
-
-    /**
-     * Creates Inside Bar daily, weekly, monthly, watchlists for the next T
-     * @param array $marketBreadth @see getMarketBreadth()
-     * @param App\Entity\Expression[] $xpressions
-     * @param \DateTime $date Date for which to create watchlists. Will be part of their name
-     * @return integer $counter number of watchlists saved
-     */
-//    public function feedNextDaysInsideBarWatchlists($marketBreadth, $expressions, $date)
-//    {
-//        $counter = 0;
-//        $timeframes = ['d' => 'Ins D', 'wk' => 'Ins Wk', 'mo' => 'Ins Mo'];
-//        foreach ($timeframes as $timeframe => $exprName) {
-//            $watchlistName = sprintf('ins_%s_bobd_%s', $timeframe, $date->format('ymd'));
-//            $newWatchlist = WatchlistRepository::createWatchlist($watchlistName, null, $expressions,
-//                                                                 $marketBreadth[0][$exprName]);
-//            $this->em->persist($newWatchlist);
-//            $this->em->flush();
-//            unset($newWatchlist);
-//            $counter++;
-//        }
-//        return $counter;
-//    }
 
     public function buildSectorTable() {}
 }

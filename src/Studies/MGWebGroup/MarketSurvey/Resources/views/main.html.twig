@@ -9,14 +9,24 @@
     {% set ins_mo_ct = 0 %}
     {% set order_of_expr = ['Ins D & Up', 'Ins Wk & Up', 'Ins Mo & Up', 'Ins D', 'Ins D & Dwn', 'Ins Wk & Dwn', 'Ins Mo & Dwn', 'D Hammer', 'Wk Hammer', 'Mo Hammer', 'Ins Wk', 'D Shtng Star', 'Wk Shtng Star', 'Mo Shtng Star', 'Ins Mo', 'D Bullish Eng', 'D Bearish Eng', 'Wk Bullish Eng', 'Wk Bearish Eng', 'Mo Bullish Eng', 'Mo Bearish Eng', 'D Hammer & Up', 'D Shtng Star & Down'] %}
     {% set highlighted_cols = ['Ins D', 'D Hammer', 'Wk Hammer', 'Mo Hammer', 'D Shtng Star', 'Wk Shtng Star', 'Mo Shtng Star', 'D Bullish Eng', 'D Bearish Eng', 'Wk Bullish Eng', 'Wk Bearish Eng', 'Mo Bullish Eng', 'Mo Bearish Eng'] %}
+    {% set order_of_quartets = ['Ins Mo BO','Pos on Mo','Neg on Mo','Ins Mo BD','Ins Wk BO','Pos on Wk','Neg on Wk','Ins Wk BD','Ins D BO','Pos on D','Neg on D','Ins D BD'] %}
     <div class="page-wrapper container-fluid">
-        <section class="announcements">
-            <div class="row"><div class="col"><h4>{{ date|date('M d, Y') }}</h4></div></div>
-        </section>
-
-        <section class="survey">
+        <section class="announcements border-bottom">
             <div class="row">
-                <div class="col-2 ml-auto"><h5 class="text-right">Score: {{ score }}</h5></div>
+                <div class="col-2"><h4>{{ date|date('M d, Y') }}</h4></div>
+                <div class="col">
+                    {% for error in errors %}
+                        <p class="text-dander bg-warning border border-danger rounded p-1 text-center">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    {% if errors is empty %}
+        <section class="survey mt-2">
+            <div class="row">
+                <div class="col-4 offset-4"><h5 class="text-center">Market Survey</h5></div>
+                <div class="col-1 ml-auto"><h6 class="text-right mb-0 mt-2">Score: {{ score }}</h6></div>
+                <div class="col-1"><h6 class="text-right mb-0 mt-2">Delta: {{ score_delta }}</h6></div>
             </div>
             <table class="table table-sm">
                 <thead>
@@ -28,15 +38,15 @@
                             {% set add_class = null %}
                         {% endif %}
                         <th scope="col" class="text-center {{ add_class }}">{{ expression }}</th>
-                            {% if 'Ins D' == expression %}
-                                {% set ins_d_ct = attribute(survey, expression)|length %}
-                            {% endif %}
-                            {% if 'Ins Wk' == expression %}
-                                {% set ins_wk_ct = attribute(survey, expression)|length %}
-                            {% endif %}
-                            {% if 'Ins Mo' == expression %}
-                                {% set ins_mo_ct = attribute(survey, expression)|length %}
-                            {% endif %}
+                        {% if 'Ins D' == expression %}
+                            {% set ins_d_ct = attribute(survey, expression)|length %}
+                        {% endif %}
+                        {% if 'Ins Wk' == expression %}
+                            {% set ins_wk_ct = attribute(survey, expression)|length %}
+                        {% endif %}
+                        {% if 'Ins Mo' == expression %}
+                            {% set ins_mo_ct = attribute(survey, expression)|length %}
+                        {% endif %}
                     {% endfor %}
                     {% set table_max_rows = max(ins_d_ct, ins_wk_ct, ins_mo_ct) %}
                 </tr>
@@ -52,28 +62,121 @@
                 </tr>
                 </thead>
                 <tbody>
-                    {% for i in 0..table_max_rows %}
-                        <tr>
-                            {% for expression in order_of_expr if attribute(survey, expression) is defined %}
-                                {% set list = attribute(survey, expression) %}
-                                {% if expression in highlighted_cols %}
-                                    {% set add_class = 'table-warning' %}
-                                {% else %}
-                                    {% set add_class = null %}
-                                {% endif %}
-                                <td class="text-center {{ add_class }}">{{ list[i] is defined ? attribute(list[i], 'symbol') : '' }}</td>
-                            {% endfor %}
-                        </tr>
-                    {% endfor %}
+                {% for i in 0..table_max_rows %}
+                    <tr>
+                        {% for expression in order_of_expr if attribute(survey, expression) is defined %}
+                            {% set list = attribute(survey, expression) %}
+                            {% if expression in highlighted_cols %}
+                                {% set add_class = 'table-warning' %}
+                            {% else %}
+                                {% set add_class = null %}
+                            {% endif %}
+                            <td class="text-center {{ add_class }}">{{ list[i] is defined ? attribute(list[i], 'symbol') : '' }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
-
-
         </section>
-
-
-        <div class="row"></div>
-        <div class="row"></div>
+        <section class="breakouts mt-2">
+            <div class="row">
+                <div class="col">
+                    <h6 class="text-center">Ins D, Ins Wk, Ins Mo Breakouts/Breakdowns</h6>
+                </div>
+                <div class="col">
+                    <h6 class="text-center">AS Breakouts/Breakdowns</h6>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <table class="table table-sm">
+                        <thead>
+                        <tr>
+                            <th>IM</th><th>{{insmo_bobd.count}}</th><th></th><th></th>
+                            <th>IW</th><th>{{inswk_bobd.count}}</th><th></th><th></th>
+                            <th>ID</th><th>{{insd_bobd.count}}</th><th></th><th></th>
+                        </tr>
+                        <tr>
+                            {% for expr_name in order_of_quartets %}
+                                <th>{{ expr_name }}</th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            {% for i in 0..3 %}
+                                {% set expr_name = cycle(order_of_quartets, i) %}
+                                <td>{{ attribute(insmo_bobd.survey, expr_name)|length }}</td>
+                            {% endfor %}
+                            {% for i in 4..7 %}
+                                {% set expr_name = cycle(order_of_quartets, i) %}
+                                <td>{{ attribute(inswk_bobd.survey, expr_name)|length }}</td>
+                            {% endfor %}
+                            {% for i in 8..11 %}
+                                {% set expr_name = cycle(order_of_quartets, i) %}
+                                <td>{{ attribute(insd_bobd.survey, expr_name)|length }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            {% for i in 0..3 %}
+                                {% set expr_name = cycle(order_of_quartets, i) %}
+                                <td>{{ (attribute(insmo_bobd.survey, expr_name)|length / insmo_bobd.count * 100)|number_format(2) ~ '%' }}</td>
+                            {% endfor %}
+                            {% for i in 4..7 %}
+                                {% set expr_name = cycle(order_of_quartets, i) %}
+                                <td>{{ (attribute(inswk_bobd.survey, expr_name)|length / inswk_bobd.count * 100)|number_format(2) ~ '%' }}</td>
+                            {% endfor %}
+                            {% for i in 8..11 %}
+                                {% set expr_name = cycle(order_of_quartets, i) %}
+                                <td>{{ (attribute(insd_bobd.survey, expr_name)|length / insd_bobd.count * 100)|number_format(2) ~ '%' }}</td>
+                            {% endfor %}
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col">
+                    <table class="table table-sm">
+                        <thead>
+                        <tr>
+                            <th>IM</th><th></th><th></th><th></th>
+                            <th>IW</th><th></th><th></th><th></th>
+                            <th>ID</th><th></th><th></th><th></th>
+                        </tr>
+                        <tr>
+                            {% for expr_name in order_of_quartets %}
+                                <th>{{ expr_name }}</th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            {% for i in 0..11 %}
+                                {% set expr_name = cycle(order_of_quartets, i) %}
+                                <td>{{ attribute(as_bobd.survey, expr_name)|length }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            {% for i in 0..11 %}
+                                {% set expr_name = cycle(order_of_quartets, i) %}
+                                <td>{{ (attribute(as_bobd.survey, expr_name)|length / as_bobd.count * 100)|number_format(2) ~ '%' }}</td>
+                            {% endfor %}
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        <section class="market-score">
+            <div class="row">
+                <div class="col">
+                    <h6 class="text-center">Market Score MTD</h6>
+                </div>
+                <div class="col">
+                    <h6 class="text-center">Market Score 21 day</h6>
+                </div>
+            </div>
+        </section>
+    {% endif %}
     </div>
 {% endblock %}
 {% block javascripts %}
