@@ -16,3 +16,12 @@ framework:
     #fragments: true
     php_errors:
         log: true
+
+    cache:
+        pools:
+            doctrine.query_cache_pool:
+                adapter: cache.app
+            doctrine.result_cache_pool:
+                adapter: cache.app
+            doctrine.metadata_cache_pool:
+                adapter: cache.app
