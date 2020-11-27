@@ -32,13 +32,20 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
      */
     private $catalog;
 
+    /**
+     * @var integer
+     */
+    private $resultCacheLifetime;
+
     public function __construct(
         EntityManager $em,
-        Catalog $catalog
+        Catalog $catalog,
+        $resultCacheLifetime
     )
     {
         $this->em = $em;
         $this->catalog = $catalog;
+        $this->resultCacheLifetime = $resultCacheLifetime;
     }
 
     public function getFunctions()
@@ -108,6 +115,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             $query->setParameter('id', $instrument->getId());
             $query->setParameter('date', $offsetDate->format('Y-m-d'));
             $query->setParameter('interval', $interval);
+            $query->useResultCache(true, $this->resultCacheLifetime);
 
             // to ignore dates use a limit statement
 //            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
