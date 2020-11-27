@@ -11,7 +11,8 @@ parameters:
     dates_begin: 946684800
     # '2100-12-31 Friday'
     dates_end: 4133894400
-
+    # 22 days
+    result_cache_lifetime: 1900800
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -61,7 +62,6 @@ services:
     App\Command\SyncPrice:
         arguments:
             $priceProvider: '@app.price_provider'
-#    App\Service\Watchlist\Factory:
-#        arguments:
-#            $em: '@'
-
+    App\Service\ExpressionHandler\OHLCV\Calculator:
+        arguments:
+            $resultCacheLifetime: '%result_cache_lifetime%'

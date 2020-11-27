@@ -14,6 +14,8 @@ services:
   App\Service\ExpressionHandler\OHLCV\Calculator:
       public: true
       autowire: true
+      arguments:
+        $resultCacheLifetime: '%result_cache_lifetime%'
   App\Service\Exchange\DailyIterator:
     public: true
     autowire: true
@@ -35,5 +37,6 @@ services:
   App\Service\Watchlist\Factory:
     public: true
     autowire: true
-
-
+  App\Studies\MGWebGroup\MarketSurvey\StudyBuilder:
+    public: true
+    autowire: true

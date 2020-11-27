@@ -33,12 +33,13 @@ class Calculator extends ExpressionLanguage
 
     public function __construct(
       RegistryInterface $registry,
-      Catalog $catalog
+      Catalog $catalog,
+      $resultCacheLifetime = 0
     )
     {
         $this->em = $registry->getManager();
         $this->catalog = $catalog;
-        $this->registerProvider(new SimpleFunctionsProvider($this->em, $catalog));
+        $this->registerProvider(new SimpleFunctionsProvider($this->em, $catalog, $resultCacheLifetime));
 
         parent::__construct();
     }
