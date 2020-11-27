@@ -7,7 +7,6 @@ use App\Entity\Study\ArrayAttribute;
 use App\Entity\Watchlist;
 use App\Entity\Study\Study;
 use App\Studies\MGWebGroup\MarketSurvey\StudyBuilder;
-use DoctrineExtensions\Query\Mysql\StrToDate;
 use League\Csv\Reader;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Doctrine\Common\Collections\Criteria;
@@ -30,8 +29,15 @@ class StudyBuilderTest extends KernelTestCase
      */
     private $em;
 
-
+    /**
+     * @var App\Repository\WatchlistRepository
+     */
     private $watchlistRepository;
+
+    /**
+     * @var integer
+     */
+    private $resultCacheLifetime;
 
     /**
      * Details on how to access services in tests:
@@ -42,6 +48,7 @@ class StudyBuilderTest extends KernelTestCase
         self::bootKernel();
         $this->SUT = self::$container->get(StudyBuilder::class);
         $this->em = self::$container->get('doctrine')->getManager();
+        $this->resultCacheLifetime = self::$container->getParameter('result_cache_lifetime');
 
         $this->watchlistRepository = $this->em->getRepository(Watchlist::class);
 

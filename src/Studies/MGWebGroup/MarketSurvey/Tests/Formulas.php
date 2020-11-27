@@ -260,6 +260,7 @@ trait Formulas
           ->setParameter('instrument', $instrument)
         ;
         $query = $queryBuilder->getQuery();
+        $query->useResultCache(true, $this->resultCacheLifetime);
         $results = $query->execute();
 
         if (empty($results)) {
