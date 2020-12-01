@@ -345,12 +345,12 @@ class StudyBuilder
     }
 
     /**
-     * Takes specific watchlists already attached to the study and selects top 10 instruments from each by price and in
-     * some cases by price and volume to formulate the Actionable Symbols (AS) watchlist. This AS watchlist is
+     * Takes specific watchlists already attached to the study and selects top 10 instruments from some lists by price
+     * and from other lists by price and volume to formulate the Actionable Symbols (AS) watchlist. This AS watchlist is
      * attached to the study
      * @return StudyBuilder
      */
-    public function buildActionSymbolsWatchlist()
+    public function buildActionableSymbolsWatchlist()
     {
         $watchlistsOfInterest = [
           self::INSIDE_BAR_DAY,
