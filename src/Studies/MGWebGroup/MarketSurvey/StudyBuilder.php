@@ -236,7 +236,6 @@ class StudyBuilder
         return $survey;
     }
 
-
     /**
      * Given the study, scans its Inside Bar watchlists for Breakouts/Breakdowns (formula
      * quartets) for the $effectiveDate. Saves results as array attributes 'bobd-daily', 'bobd-weekly',
