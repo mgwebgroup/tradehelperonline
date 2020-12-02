@@ -275,7 +275,7 @@ class StudyBuilder
                     $attribute = null;
             }
 
-            $bobdTable = $this->figureBOBD($effectiveDate, $insideBarWatchlist, $exprList);
+            $bobdTable = $this->makeSurvey($effectiveDate, $insideBarWatchlist, $exprList);
 
             StudyArrayAttributeRepository::createArrayAttr($this->study, $attribute, $bobdTable);
         }
@@ -307,7 +307,7 @@ class StudyBuilder
         ];
         $attribute = 'as-bobd';
 
-        $bobdTable = $this->figureBOBD($effectiveDate, $ASWatchlist, $exprList);
+        $bobdTable = $this->makeSurvey($effectiveDate, $ASWatchlist, $exprList);
 
         StudyArrayAttributeRepository::createArrayAttr($this->study, $attribute, $bobdTable);
 
@@ -315,7 +315,7 @@ class StudyBuilder
     }
 
     /**
-     * Performs watchlist scan using list of expression names.
+     * Performs watchlist scan using list of expression names as strings.
      * @param DateTime $date
      * @param App\Entity\Watchlist $watchlist
      * @param array $exprList String[]
@@ -327,7 +327,7 @@ class StudyBuilder
      *      'count' => integer
      *   ]
      */
-    private function figureBOBD($date, $watchlist, $exprList)
+    private function makeSurvey($date, $watchlist, $exprList)
     {
         $bobdTable = [];
         $expressions = [];
