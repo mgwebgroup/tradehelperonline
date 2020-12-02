@@ -21,6 +21,7 @@ use Doctrine\Common\Collections\Criteria;
  *   - Market Breadth table (is a basis for Inside Bar watchlists, Market Score and Actionable Symbols list)
  *   - Inside Bar Breakout/Breakdown table
  *   - Actionable Symbols list
+ *   - Actionable Symbols Breakout/Breakdown table
  *   - Market Score statistic
  *   - Sectors table
  *   - Y-Universe scoring table
@@ -42,16 +43,16 @@ class StudyBuilder
     const D_SHTNG_STAR_AND_DWN = 'D Shtng Star & Down';
     const D_BEARISH_ENG = 'D Bearish Eng';
 
-    const INS_D_BO = 'Ins D BO';
-    const INS_D_BD = 'Ins D BD';
+    const D_BO = 'D BO';
+    const D_BD = 'D BD';
     const POS_ON_D = 'Pos on D';
     const NEG_ON_D = 'Neg on D';
-    const INS_WK_BO = 'Ins Wk BO';
-    const INS_WK_BD = 'Ins Wk BD';
+    const WK_BO = 'Wk BO';
+    const WK_BD = 'Wk BD';
     const POS_ON_WK = 'Pos on Wk';
     const NEG_ON_WK = 'Neg on Wk';
-    const INS_MO_BO = 'Ins Mo BO';
-    const INS_MO_BD = 'Ins Mo BD';
+    const MO_BO = 'Mo BO';
+    const MO_BD = 'Mo BD';
     const POS_ON_MO = 'Pos on Mo';
     const NEG_ON_MO = 'Neg on Mo';
 
@@ -131,8 +132,10 @@ class StudyBuilder
      * later used in Inside Bar Breakouts/Breakdowns analysis as well as to build Actionable Symbols lists in
      * other functions of the StudyBuilder. These watchlists are added to $this->study into its $watchlists property.
      *
-     * @param \App\Entity\Watchlist $watchlist must have expressions for daily, weekly and monthly breakouts:
-     *   Ins D BO:Ins D BD:Pos on D:Neg on D:Ins Wk BO:Ins Wk BD:Pos on Wk:Neg on Wk:Ins Mo BO:Ins Mo BD:Pos on Mo:Neg on Mo:V
+     * @param \App\Entity\Watchlist $watchlist must have expressions associated with it for daily breakouts,
+     * breakdowns, and volume:
+     *   D BO:D BD:V
+     * These expressions are used in figuring out of Actionable Symbols list
      * @return StudyBuilder
      */
     public function calculateMarketBreadth($watchlist)
@@ -256,15 +259,15 @@ class StudyBuilder
             $exprName = $insideBarWatchlist->getName();
             switch ($exprName) {
                 case self::INSIDE_BAR_DAY:
-                    $exprList = [self::INS_D_BO, self::INS_D_BD, self::POS_ON_D, self::NEG_ON_D];
+                    $exprList = [self::D_BO, self::D_BD, self::POS_ON_D, self::NEG_ON_D];
                     $attribute = 'bobd-daily';
                     break;
                 case self::INSIDE_BAR_WK:
-                    $exprList = [self::INS_WK_BO, self::INS_WK_BD, self::POS_ON_WK, self::NEG_ON_WK];
+                    $exprList = [self::WK_BO, self::WK_BD, self::POS_ON_WK, self::NEG_ON_WK];
                     $attribute = 'bobd-weekly';
                     break;
                 case self::INSIDE_BAR_MO:
-                    $exprList = [self::INS_MO_BO, self::INS_MO_BD, self::POS_ON_MO, self::NEG_ON_MO];
+                    $exprList = [self::MO_BO, self::MO_BD, self::POS_ON_MO, self::NEG_ON_MO];
                     $attribute = 'bobd-monthly';
                     break;
                 default:
@@ -298,9 +301,9 @@ class StudyBuilder
         $ASWatchlist = $study->getWatchlists()->matching($getASWatchlist)->first();
 
         $exprList = [
-            self::INS_D_BO, self::INS_D_BD, self::POS_ON_D, self::NEG_ON_D,
-            self::INS_WK_BO, self::INS_WK_BD, self::POS_ON_WK, self::NEG_ON_WK,
-            self::INS_MO_BO, self::INS_MO_BD, self::POS_ON_MO, self::NEG_ON_MO
+            self::D_BO, self::D_BD, self::POS_ON_D, self::NEG_ON_D,
+            self::WK_BO, self::WK_BD, self::POS_ON_WK, self::NEG_ON_WK,
+            self::MO_BO, self::MO_BD, self::POS_ON_MO, self::NEG_ON_MO
         ];
         $attribute = 'as-bobd';
 
@@ -312,13 +315,7 @@ class StudyBuilder
     }
 
     /**
-     * Figures Daily, Weekly, Monthly Breakouts and Breakdowns for a watchlist using standard formula quartets.
-     * A formula quartet for daily time frame is:
-     *   'Ins D BO', 'Ins D BD', 'Pos on D', 'Neg on D'
-     *  For weekly:
-     *   'Ins Wk BO', 'Ins Wk BD', 'Pos on Wk', 'Neg on Wk'
-     *  For monthly:
-     *   'Ins Mo BO', 'Ins Mo BD', 'Pos on Mo', 'Neg on Mo'
+     * Performs watchlist scan using list of expression names.
      * @param DateTime $date
      * @param App\Entity\Watchlist $watchlist
      * @param array $exprList String[]
@@ -347,7 +344,7 @@ class StudyBuilder
     /**
      * Takes specific watchlists already attached to the study and selects top 10 instruments from some lists by price
      * and from other lists by price and volume to formulate the Actionable Symbols (AS) watchlist. This AS watchlist is
-     * attached to the study
+     * attached to the study.
      * @return StudyBuilder
      */
     public function buildActionableSymbolsWatchlist()

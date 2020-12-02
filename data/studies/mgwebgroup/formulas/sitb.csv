@@ -24,15 +24,15 @@ weekly,Wk Bearish Eng,(Close(0) < Close(1) and Close(0) < Open(1)) and (Open(0) 
 monthly,Mo Bearish Eng,(Close(0) < Close(1) and Close(0) < Open(1)) and (Open(0) > Close(1) and Open(0) > Open(1)),= true
 daily,D Hammer & Up,(((High(1) - Low(1)) > 3 * (Open(1) - Close(1)) and ((Close(1) - Low(1)) / (0.001 + High(1) - Low(1)) > 0.6) and ((Open(1) - Low(1)) / (0.001 + High(1) - Low(1)) > 0.6))) and Close(0) > High(1),= true
 daily,D Shtng Star & Down,(((High(1) - Low(1)) > 3 * (Open(1) - Close(1)) and ((High(1) - Close(1)) / (0.001 + High(1) - Low(1)) > 0.6) and ((High(1)-Open(1)) / (0.001 + High(1) - Low(1)) > 0.6))) and Open(0) < High(1) and Close(0) < Low(1),= true
-daily,Ins D BO,Close(0)-High(1),> 0
-daily,Ins D BD,Close(0)-Low(1),< 0
+daily,D BO,Close(0)-High(1),> 0
+daily,D BD,Close(0)-Low(1),< 0
 daily,Pos on D,Close(0)-Open(0),> 0
 daily,Neg on D,Close(0)-Open(0),< 0
-weekly,Ins Wk BO,Close(0)-High(1),> 0
-weekly,Ins Wk BD,Close(0)-Low(1),< 0
+weekly,Wk BO,Close(0)-High(1),> 0
+weekly,Wk BD,Close(0)-Low(1),< 0
 weekly,Pos on Wk,Close(0)-Open(0),> 0
 weekly,Neg on Wk,Close(0)-Open(0),< 0
-monthly,Ins Mo BO,Close(0)-High(1),> 0
-monthly,Ins Mo BD,Close(0)-Low(1),< 0
+monthly,Mo BO,Close(0)-High(1),> 0
+monthly,Mo BD,Close(0)-Low(1),< 0
 monthly,Pos on Mo,Close(0)-Open(0),> 0
 monthly,Neg on Mo,Close(0)-Open(0),< 0

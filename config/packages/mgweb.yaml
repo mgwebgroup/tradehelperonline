@@ -23,17 +23,3 @@ parameters:
       Mo Bearish Eng: -2
       D Hammer & Up: 3.75
       D Shtng Star & Down: -3.75
-  inside-bar-watchlist-formulas:
-    - Ins D BO
-    - Ins D BD
-    - Pos on D
-    - Neg on D
-    - Ins Wk BO
-    - Ins Wk BD
-    - Pos on Wk
-    - Neg on Wk
-    - Ins Mo BO
-    - Ins Mo BD
-    - Pos on Mo
-    - Neg on Mo
-

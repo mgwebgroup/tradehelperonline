@@ -29,7 +29,11 @@ class WatchlistFixtures extends Fixture implements FixtureGroupInterface
 
     private $manager;
 
-    private $expressions = 'Ins D BO:Ins D BD:Pos on D:Neg on D:Ins Wk BO:Ins Wk BD:Pos on Wk:Neg on Wk:Ins Mo BO:Ins Mo BD:Pos on Mo:Neg on Mo:V';
+    /**
+     * These are the only expressions used to formulate Actionable Symbols lists
+     * @var string
+     */
+    private $expressions = 'Pos on D:Neg on D:V';
 
     public static function getGroups(): array
     {

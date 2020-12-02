@@ -100,7 +100,7 @@ trait Formulas
         return false;
     }
 
-    private function insDBO($instrument, $date)
+    private function dayBO($instrument, $date)
     {
         list($p0, $p1, $p2) = $this->getDailyPrices($instrument, $date);
 
@@ -111,7 +111,7 @@ trait Formulas
         return false;
     }
 
-    private function insDBD($instrument, $date)
+    private function dayBD($instrument, $date)
     {
         list($p0, $p1, $p2) = $this->getDailyPrices($instrument, $date);
 
@@ -144,11 +144,22 @@ trait Formulas
         return false;
     }
 
-    private function insWkBO($instrument, $date)
+    private function weekBO($instrument, $date)
     {
         list($p0, $p1, $p2) = $this->getWeeklyPrices($instrument, $date);
 
         if ($p0->getClose()-$p1->getHigh() > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function weekBD($instrument, $date)
+    {
+        list($p0, $p1, $p2) = $this->getWeeklyPrices($instrument, $date);
+
+        if ($p0->getClose()-$p1->getLow() < 0) {
             return true;
         }
 
@@ -166,7 +177,18 @@ trait Formulas
         return false;
     }
 
-    private function insMoBO($instrument, $date)
+    private function posOnWk($instrument, $date)
+    {
+        list($p0, $p1, $p2) = $this->getWeeklyPrices($instrument, $date);
+
+        if ($p0->getClose()-$p0->getOpen() > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function monthBO($instrument, $date)
     {
         list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
         
@@ -177,7 +199,7 @@ trait Formulas
         return false;
     }
     
-    private function insMoBD($instrument, $date)
+    private function monthBD($instrument, $date)
     {
         list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
 
@@ -187,7 +209,28 @@ trait Formulas
 
         return false;
     }
-    
+
+    private function posOnMo($instrument, $date)
+    {
+        list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
+
+        if ($p0->getClose()-$p0->getOpen() > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function negOnMo($instrument, $date)
+    {
+        list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
+
+        if ($p0->getClose()-$p0->getOpen() < 0) {
+            return true;
+        }
+
+        return false;
+    }
     
     private function getDailyPrices($instrument, $date)
     {

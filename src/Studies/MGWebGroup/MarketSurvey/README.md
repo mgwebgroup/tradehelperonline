@@ -60,14 +60,15 @@ bin/console -v th:convert-ohlcv --weekly --monthly data/source/y_universe.csv
 
 Import the study formulas:
 ```bash
-bin/console -v th:expression:import --file data/studies/mgwebgroup/formulas/sitb.csv
+bin/console -v th:expression:import --symbol=LIN --file data/studies/mgwebgroup/formulas/sitb.csv
 ```
+You can specify any instrument for the _--symbol_ option. Price data on the instrument is used to test imported formulas. If you omit this option, the instrument will be selected at random. This may fail the import because for each new formula in the list, another random symbol will be chosen, which may not have the price data.
+
 
 The watchlists for the study in csv format are already present in data/studies/mgwebgroup/watchlists/ folder and must be imported with the following command:
 ```bash
 bin/console -v th:watchlist:import data/studies/mgwebgroup/watchlists/y_universe.csv y_universe
 ```
-Watchlist named _y_universe_ contains formulas necessary for market scoring (market survey).
 
 
 Testing

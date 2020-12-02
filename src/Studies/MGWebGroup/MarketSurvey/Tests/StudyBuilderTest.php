@@ -169,10 +169,10 @@ class StudyBuilderTest extends KernelTestCase
         $posOnD = [];
         $negOnD = [];
         foreach ($insideBarWatchlist->getInstruments() as $instrument) {
-            if ($this->insDBO($instrument, $date2)) {
+            if ($this->dayBO($instrument, $date2)) {
                 $insDBO[] = $instrument;
             }
-            if ($this->insDBD($instrument, $date2)) {
+            if ($this->dayBD($instrument, $date2)) {
                 $insDBD[] = $instrument;
             }
             if ($this->posOnD($instrument, $date2)) {
@@ -189,7 +189,7 @@ class StudyBuilderTest extends KernelTestCase
         $insWkBO = [];
         $negOnWk = [];
         foreach ($insideBarWatchlist->getInstruments() as $instrument) {
-            if ($this->insWkBO($instrument, $date2)) {
+            if ($this->weekBO($instrument, $date2)) {
                 $insWkBO[] = $instrument;
             }
             if ($this->negOnWk($instrument, $date2)) {
@@ -203,10 +203,10 @@ class StudyBuilderTest extends KernelTestCase
         $insMoBO = [];
         $insMoBD = [];
         foreach ($insideBarWatchlist->getInstruments() as $instrument) {
-            if ($this->insMoBO($instrument, $date2)) {
+            if ($this->monthBO($instrument, $date2)) {
                 $insMoBO[] = $instrument;
             }
-            if ($this->insMoBD($instrument, $date2)) {
+            if ($this->monthBD($instrument, $date2)) {
                 $insMoBD[] = $instrument;
             }
         }
@@ -219,24 +219,24 @@ class StudyBuilderTest extends KernelTestCase
         $bobdMonthly = $this->SUT->getStudy()->getArrayAttributes()->matching($getBOBDMonthly)->first()->getValue();
 
 
-        $this->assertCount(count($insDBO), $bobdDaily['survey'][StudyBuilder::INS_D_BO]);
-        $this->assertArraySubset($insDBO, $bobdDaily['survey'][StudyBuilder::INS_D_BO]);
-        $this->assertCount(count($insDBD), $bobdDaily['survey'][StudyBuilder::INS_D_BD]);
-        $this->assertArraySubset($insDBD, $bobdDaily['survey'][StudyBuilder::INS_D_BD]);
+        $this->assertCount(count($insDBO), $bobdDaily['survey'][StudyBuilder::D_BO]);
+        $this->assertArraySubset($insDBO, $bobdDaily['survey'][StudyBuilder::D_BO]);
+        $this->assertCount(count($insDBD), $bobdDaily['survey'][StudyBuilder::D_BD]);
+        $this->assertArraySubset($insDBD, $bobdDaily['survey'][StudyBuilder::D_BD]);
         $this->assertCount(count($posOnD), $bobdDaily['survey'][StudyBuilder::POS_ON_D]);
         $this->assertArraySubset($posOnD, $bobdDaily['survey'][StudyBuilder::POS_ON_D]);
         $this->assertCount(count($negOnD), $bobdDaily['survey'][StudyBuilder::NEG_ON_D]);
         $this->assertArraySubset($negOnD, $bobdDaily['survey'][StudyBuilder::NEG_ON_D]);
 
-        $this->assertCount(count($insWkBO), $bobdWeekly['survey'][StudyBuilder::INS_WK_BO]);
-        $this->assertArraySubset($insWkBO, $bobdWeekly['survey'][StudyBuilder::INS_WK_BO]);
+        $this->assertCount(count($insWkBO), $bobdWeekly['survey'][StudyBuilder::WK_BO]);
+        $this->assertArraySubset($insWkBO, $bobdWeekly['survey'][StudyBuilder::WK_BO]);
         $this->assertCount(count($negOnWk), $bobdWeekly['survey'][StudyBuilder::NEG_ON_WK]);
         $this->assertArraySubset($negOnWk, $bobdWeekly['survey'][StudyBuilder::NEG_ON_WK]);
 
-        $this->assertCount(count($insMoBO), $bobdMonthly['survey'][StudyBuilder::INS_MO_BO]);
-        $this->assertArraySubset($insMoBO, $bobdMonthly['survey'][StudyBuilder::INS_MO_BO]);
-        $this->assertCount(count($insMoBD), $bobdMonthly['survey'][StudyBuilder::INS_MO_BD]);
-        $this->assertArraySubset($insMoBD, $bobdMonthly['survey'][StudyBuilder::INS_MO_BD]);
+        $this->assertCount(count($insMoBO), $bobdMonthly['survey'][StudyBuilder::MO_BO]);
+        $this->assertArraySubset($insMoBO, $bobdMonthly['survey'][StudyBuilder::MO_BO]);
+        $this->assertCount(count($insMoBD), $bobdMonthly['survey'][StudyBuilder::MO_BD]);
+        $this->assertArraySubset($insMoBD, $bobdMonthly['survey'][StudyBuilder::MO_BD]);
     }
 
     public function testMarketScoreDelta()
@@ -282,7 +282,7 @@ class StudyBuilderTest extends KernelTestCase
         $this->SUT->calculateMarketBreadth($watchlist);
         fwrite(STDOUT, 'complete.'.PHP_EOL);
 
-        $this->SUT->buildActionSymbolsWatchlist();
+        $this->SUT->buildActionableSymbolsWatchlist();
 
         $getASWatchilst = new Criteria(Criteria::expr()->eq('name', 'AS'));
         $ASWatchlist = $this->SUT->getStudy()->getWatchlists()->matching($getASWatchilst)->first();
@@ -360,17 +360,17 @@ class StudyBuilderTest extends KernelTestCase
         $ASWatchlist = $pastStudy->getWatchlists()->matching($getASWatchilst)->first();
         $ASInstruments = $ASWatchlist->getInstruments()->toArray();
 
-        $insDBO = [];
-        $insDBD = [];
+        $dayBO = [];
+        $dayBD = [];
         $posOnD = [];
         $negOnD = [];
         $date2 = new \DateTime('2020-05-15');
         foreach ($ASInstruments as $instrument) {
-            if ($this->insDBO($instrument, $date2)) {
-                $insDBO[] = $instrument;
+            if ($this->dayBO($instrument, $date2)) {
+                $dayBO[] = $instrument;
             }
-            if ($this->insDBD($instrument, $date2)) {
-                $insDBD[] = $instrument;
+            if ($this->dayBD($instrument, $date2)) {
+                $dayBD[] = $instrument;
             }
             if ($this->posOnD($instrument, $date2)) {
                 $posOnD[] = $instrument;
@@ -387,16 +387,16 @@ class StudyBuilderTest extends KernelTestCase
         $getASBOBD = new Criteria(Criteria::expr()->eq('attribute', 'as-bobd'));
         $ASBOBD = $this->SUT->getStudy()->getArrayAttributes()->matching($getASBOBD)->first()->getValue();
 
-        $this->assertCount(count($insDBO), $ASBOBD['survey'][StudyBuilder::INS_D_BO]);
-        foreach ($insDBO as $instrument) {
-            $this->assertContains($instrument, $ASBOBD['survey'][StudyBuilder::INS_D_BO]);
+        $this->assertCount(count($dayBO), $ASBOBD['survey'][StudyBuilder::D_BO]);
+        foreach ($dayBO as $instrument) {
+            $this->assertContains($instrument, $ASBOBD['survey'][StudyBuilder::D_BO]);
         }
-        $this->assertCount(count($insDBD), $ASBOBD['survey'][StudyBuilder::INS_D_BD]);
-        foreach ($insDBD as $instrument) {
-            $this->assertContains($instrument, $ASBOBD['survey'][StudyBuilder::INS_D_BD]);
+        $this->assertCount(count($dayBD), $ASBOBD['survey'][StudyBuilder::D_BD]);
+        foreach ($dayBD as $instrument) {
+            $this->assertContains($instrument, $ASBOBD['survey'][StudyBuilder::D_BD]);
         }
         $this->assertCount(count($posOnD), $ASBOBD['survey'][StudyBuilder::POS_ON_D]);
-        foreach ($insDBD as $instrument) {
+        foreach ($posOnD as $instrument) {
             $this->assertContains($instrument, $ASBOBD['survey'][StudyBuilder::POS_ON_D]);
         }
         $this->assertCount(count($negOnD), $ASBOBD['survey'][StudyBuilder::NEG_ON_D]);
