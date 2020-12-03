@@ -120,6 +120,9 @@
     "league/csv": {
         "version": "9.6.0"
     },
+    "markrogoyski/math-php": {
+        "version": "v1.7.0"
+    },
     "nikic/php-parser": {
         "version": "v4.2.1"
     },
