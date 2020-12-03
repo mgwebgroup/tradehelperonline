@@ -3,17 +3,19 @@ namespace App\Studies\MGWebGroup\MarketSurvey;
 
 use App\Entity\Expression;
 use App\Entity\Instrument;
+use App\Entity\OHLCV\History;
 use App\Entity\Study\Study;
 use App\Repository\StudyArrayAttributeRepository;
 use App\Repository\StudyFloatAttributeRepository;
 use App\Repository\WatchlistRepository;
+use App\Service\Exchange\Equities\TradingCalendar;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
 use DateTime;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use App\Service\Scanner\ScannerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Doctrine\Common\Collections\Criteria;
-
+use App\Studies\MGWebGroup\MarketSurvey\Exception\StudyException;
 
 /**
  * Implements all calculations necessary for the Market Survey. Based on procedures of October 2018.
@@ -82,18 +84,25 @@ class StudyBuilder
      */
     private $study;
 
+    /**
+     * @var
+     */
+    private $tradeDayIterator;
+
 
     public function __construct(
         RegistryInterface $registry,
         ScannerInterface $scanner,
         ContainerInterface $container,
-        Calculator $calculator
+        Calculator $calculator,
+        TradingCalendar $tradingCalendar
     )
     {
         $this->em = $registry->getManager();
         $this->scanner = $scanner;
         $this->container = $container;
         $this->calculator = $calculator;
+        $this->tradeDayIterator = $tradingCalendar;
     }
 
     /**
@@ -108,7 +117,7 @@ class StudyBuilder
         $this->study->setDate($date);
         $this->study->setName($name);
 
-        return $this;
+        return $this->study;
     }
 
     public function getStudy()
@@ -187,11 +196,14 @@ class StudyBuilder
      * 'market-score'
      * @return StudyBuilder
      */
-    public function calculateScoreDelta($pastStudy)
+    public function calculateScoreDelta($pastStudy=null)
     {
         $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
-        $pastScore = $pastStudy->getFloatAttributes()->matching($getScore)->first()->getValue();
-
+        if (!$pastStudy) {
+            $pastScore = 0;
+        } else {
+            $pastScore = $pastStudy->getFloatAttributes()->matching($getScore)->first()->getValue();
+        }
         $score = $this->study->getFloatAttributes()->matching($getScore)->first()->getValue();
 
         $scoreDelta = $score - $pastScore;
@@ -388,9 +400,112 @@ class StudyBuilder
         return $this;
     }
 
-    public function buildMarketScoreTableForRollingPeriod($date, $daysBack, $score)
+    /**
+     * Score table contains current score with historical market scores, score deltas, prices for SPY and how many
+     * standard deviations from average the score and the score deltas are for each day. These numbers are used to
+     * mark significant levels for SPY, called the Levels Map.
+     * In order to calculate the table correctly, current study must already have attributes 'market-score' and 'score-delta'
+     * calculated. Also, studies for the $daysBack must already be saved in database.
+     * @param integer $daysBack
+     * @return StudyBuilder
+     * @throws StudyException
+     * @throws \App\Exception\PriceHistoryException
+     */
+    public function buildMarketScoreTableForRollingPeriod($daysBack)
     {
+        /** @var App\Entity\Instrument | null $SPY */
+        $SPY = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => 'SPY']);
+        if (!$SPY) {
+            throw new StudyException('Could not find instrument for `SPY`');
+        }
 
+        /** @var \DateInterval $interval */
+        $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
+
+        $scoreTableRolling = ['table' => [], 'summary' => []];
+
+        $date = clone $this->study->getDate();
+
+//        $studyParams = $this->getScoreTableParams($this->study, $SPY, $interval);
+        $studyParams = ['score' => 238.75, 'delta' => -51.75, 'P' => 286.28];
+        $studyParams['date'] = $date;
+
+        $scoreTableRolling['table'][] = $studyParams;
+
+        $this->tradeDayIterator->getInnerIterator()->setStartDate($date)->setDirection(-1);
+        $this->tradeDayIterator->getInnerIterator()->rewind();
+        while ($daysBack > 0) {
+            $this->tradeDayIterator->next();
+            $date = $this->tradeDayIterator->current();
+
+            $study = $this->em->getRepository(Study::class)->findOneBy(['name' => $this->study->getName(), 'date' => $date]);
+            if (!$study) {
+                throw new StudyException(sprintf('Could not find study for date %s', $date->format('Y-m-d H:i:s')));
+            }
+
+            $studyParams = $this->getScoreTableParams($study, $SPY, $interval);
+            $studyParams['date'] = clone $date;
+            $scoreTableRolling['table'][] = $studyParams;
+
+            $daysBack--;
+        }
+
+        $count = count($scoreTableRolling['table']);
+        if ( $count > 0) {
+            $scoreColumn = array_column($scoreTableRolling['table'], 'score');
+            $scoreTableRolling['summary']['score-avg'] = array_sum($scoreColumn) / $count;
+            $scoreTableRolling['summary']['score-max'] = max($scoreColumn);
+            $scoreTableRolling['summary']['score-min'] = min($scoreColumn);
+            $deltaColumn = array_column($scoreTableRolling['table'], 'delta');
+            $scoreTableRolling['summary']['delta-avg'] = array_sum($deltaColumn) / $count;
+            $scoreTableRolling['summary']['delta-max'] = max($deltaColumn);
+            $scoreTableRolling['summary']['delta-min'] = min($deltaColumn);
+            $PColumn = array_column($scoreTableRolling['table'], 'P');
+            $scoreTableRolling['summary']['P-avg'] = array_sum($PColumn) / $count;
+
+            $scoreTableRolling['summary']['score-std_div'] = null;
+            $scoreTableRolling['summary']['delta-std_div'] = null;
+        }
+
+
+        return $this;
+    }
+
+    /**
+     * @param $study Study
+     * @param App\Entity\Instrument $instrument
+     * @param \DateInterval $interval
+     * @return array = ['score' => float, 'delta' => float, 'P' => float]
+     * @throws StudyException
+     */
+    private function getScoreTableParams($study, $instrument, $interval)
+    {
+        $date = $study->getDate();
+
+        $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
+        /** @var App\Entity\Study\FloatAttribute | false  $scoreFloatAttr */
+        $scoreFloatAttr = $study->getFloatAttributes()->matching($getScore)->first();
+        if ($scoreFloatAttr) {
+            $score = $scoreFloatAttr->getValue();
+        } else {
+            throw new StudyException(sprintf('Study with id=%d is missing its current score.', $study->getId()));
+        }
+
+        $getScoreDelta = new Criteria(Criteria::expr()->eq('attribute', 'score-delta'));
+        $scoreDeltaFloatAttr = $study->getFloatAttributes()->matching($getScoreDelta)->first();
+        if ($scoreDeltaFloatAttr) {
+            $scoreDelta = $scoreDeltaFloatAttr->getValue();
+        } else {
+            throw new StudyException('Study in the StudyBuilder is missing current score delta');
+        }
+
+        $h = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $date, 'timeinterval' => $interval]);
+        if (!$h) {
+            throw new StudyException(sprintf('Price history for instrument `%s` and date `%s` could not be found',
+                                             $instrument->getSymbol(), $date->format('Y-m-d H:i:s')));
+        }
+
+        return ['score' => $score, 'delta' => $scoreDelta, 'P' => $h->getClose()];
     }
 
     public function buildMarketScoreTableForMTD($date, $score)

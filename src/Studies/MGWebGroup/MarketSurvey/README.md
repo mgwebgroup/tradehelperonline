@@ -50,8 +50,9 @@ $ npx encore dev --config src/Studies/MGWebGroup/MarketSurvey/webpack.config.js
 The study utilizes common symbols that are already imported into the main system. If they are not already imported, use the following command:
 ```bash
 bin/console -v th:instruments:import
+bin/console -v th:instruments:import data/source/spdrs.csv
 ```
-This command will take the main index file _data/source/y_universe.csv_ (default) and together with _data/source/nasdaqlisted.csv_ and _data/source/otherlisted.csv_ will import all instruments. Two additional files _nasdaqlisted.csv_ and _otherlisted.csv_ are necessary to determine which stock exchange symbols belong to.
+The commands will take the main index file _data/source/y_universe.csv_ (default) and together with _data/source/nasdaqlisted.csv_ and _data/source/otherlisted.csv_ will import all instruments. Two additional files _nasdaqlisted.csv_ and _otherlisted.csv_ are necessary to determine which stock exchange symbols belong to.
 
 As mentioned above, price data on all instruments must be present for each imported symbol. Besides the daily prices the study uses weekly and monthly time frames. They should be present in the price history and saved in database (table _ohlcvhistory_). If not, run this command to create them from daily prices:
 ```bash

@@ -6,6 +6,7 @@ use App\Entity\Instrument;
 use App\Entity\Study\ArrayAttribute;
 use App\Entity\Watchlist;
 use App\Entity\Study\Study;
+use App\Service\Exchange\Equities\TradingCalendar;
 use App\Studies\MGWebGroup\MarketSurvey\StudyBuilder;
 use League\Csv\Reader;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -479,6 +480,48 @@ class StudyBuilderTest extends KernelTestCase
         foreach ($negOnMo as $instrument) {
             $this->assertContains($instrument, $ASBOBD['survey'][StudyBuilder::NEG_ON_MO]);
         }
+    }
+
+    public function testBuildMarketScoreTableForRollingPeriod_start15May2020_MarketScoreRollingAttr()
+    {
+        $name = 'test_market_study';
+
+        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
+
+//        $date = $this->SUT->getStudy()->getDate();
+        $periodDays = 2;
+//        $tradeDayIterator = self::$container->get(TradingCalendar::class);
+//        $tradeDayIterator->getInnerIterator()->setStartDate($date)->setDirection(-1);
+//        $tradeDayIterator->getInnerIterator()->rewind();
+//        for ($i = 1; $i <= $periodDays; $i++) {
+//            $tradeDayIterator->next();
+//        }
+//        $date = $tradeDayIterator->current();
+//
+//        $this->SUT->createStudy($date, $name);
+
+//        $pastStudy = null;
+//        for ($i = 1; $i <= $periodDays; $i++) {
+//            fwrite(STDOUT, sprintf('%2d Calculating Market Breadth...', $i));
+//            $this->SUT->calculateMarketBreadth($watchlist);
+//            fwrite(STDOUT, 'done'.PHP_EOL);
+//            $this->SUT->calculateScoreDelta($pastStudy);
+//            $pastStudy = $this->SUT->getStudy();
+//            $this->em->persist($pastStudy);
+//            $this->em->flush();
+//
+//            $tradeDayIterator->getInnerIterator()->setStartDate($date)->setDirection(1);
+//            $tradeDayIterator->getInnerIterator()->rewind();
+//            $tradeDayIterator->next();
+//            $date = $tradeDayIterator->current();
+//
+//            $this->SUT->createStudy($date, $name);
+//        }
+
+//        $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => new \DateTime('2020-05-14')]);
+//        $this->SUT->calculateMarketBreadth($watchlist);
+//        $this->SUT->calculateScoreDelta($pastStudy);
+        $this->SUT->buildMarketScoreTableForRollingPeriod($periodDays);
     }
 
     public function testCreateFullStudy_15May2020_FullStudySaved()
