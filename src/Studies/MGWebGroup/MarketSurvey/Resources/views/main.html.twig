@@ -32,11 +32,7 @@
                 <thead>
                 <tr>
                     {% for expression in order_of_expr if attribute(survey, expression) is defined %}
-                        {% if expression in highlighted_cols %}
-                            {% set add_class = 'table-warning' %}
-                        {% else %}
-                            {% set add_class = null %}
-                        {% endif %}
+                        {% set add_class = expression in highlighted_cols ? 'table-warning' : null %}
                         <th scope="col" class="text-center {{ add_class }}">{{ expression }}</th>
                         {% if 'Ins D' == expression %}
                             {% set ins_d_ct = attribute(survey, expression)|length %}
@@ -52,11 +48,7 @@
                 </tr>
                 <tr>
                     {% for expression in order_of_expr if attribute(survey, expression) is defined %}
-                        {% if expression in highlighted_cols %}
-                            {% set add_class = 'table-warning' %}
-                        {% else %}
-                            {% set add_class = null %}
-                        {% endif %}
+                        {% set add_class = expression in highlighted_cols ? 'table-warning' : null %}
                         <th scope="col" class="text-center {{ add_class }}">{{ attribute(survey, expression)|length }}</th>
                     {% endfor %}
                 </tr>
@@ -66,11 +58,7 @@
                     <tr>
                         {% for expression in order_of_expr if attribute(survey, expression) is defined %}
                             {% set list = attribute(survey, expression) %}
-                            {% if expression in highlighted_cols %}
-                                {% set add_class = 'table-warning' %}
-                            {% else %}
-                                {% set add_class = null %}
-                            {% endif %}
+                            {% set add_class = expression in highlighted_cols ? 'table-warning' : null %}
                             <td class="text-center {{ add_class }}">{{ list[i] is defined ? attribute(list[i], 'symbol') : '' }}</td>
                         {% endfor %}
                     </tr>
@@ -183,13 +171,14 @@
                         {% for record in score_table_rolling.table %}
                             <tr>
                                 <td>{{record.date|date('m/d/y')}}</td>
-                                {% if record.score == attribute(score_table_rolling.summary, 'score-max') %}
-                                    {% set add_class = 'table-success' %}
-                                {% else %}
-                                    {% set add_class = null %}
-                                {% endif %}
+                                {% set add_class = record.score == attribute(score_table_rolling.summary, 'score-max') ? 'table-success': null %}
+                                {% set add_class = record.score == attribute(score_table_rolling.summary, 'score-min') ? 'table-danger': add_class %}
                                 <td class="{{ add_class }}">{{record.score|number_format(2)}}</td><td>{{ attribute(record, 'score-std_div_qty')|number_format(2) }}</td>
-                                <td>{{ record.delta|number_format(2) }}</td><td>{{ attribute(record, 'delta-std_div_qty')|number_format(2) }}</td><td>{{ record.P|number_format(2) }}</td>
+                                {% set add_class = record.delta == attribute(score_table_rolling.summary, 'delta-max') ? 'table-success': null %}
+                                {% set add_class = record.delta == attribute(score_table_rolling.summary, 'delta-min') ? 'table-danger': add_class %}
+                                <td class="{{ add_class }}">{{ record.delta|number_format(2) }}</td><td>{{ attribute(record, 'delta-std_div_qty')|number_format(2) }}</td>
+                                {% set add_class = attribute(record, 'delta-std_div_qty') > 1 or attribute(record, 'delta-std_div_qty') < -1 ? 'table-active' : null %}
+                                <td class="{{ add_class }}">{{ record.P|number_format(2) }}</td>
                             </tr>
                         {% endfor %}
                         <tr class="table-active">
