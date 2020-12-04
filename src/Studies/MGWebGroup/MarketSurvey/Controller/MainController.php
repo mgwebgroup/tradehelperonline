@@ -63,10 +63,23 @@ class MainController extends AbstractController
             $getASBOBD = new Criteria(Criteria::expr()->eq('attribute', 'as-bobd'));
             $ASBOBD = $study->getArrayAttributes()->matching($getASBOBD)->first()->getValue();
 
+            $getScoreTableRolling = new Criteria(Criteria::expr()->eq('attribute', 'score-table-rolling'));
+            $scoreTableRolling = $study->getArrayAttributes()->matching($getScoreTableRolling)->first()->getValue();
+            $dateColumn = array_column($scoreTableRolling['table'], 'date');
+            array_multisort($dateColumn, SORT_ASC, $scoreTableRolling['table']);
 
-            return $this->render('@MarketSurvey/main.html.twig', ['date' => $date, 'survey' => $survey, 'score' =>
-              $score, 'score_delta' => $scoreDelta, 'insd_bobd' => $insDBOBD, 'inswk_bobd' => $insWkBOBD, 'insmo_bobd' =>
-              $insMoBOBD, 'as_bobd' => $ASBOBD, 'errors' => $errors ]);
+            return $this->render('@MarketSurvey/main.html.twig', [
+              'date' => $date,
+              'survey' => $survey,
+              'score' => $score,
+              'score_delta' => $scoreDelta,
+              'insd_bobd' => $insDBOBD,
+              'inswk_bobd' => $insWkBOBD,
+              'insmo_bobd' => $insMoBOBD,
+              'as_bobd' => $ASBOBD,
+              'score_table_rolling' => $scoreTableRolling,
+              'errors' => $errors ]
+            );
 
         } else {
             return $this->render('@MarketSurvey/main.html.twig', ['date' => $date, 'errors' => $errors]);

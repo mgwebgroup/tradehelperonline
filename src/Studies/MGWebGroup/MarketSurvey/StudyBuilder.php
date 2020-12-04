@@ -16,6 +16,8 @@ use App\Service\Scanner\ScannerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Doctrine\Common\Collections\Criteria;
 use App\Studies\MGWebGroup\MarketSurvey\Exception\StudyException;
+use MathPHP\Statistics\Descriptive;
+use Doctrine\ORM\PersistentCollection;
 
 /**
  * Implements all calculations necessary for the Market Survey. Based on procedures of October 2018.
@@ -131,8 +133,7 @@ class StudyBuilder
      *   'Ins Wk & Up' => App\Entity\Instrument[]
      *   ...
      * ]
-     * and saves it as 'market-breadth' array attribute in $this->study. Sequence of the elements is determined by
-     * parameters in config/packages/mgweb.yaml.
+     * and saves it as 'market-breadth' array attribute in $this->study.
      *
      * Calculates market score according to the metric stored in mgweb.yaml parameters, and saves it as 'market-score'
      * float attribute in $this->study.
@@ -259,7 +260,7 @@ class StudyBuilder
      */
     public function figureInsideBarBOBD($study, $effectiveDate)
     {
-        if ($study->getWatchlists() instanceof Doctrine\ORM\PersistentCollection ) {
+        if ($study->getWatchlists() instanceof PersistentCollection ) {
             $study->getWatchlists()->initialize();
         }
 
@@ -303,7 +304,7 @@ class StudyBuilder
      */
     public function figureASBOBD($study, $effectiveDate)
     {
-        if ($study->getWatchlists() instanceof Doctrine\ORM\PersistentCollection ) {
+        if ($study->getWatchlists() instanceof PersistentCollection ) {
             $study->getWatchlists()->initialize();
         }
 
@@ -406,10 +407,13 @@ class StudyBuilder
      * mark significant levels for SPY, called the Levels Map.
      * In order to calculate the table correctly, current study must already have attributes 'market-score' and 'score-delta'
      * calculated. Also, studies for the $daysBack must already be saved in database.
+     * Function attaches new array attribute 'score-table-rolling' to the $study
      * @param integer $daysBack
      * @return StudyBuilder
      * @throws StudyException
      * @throws \App\Exception\PriceHistoryException
+     * @throws \MathPHP\Exception\BadDataException
+     * @throws \MathPHP\Exception\OutOfBoundsException
      */
     public function buildMarketScoreTableForRollingPeriod($daysBack)
     {
@@ -426,8 +430,8 @@ class StudyBuilder
 
         $date = clone $this->study->getDate();
 
-//        $studyParams = $this->getScoreTableParams($this->study, $SPY, $interval);
-        $studyParams = ['score' => 238.75, 'delta' => -51.75, 'P' => 286.28];
+        $studyParams = $this->getScoreTableParams($this->study, $SPY, $interval);
+//        $studyParams = ['score' => 238.75, 'delta' => -51.75, 'P' => 286.28];
         $studyParams['date'] = $date;
 
         $scoreTableRolling['table'][] = $studyParams;
@@ -463,10 +467,29 @@ class StudyBuilder
             $PColumn = array_column($scoreTableRolling['table'], 'P');
             $scoreTableRolling['summary']['P-avg'] = array_sum($PColumn) / $count;
 
-            $scoreTableRolling['summary']['score-std_div'] = null;
-            $scoreTableRolling['summary']['delta-std_div'] = null;
-        }
+            $scoreTableRolling['summary']['score-std_div'] = Descriptive::sd($scoreColumn);
+            $scoreTableRolling['summary']['delta-std_div'] = Descriptive::sd($deltaColumn);
+            
+            $scoreTableRolling['summary']['score-days_pos'] = array_reduce($scoreColumn, function($carry, $item) {
+                if ($item > 0) { $carry++;} return $carry; }, 0);
+            $scoreTableRolling['summary']['score-days_neg'] = array_reduce($scoreColumn, function($carry, $item) {
+                if ($item < 0) { $carry++;} return $carry; }, 0);
 
+            $scoreAvg = $scoreTableRolling['summary']['score-avg'];
+            $scoreStdDev = $scoreTableRolling['summary']['score-std_div'];
+            $deltaAvg = $scoreTableRolling['summary']['delta-avg'];
+            $deltaStdDev = $scoreTableRolling['summary']['delta-std_div'];
+            $updatedTable =  array_map(
+              function($record) use ($scoreAvg, $scoreStdDev, $deltaAvg, $deltaStdDev) {
+                  $record['score-std_div_qty'] = ($record['score'] - $scoreAvg) / $scoreStdDev;
+                  $record['delta-std_div_qty'] = ($record['delta'] - $deltaAvg) / $deltaStdDev;
+                  return $record;
+            }, $scoreTableRolling['table']);
+
+            $scoreTableRolling['table'] = $updatedTable;
+
+            StudyArrayAttributeRepository::createArrayAttr($this->study, 'score-table-rolling', $scoreTableRolling);
+        }
 
         return $this;
     }
