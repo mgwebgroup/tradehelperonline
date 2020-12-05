@@ -158,6 +158,52 @@
             <div class="row">
                 <div class="col">
                     <h6 class="text-center">Market Score MTD</h6>
+                    <table class="table table-sm">
+                        <thead>
+                        <tr>
+                            <th>Date</th><th>Score</th><th>Std Devs from Avg</th><th>Delta</th><th>Std Devs from Avg</th><th>SPY</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for record in score_table_mtd.table %}
+                            <tr>
+                                <td>{{record.date|date('m/d/y')}}</td>
+                                {% set add_class = record.score == attribute(score_table_mtd.summary, 'score-max') ? 'table-success': null %}
+                                {% set add_class = record.score == attribute(score_table_mtd.summary, 'score-min') ? 'table-danger': add_class %}
+                                <td class="{{ add_class }}">{{record.score|number_format(2)}}</td><td>{{ attribute(record, 'score-std_div_qty')|number_format(2) }}</td>
+                                {% set add_class = record.delta == attribute(score_table_mtd.summary, 'delta-max') ? 'table-success': null %}
+                                {% set add_class = record.delta == attribute(score_table_mtd.summary, 'delta-min') ? 'table-danger': add_class %}
+                                <td class="{{ add_class }}">{{ record.delta|number_format(2) }}</td><td>{{ attribute(record, 'delta-std_div_qty')|number_format(2) }}</td>
+                                {% set add_class = attribute(record, 'delta-std_div_qty') > 1 or attribute(record, 'delta-std_div_qty') < -1 ? 'table-active' : null %}
+                                <td class="{{ add_class }}">{{ record.P|number_format(2) }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="table-info">
+                            <td>Avg</td><td>{{ attribute(score_table_mtd.summary, 'score-avg')|number_format(2) }}</td><td></td>
+                            <td>{{ attribute(score_table_mtd.summary, 'delta-avg')|number_format(2) }}</td><td></td><td>{{ attribute(score_table_mtd.summary, 'P-avg')|number_format(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Max</td><td>{{ attribute(score_table_mtd.summary, 'score-max')|number_format(2) }}</td><td></td>
+                            <td>{{ attribute(score_table_mtd.summary, 'delta-max')|number_format(2) }}</td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Min</td><td>{{ attribute(score_table_mtd.summary, 'score-min')|number_format(2) }}</td><td></td>
+                            <td>{{ attribute(score_table_mtd.summary, 'delta-min')|number_format(2) }}</td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Std Dev</td><td>{{ attribute(score_table_mtd.summary, 'score-std_div')|number_format(2) }}</td><td></td>
+                            <td>{{ attribute(score_table_mtd.summary, 'delta-std_div')|number_format(2) }}</td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Days Pos</td><td>{{ attribute(score_table_mtd.summary, 'score-days_pos') }}</td><td></td>
+                            <td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Days Neg</td><td>{{ attribute(score_table_mtd.summary, 'score-days_neg') }}</td><td></td>
+                            <td></td><td></td><td></td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
                 <div class="col">
                     <h6 class="text-center">Market Score 21 day</h6>
@@ -181,7 +227,7 @@
                                 <td class="{{ add_class }}">{{ record.P|number_format(2) }}</td>
                             </tr>
                         {% endfor %}
-                        <tr class="table-active">
+                        <tr class="table-info">
                             <td>Avg</td><td>{{ attribute(score_table_rolling.summary, 'score-avg')|number_format(2) }}</td><td></td>
                             <td>{{ attribute(score_table_rolling.summary, 'delta-avg')|number_format(2) }}</td><td></td><td>{{ attribute(score_table_rolling.summary, 'P-avg')|number_format(2) }}</td>
                         </tr>

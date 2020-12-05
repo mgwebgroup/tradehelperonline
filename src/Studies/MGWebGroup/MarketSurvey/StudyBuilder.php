@@ -407,7 +407,7 @@ class StudyBuilder
      * mark significant levels for SPY, called the Levels Map.
      * In order to calculate the table correctly, current study must already have attributes 'market-score' and 'score-delta'
      * calculated. Also, studies for the $daysBack must already be saved in database.
-     * Function attaches new array attribute 'score-table-rolling' to the $study
+     * Function attaches new array attribute 'score-table-rolling' to the $study.
      * @param integer $daysBack
      * @return StudyBuilder
      * @throws StudyException
@@ -433,7 +433,6 @@ class StudyBuilder
         $studyParams = $this->getScoreTableParams($this->study, $SPY, $interval);
 //        $studyParams = ['score' => 238.75, 'delta' => -51.75, 'P' => 286.28];
         $studyParams['date'] = $date;
-
         $scoreTableRolling['table'][] = $studyParams;
 
         $this->tradeDayIterator->getInnerIterator()->setStartDate($date)->setDirection(-1);
@@ -454,39 +453,8 @@ class StudyBuilder
             $daysBack--;
         }
 
-        $count = count($scoreTableRolling['table']);
-        if ( $count > 0) {
-            $scoreColumn = array_column($scoreTableRolling['table'], 'score');
-            $scoreTableRolling['summary']['score-avg'] = array_sum($scoreColumn) / $count;
-            $scoreTableRolling['summary']['score-max'] = max($scoreColumn);
-            $scoreTableRolling['summary']['score-min'] = min($scoreColumn);
-            $deltaColumn = array_column($scoreTableRolling['table'], 'delta');
-            $scoreTableRolling['summary']['delta-avg'] = array_sum($deltaColumn) / $count;
-            $scoreTableRolling['summary']['delta-max'] = max($deltaColumn);
-            $scoreTableRolling['summary']['delta-min'] = min($deltaColumn);
-            $PColumn = array_column($scoreTableRolling['table'], 'P');
-            $scoreTableRolling['summary']['P-avg'] = array_sum($PColumn) / $count;
-
-            $scoreTableRolling['summary']['score-std_div'] = Descriptive::sd($scoreColumn);
-            $scoreTableRolling['summary']['delta-std_div'] = Descriptive::sd($deltaColumn);
-            
-            $scoreTableRolling['summary']['score-days_pos'] = array_reduce($scoreColumn, function($carry, $item) {
-                if ($item > 0) { $carry++;} return $carry; }, 0);
-            $scoreTableRolling['summary']['score-days_neg'] = array_reduce($scoreColumn, function($carry, $item) {
-                if ($item < 0) { $carry++;} return $carry; }, 0);
-
-            $scoreAvg = $scoreTableRolling['summary']['score-avg'];
-            $scoreStdDev = $scoreTableRolling['summary']['score-std_div'];
-            $deltaAvg = $scoreTableRolling['summary']['delta-avg'];
-            $deltaStdDev = $scoreTableRolling['summary']['delta-std_div'];
-            $updatedTable =  array_map(
-              function($record) use ($scoreAvg, $scoreStdDev, $deltaAvg, $deltaStdDev) {
-                  $record['score-std_div_qty'] = ($record['score'] - $scoreAvg) / $scoreStdDev;
-                  $record['delta-std_div_qty'] = ($record['delta'] - $deltaAvg) / $deltaStdDev;
-                  return $record;
-            }, $scoreTableRolling['table']);
-
-            $scoreTableRolling['table'] = $updatedTable;
+        if ( count($scoreTableRolling['table']) > 0) {
+            $scoreTableRolling = $this->addScoreTableSummary($scoreTableRolling);
 
             StudyArrayAttributeRepository::createArrayAttr($this->study, 'score-table-rolling', $scoreTableRolling);
         }
@@ -494,11 +462,45 @@ class StudyBuilder
         return $this;
     }
 
+    private function addScoreTableSummary($scoreTable)
+    {
+        $count = count($scoreTable['table']);
+        $scoreColumn = array_column($scoreTable['table'], 'score');
+        $scoreTable['summary']['score-avg'] = array_sum($scoreColumn) / $count;
+        $scoreTable['summary']['score-max'] = max($scoreColumn);
+        $scoreTable['summary']['score-min'] = min($scoreColumn);
+        $deltaColumn = array_column($scoreTable['table'], 'delta');
+        $scoreTable['summary']['delta-avg'] = array_sum($deltaColumn) / $count;
+        $scoreTable['summary']['delta-max'] = max($deltaColumn);
+        $scoreTable['summary']['delta-min'] = min($deltaColumn);
+        $PColumn = array_column($scoreTable['table'], 'P');
+        $scoreTable['summary']['P-avg'] = array_sum($PColumn) / $count;
+
+        $scoreTable['summary']['score-std_div'] = Descriptive::sd($scoreColumn);
+        $scoreTable['summary']['delta-std_div'] = Descriptive::sd($deltaColumn);
+
+        $scoreTable['summary']['score-days_pos'] = array_reduce($scoreColumn, function($carry, $item) {
+            if ($item > 0) { $carry++;} return $carry; }, 0);
+        $scoreTable['summary']['score-days_neg'] = array_reduce($scoreColumn, function($carry, $item) {
+            if ($item < 0) { $carry++;} return $carry; }, 0);
+
+        $scoreAvg = $scoreTable['summary']['score-avg'];
+        $scoreStdDev = $scoreTable['summary']['score-std_div'];
+        $deltaAvg = $scoreTable['summary']['delta-avg'];
+        $deltaStdDev = $scoreTable['summary']['delta-std_div'];
+        $updatedTable =  array_map(
+          function($record) use ($scoreAvg, $scoreStdDev, $deltaAvg, $deltaStdDev) {
+              $record['score-std_div_qty'] = ($record['score'] - $scoreAvg) / $scoreStdDev;
+              $record['delta-std_div_qty'] = ($record['delta'] - $deltaAvg) / $deltaStdDev;
+              return $record;
+          }, $scoreTable['table']);
+
+        $scoreTable['table'] = $updatedTable;
+
+        return $scoreTable;
+    }
+
     /**
-     * @param $study Study
-     * @param App\Entity\Instrument $instrument
-     * @param \DateInterval $interval
-     * @return array = ['score' => float, 'delta' => float, 'P' => float]
      * @throws StudyException
      */
     private function getScoreTableParams($study, $instrument, $interval)
@@ -531,9 +533,49 @@ class StudyBuilder
         return ['score' => $score, 'delta' => $scoreDelta, 'P' => $h->getClose()];
     }
 
-    public function buildMarketScoreTableForMTD($date, $score)
+    public function buildMarketScoreTableForMTD()
     {
+        /** @var App\Entity\Instrument | null $SPY */
+        $SPY = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => 'SPY']);
+        if (!$SPY) {
+            throw new StudyException('Could not find instrument for `SPY`');
+        }
 
+        /** @var \DateInterval $interval */
+        $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
+
+        $scoreTableMTD = ['table' => [], 'summary' => []];
+
+        $date = clone $this->study->getDate();
+
+        $studyParams = $this->getScoreTableParams($this->study, $SPY, $interval);
+//        $studyParams = ['score' => 238.75, 'delta' => -51.75, 'P' => 286.28];
+        $studyParams['date'] = $date;
+        $scoreTableMTD['table'][] = $studyParams;
+
+        $this->tradeDayIterator->getInnerIterator()->setStartDate($date)->setDirection(-1);
+        $this->tradeDayIterator->getInnerIterator()->rewind();
+        while ($this->tradeDayIterator->current()->format('d') > 1) {
+            $this->tradeDayIterator->next();
+            $date = $this->tradeDayIterator->current();
+
+            $study = $this->em->getRepository(Study::class)->findOneBy(['name' => $this->study->getName(), 'date' => $date]);
+            if (!$study) {
+                throw new StudyException(sprintf('Could not find study for date %s', $date->format('Y-m-d H:i:s')));
+            }
+
+            $studyParams = $this->getScoreTableParams($study, $SPY, $interval);
+            $studyParams['date'] = clone $date;
+            $scoreTableMTD['table'][] = $studyParams;
+        }
+
+        if ( count($scoreTableMTD['table']) > 0) {
+            $scoreTableMTD = $this->addScoreTableSummary($scoreTableMTD);
+
+            StudyArrayAttributeRepository::createArrayAttr($this->study, 'score-table-mtd', $scoreTableMTD);
+        }
+
+        return $this;
     }
 
     public function buildSectorTable() {}

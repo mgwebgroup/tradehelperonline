@@ -49,19 +49,21 @@ $ npx encore dev --config src/Studies/MGWebGroup/MarketSurvey/webpack.config.js
 ### Step 4: Import Study symbols, watchlists and formulas
 The study utilizes common symbols that are already imported into the main system. If they are not already imported, use the following command:
 ```bash
-bin/console -v th:instruments:import
+bin/console -v th:instruments:import data/source/x_universe.csv
 bin/console -v th:instruments:import data/source/spdrs.csv
 ```
 The commands will take the main index file _data/source/y_universe.csv_ (default) and together with _data/source/nasdaqlisted.csv_ and _data/source/otherlisted.csv_ will import all instruments. Two additional files _nasdaqlisted.csv_ and _otherlisted.csv_ are necessary to determine which stock exchange symbols belong to.
 
 As mentioned above, price data on all instruments must be present for each imported symbol. Besides the daily prices the study uses weekly and monthly time frames. They should be present in the price history and saved in database (table _ohlcvhistory_). If not, run this command to create them from daily prices:
 ```bash
-bin/console -v th:convert-ohlcv --weekly --monthly data/source/y_universe.csv
+bin/console -v th:convert-ohlcv --weekly --monthly data/source/x_universe.csv
+bin/console -v th:convert-ohlcv --weekly --monthly data/source/spdrs.csv
 ```
 
 Import the study formulas:
 ```bash
 bin/console -v th:expression:import --symbol=LIN --file data/studies/mgwebgroup/formulas/sitb.csv
+bin/console -v th:expression:import --symbol=LIN --file data/studies/mgwebgroup/formulas/general.csv
 ```
 You can specify any instrument for the _--symbol_ option. Price data on the instrument is used to test imported formulas. If you omit this option, the instrument will be selected at random. This may fail the import because for each new formula in the list, another random symbol will be chosen, which may not have the price data.
 
@@ -69,6 +71,7 @@ You can specify any instrument for the _--symbol_ option. Price data on the inst
 The watchlists for the study in csv format are already present in data/studies/mgwebgroup/watchlists/ folder and must be imported with the following command:
 ```bash
 bin/console -v th:watchlist:import data/studies/mgwebgroup/watchlists/y_universe.csv y_universe
+bin/console -v th:watchlist:import data/studies/mgwebgroup/watchlists/sectors.csv sectors
 ```
 
 

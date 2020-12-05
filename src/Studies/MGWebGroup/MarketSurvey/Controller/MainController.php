@@ -68,6 +68,11 @@ class MainController extends AbstractController
             $dateColumn = array_column($scoreTableRolling['table'], 'date');
             array_multisort($dateColumn, SORT_ASC, $scoreTableRolling['table']);
 
+            $getScoreTableMTD = new Criteria(Criteria::expr()->eq('attribute', 'score-table-mtd'));
+            $scoreTableMTD = $study->getArrayAttributes()->matching($getScoreTableMTD)->first()->getValue();
+            $dateColumn = array_column($scoreTableMTD['table'], 'date');
+            array_multisort($dateColumn, SORT_ASC, $scoreTableMTD['table']);
+
             return $this->render('@MarketSurvey/main.html.twig', [
               'date' => $date,
               'survey' => $survey,
@@ -77,7 +82,7 @@ class MainController extends AbstractController
               'inswk_bobd' => $insWkBOBD,
               'insmo_bobd' => $insMoBOBD,
               'as_bobd' => $ASBOBD,
-              'score_table_rolling' => $scoreTableRolling,
+              'score_table_rolling' => $scoreTableRolling, 'score_table_mtd' => $scoreTableMTD,
               'errors' => $errors ]
             );
 
