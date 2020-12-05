@@ -80,9 +80,10 @@ Testing
 
 Study tests rely on already imported instruments and their price data up to and including May 15th, 2020. Testing also must be done utilizing a separate database (i.e. _TRADEHLEPERONLINE_TEST_). Therefore make sure when running tests your database connection points to a test database. All instruments contained in test watchlist with their price data must already be imported and converted from daily into weekly, and monthly time frames. Running tests with data fixtures imported from the basic version of this package will not work. You must import instruments contained in _src/Studies/MGWebGroup/MarketSurvey/DataFixtures/watchlist_test.csv_, and you must have at a bare minimum daily prices, which you can then convert to weekly and monthly time frames. Price files may come with the basic version of the package but it is not guaranteed.
 
-1. Import test watchlist
+1. Import test watchlist and studies
 ```bash
 bin/console doctrine:fixtures:load --append --group=mgweb_watchlist
+bin/console doctrine:fixtures:load --append --group=mgweb_studies
 ```
 Option _--append_ makes sure existing instruments and price data will not be purged.
 

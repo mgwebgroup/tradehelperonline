@@ -6,7 +6,6 @@ use App\Entity\Instrument;
 use App\Entity\Study\ArrayAttribute;
 use App\Entity\Watchlist;
 use App\Entity\Study\Study;
-use App\Service\Exchange\Equities\TradingCalendar;
 use App\Studies\MGWebGroup\MarketSurvey\StudyBuilder;
 use League\Csv\Reader;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -20,6 +19,9 @@ class StudyBuilderTest extends KernelTestCase
     const INTERVAL_WEEKLY = '+P00Y00M07DT00H00M00S';
     const INTERVAL_MONTHLY = '+P00Y01M00DT00H00M00S';
 
+    const WATCHLIST_NAME = 'watchlist_test';
+    const STUDY_NAME = 'test_market_study';
+
     /**
      * @var
      */
@@ -31,9 +33,9 @@ class StudyBuilderTest extends KernelTestCase
     private $em;
 
     /**
-     * @var App\Repository\WatchlistRepository
+     * @var Watchlist
      */
-    private $watchlistRepository;
+    private $watchlist;
 
     /**
      * @var integer
@@ -51,11 +53,10 @@ class StudyBuilderTest extends KernelTestCase
         $this->em = self::$container->get('doctrine')->getManager();
         $this->resultCacheLifetime = self::$container->getParameter('result_cache_lifetime');
 
-        $this->watchlistRepository = $this->em->getRepository(Watchlist::class);
+        $this->watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => self::WATCHLIST_NAME]);
 
         $date = new \DateTime('2020-05-15');
-        $name = 'test_market_study';
-        $this->SUT->createStudy($date, $name);
+        $this->SUT->createStudy($date, self::STUDY_NAME);
     }
 
     public function testMarketBreadth_15May2020_MarketBreadth()
@@ -107,10 +108,8 @@ class StudyBuilderTest extends KernelTestCase
         }
         fwrite(STDOUT, 'complete.'.PHP_EOL);
 
-        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
-
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
-        $this->SUT->calculateMarketBreadth($watchlist);
+        $this->SUT->calculateMarketBreadth($this->watchlist);
         fwrite(STDOUT, 'complete.'.PHP_EOL);
 
         $getMarketBreadth = new Criteria(Criteria::expr()->eq('attribute', 'market-breadth'));
@@ -148,10 +147,8 @@ class StudyBuilderTest extends KernelTestCase
         $date1 = new \DateTime('2020-05-14');
         $this->SUT->getStudy()->setDate($date1);
 
-        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
-
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
-        $this->SUT->calculateMarketBreadth($watchlist);
+        $this->SUT->calculateMarketBreadth($this->watchlist);
         fwrite(STDOUT, 'complete.'.PHP_EOL);
 
         $pastStudy = $this->SUT->getStudy();
@@ -242,13 +239,12 @@ class StudyBuilderTest extends KernelTestCase
 
     public function testMarketScoreDelta()
     {
-        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
         $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
 
         $date1 = new \DateTime('2020-05-14');
         $this->SUT->getStudy()->setDate($date1);
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
-        $this->SUT->calculateMarketBreadth($watchlist);
+        $this->SUT->calculateMarketBreadth($this->watchlist);
         fwrite(STDOUT, 'complete.'.PHP_EOL);
         $pastStudy = $this->SUT->getStudy();
         $pastScore = $pastStudy->getFloatAttributes()->matching($getScore)->first()->getValue();
@@ -258,7 +254,7 @@ class StudyBuilderTest extends KernelTestCase
         $this->SUT->createStudy($date2, $name);
 
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
-        $this->SUT->calculateMarketBreadth($watchlist);
+        $this->SUT->calculateMarketBreadth($this->watchlist);
         fwrite(STDOUT, 'complete.'.PHP_EOL);
 
         $this->SUT->calculateScoreDelta($pastStudy);
@@ -277,10 +273,9 @@ class StudyBuilderTest extends KernelTestCase
     public function testActionableSymbolsWatchlist()
     {
         $date = new \DateTime('2020-05-15');
-        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
 
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
-        $this->SUT->calculateMarketBreadth($watchlist);
+        $this->SUT->calculateMarketBreadth($this->watchlist);
         fwrite(STDOUT, 'complete.'.PHP_EOL);
 
         $this->SUT->buildActionableSymbolsWatchlist();
@@ -348,10 +343,8 @@ class StudyBuilderTest extends KernelTestCase
         $date1 = new \DateTime('2020-05-14');
         $this->SUT->getStudy()->setDate($date1);
 
-        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
-
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
-        $this->SUT->calculateMarketBreadth($watchlist);
+        $this->SUT->calculateMarketBreadth($this->watchlist);
         fwrite(STDOUT, 'complete.'.PHP_EOL);
 
         $this->SUT->buildActionableSymbolsWatchlist();
@@ -482,109 +475,27 @@ class StudyBuilderTest extends KernelTestCase
         }
     }
 
-    /**
-     * Creates 20 studies without historical score table in them.
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
-     */
-    public function testCreateSeveralStudies_20days_StudiesPersisted()
-    {
-        $name = 'test_market_study';
-        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
-        $periodDays = 20;
-
-        $date = $this->SUT->getStudy()->getDate();
-        $tradeDayIterator = self::$container->get(TradingCalendar::class);
-        $tradeDayIterator->getInnerIterator()->setStartDate($date)->setDirection(-1);
-        $tradeDayIterator->getInnerIterator()->rewind();
-        for ($i = 1; $i <= $periodDays; $i++) {
-            $tradeDayIterator->next();
-        }
-        $date = $tradeDayIterator->current();
-
-        $this->SUT->createStudy($date, $name);
-
-        $pastStudy = null;
-        for ($i = 1; $i <= $periodDays; $i++) {
-            $startTimestamp = time();
-            fwrite(STDOUT, sprintf('%2d Calculating Market Breadth...', $i));
-            $this->SUT->calculateMarketBreadth($watchlist);
-            $endTimestamp = time();
-            fwrite(STDOUT, sprintf('done %d s', $endTimestamp - $startTimestamp).PHP_EOL);
-            $this->SUT->calculateScoreDelta($pastStudy);
-            $this->SUT->buildActionableSymbolsWatchlist();
-            if ($pastStudy) {
-                $this->SUT->figureInsideBarBOBD($pastStudy, $date);
-                $this->SUT->figureASBOBD($pastStudy, $date);
-            }
-
-            $pastStudy = $this->SUT->getStudy();
-            $this->em->persist($pastStudy);
-            $this->em->flush();
-
-            $tradeDayIterator->getInnerIterator()->setStartDate($date)->setDirection(1);
-            $tradeDayIterator->getInnerIterator()->rewind();
-            $tradeDayIterator->next();
-            $date = $tradeDayIterator->current();
-
-            $this->SUT->createStudy($date, $name);
-        }
-    }
-
     public function testBuildMarketScoreTableForRollingPeriod_start15May2020_MarketScoreRollingAttr()
     {
-        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
         $periodDays = 20;
         $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => new \DateTime('2020-05-14')]);
-        $this->SUT->calculateMarketBreadth($watchlist);
+        $this->SUT->calculateMarketBreadth($this->watchlist);
         $this->SUT->calculateScoreDelta($pastStudy);
 //        $this->SUT->buildActionableSymbolsWatchlist();
         $this->SUT->buildMarketScoreTableForRollingPeriod($periodDays);
+
+        // test values in table
+        // ...
     }
 
     public function testBuildMarketScoreTableForMTD()
     {
-        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
         $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => new \DateTime('2020-05-14')]);
-        $this->SUT->calculateMarketBreadth($watchlist);
+        $this->SUT->calculateMarketBreadth($this->watchlist);
         $this->SUT->calculateScoreDelta($pastStudy);
         $this->SUT->buildMarketScoreTableForMTD();
-    }
 
-
-    /**
-     * This test needs full study for 2015-05-14 saved in db. If not, then this test will be marked as incomplete.
-     * Full studies are saved for the 20-day period in one of the previous tests.
-     * @throws \App\Exception\PriceHistoryException
-     * @throws \App\Studies\MGWebGroup\MarketSurvey\Exception\StudyException
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
-     * @throws \MathPHP\Exception\BadDataException
-     * @throws \MathPHP\Exception\OutOfBoundsException
-     */
-    public function testCreateFullStudy_15May2020_FullStudySaved()
-    {
-        $watchlist = $this->watchlistRepository->findOneBy(['name' => 'watchlist_test']);
-        $date = new \DateTime('2020-05-15');
-        $pastDate = new \DateTime('2020-05-14');
-        $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => $pastDate]);
-
-        if ($pastStudy) {
-            fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
-            $this->SUT->calculateMarketBreadth($watchlist);
-            fwrite(STDOUT, 'complete.'.PHP_EOL);
-            $this->SUT->calculateScoreDelta($pastStudy);
-            $this->SUT->figureInsideBarBOBD($pastStudy, $date);
-            $this->SUT->figureASBOBD($pastStudy, $date);
-            $this->SUT->buildActionableSymbolsWatchlist();
-            $period = 20;
-            $this->SUT->buildMarketScoreTableForRollingPeriod($period);
-            $this->SUT->buildMarketScoreTableForMTD();
-
-            $this->em->persist($this->SUT->getStudy());
-            $this->em->flush();
-        } else {
-            $this->markTestIncomplete(sprintf('Could not find study for date=%s', $pastDate->format('Y-m-d')));
-        }
+        // test values in table
+        // ...
     }
 }
