@@ -35,7 +35,7 @@ use App\Service\Exchange\Catalog;
  */
 class SyncPrice extends Command
 {
-    const DEFAULT_PATH = 'data/source/y_universe.csv';
+    const DEFAULT_PATH = 'data/source/x_universe.csv';
 
     const START_DATE = '2011-01-01';
 
@@ -115,7 +115,7 @@ class SyncPrice extends Command
             <<<'EOT'
 Uses a csv file with header and list of symbols to define list of symbols to work on. Symbols found in the csv file must
  also be imported as instruments. You can use instruments:import command to import all instruments. Header must contain 
- column titles contained in the current file data/source/y_universe.csv.
+ column titles contained in the current file data/source/x_universe.csv.
  The command writes everything into application log, regardless of verbosity settings. No output is sent to the screen
  by default either. If you want screen output, use -v option.
  Price records in history may be considered as either a Quote or Price History. 
@@ -140,7 +140,7 @@ Uses a csv file with header and list of symbols to define list of symbols to wor
 EOT
         );
 
-        $this->addUsage('[-v] [--prevT-QtoH] [--stillT-saveQ] [--delay=int|random] [--offset=int] [--chunk=int] [data/source/y_universe.csv]');
+        $this->addUsage('[-v] [--prevT-QtoH] [--stillT-saveQ] [--delay=int|random] [--offset=int] [--chunk=int] [data/source/x_universe.csv]');
 
         $this->addArgument('path', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on', self::DEFAULT_PATH);
 
