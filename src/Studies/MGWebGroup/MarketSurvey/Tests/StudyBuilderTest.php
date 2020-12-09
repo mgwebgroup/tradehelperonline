@@ -498,4 +498,9 @@ class StudyBuilderTest extends KernelTestCase
         // test values in table
         // ...
     }
+
+    public function testBuildSectorTable()
+    {
+
+    }
 }

@@ -1,3 +1,3 @@
 Interval,Name,Formula,Criterion,Description
 daily,delta P,Close(0)-Close(1),= true
-daily,Cum deltaP(5),Close(0)-Close(5),= true
+daily,delta P(5),Close(0)-Close(5),= true

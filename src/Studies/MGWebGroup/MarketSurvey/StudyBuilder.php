@@ -197,7 +197,7 @@ class StudyBuilder
      * 'market-score'
      * @return StudyBuilder
      */
-    public function calculateScoreDelta($pastStudy=null)
+    public function calculateScoreDelta($pastStudy = null)
     {
         $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
         if (!$pastStudy) {
@@ -501,6 +501,10 @@ class StudyBuilder
     }
 
     /**
+     * @param Study $study
+     * @param Instrument $instrument
+     * @param \DateInterval $interval
+     * @return array
      * @throws StudyException
      */
     private function getScoreTableParams($study, $instrument, $interval)
@@ -578,5 +582,24 @@ class StudyBuilder
         return $this;
     }
 
-    public function buildSectorTable() {}
+    /**
+     * Takes sector watchlist and uses prices for sectors to figure various parameters.
+     * The sector watchlist must have P:delta P expressions associated with it. File sectors.csv already comes with
+     * the sectors and formulas in it. Please refer to the study README.md file on how how to import it.
+     * Saves new array attribute for the study titled 'sector-table'.
+     * @param $watchlist
+     * @param \DateTime $date
+     */
+    public function buildSectorTable($watchlist, $date)
+    {
+        $watchlist->update($this->calculator, $date);
+        // Sort by Cum deltaP(5)
+
+        // create sector table with week delta P, Month delta P, Quarter, etc..
+
+        // Figure sector positions
+
+        // Add Summary
+
+    }
 }
