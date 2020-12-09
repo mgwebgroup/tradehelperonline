@@ -58,6 +58,11 @@ class Study
      */
     private $floatAttributes;
 
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $version;
+
 
     public function __construct()
     {
@@ -255,6 +260,18 @@ class Study
                 $floatAttribute->setStudyId(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getVersion(): ?string
+    {
+        return $this->version;
+    }
+
+    public function setVersion(?string $version): self
+    {
+        $this->version = $version;
 
         return $this;
     }
