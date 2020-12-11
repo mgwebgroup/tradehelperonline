@@ -12,15 +12,15 @@ namespace App\Service\Exchange;
 
 use App\Service\Exchange\Equities\TradingCalendar;
 use OuterIterator;
-use SeekableIterator;
 use DateInterval;
 
 /**
  * Class WeeklyIterator
- * Plug dates into seek and receive either a date for the Monday of the week, or next day if Monday is a holiday
+ * Alters $date property of Daily Iterator (using trade day filter set through Trading Calendar) and sets it to
+ * beginning of the week. Beginning of the week is either a Monday, or Tuesday if Monday is a holiday.
  * @package App\Service\Exchange
  */
-class WeeklyIterator implements SeekableIterator, OuterIterator
+class WeeklyIterator implements OuterIterator
 {
     /**
      * @var TradingCalendar
@@ -28,16 +28,15 @@ class WeeklyIterator implements SeekableIterator, OuterIterator
     protected $innerIterator;
 
     /**
-     * @var \DateInterval
+     * @var DateInterval
      */
-    protected $interval;
+    protected $weekInterval;
 
 
     public function __construct(TradingCalendar $iterator)
     {
         $this->innerIterator = $iterator;
-
-        $this->interval = new \DateInterval('P7D');
+        $this->weekInterval = new DateInterval('P7D');
     }
 
     /**
@@ -45,7 +44,7 @@ class WeeklyIterator implements SeekableIterator, OuterIterator
      */
     public function current()
     {
-        return $this->getInnerIterator()->current();
+        return $this->getInnerIterator()->getInnerIterator()->current();
     }
 
     /**
@@ -53,13 +52,24 @@ class WeeklyIterator implements SeekableIterator, OuterIterator
      */
     public function next()
     {
-        $date = $this->getInnerIterator()->current();
-        if ($this->getInnerIterator()->getInnerIterator()->getDirection() > 0) {
-            $date->add($this->interval);
+        $date = $this->getInnerIterator()->getInnerIterator()->current();
+        if ($date->format('N') != 1) {
+            if ($this->getInnerIterator()->getInnerIterator()->getDirection() < 1) {
+                $date->sub($this->weekInterval);
+            } else {
+                $date->add($this->weekInterval);
+            }
+            $date->modify('last Monday');
         } else {
-            $date->sub($this->interval);
+            if ($this->getInnerIterator()->getInnerIterator()->getDirection() < 1) {
+                $date->sub($this->weekInterval);
+            } else {
+                $date->add($this->weekInterval);
+            }
         }
-        return $this->toBeginning($date);
+        if (false === $this->getInnerIterator()->accept()) {
+            $date->add(new \DateInterval(DailyIterator::INTERVAL));
+        }
     }
 
     /**
@@ -75,53 +85,23 @@ class WeeklyIterator implements SeekableIterator, OuterIterator
      */
     public function valid()
     {
-        return $this->getInnerIterator()->valid();
+        return $this->getInnerIterator()->getInnerIterator()->valid();
     }
 
     /**
-     * @inheritDoc
+     * Rewinds to Monday of the week for which date is set in DailyIterator.
+     * Rewinds to immediate Tuesday if StartDate is a Monday Holiday
      */
     public function rewind()
     {
-        $this->getInnerIterator()->rewind();
-        $date = $this->getInnerIterator()->current();
-        $this->toBeginning($date);
-    }
-
-    /**
-     * Determines date for beginning of the week. Usually it is date on a Monday, however takes into account holidays.
-     * @param \DateTime $date
-     * @return \DateTime
-     * @throws \Exception
-     */
-    public function toBeginning($date)
-    {
+        $this->getInnerIterator()->getInnerIterator()->rewind();
+        $date = $this->getInnerIterator()->getInnerIterator()->current();
         if ($date->format('N') != 1) {
             $date->modify('last Monday');
         }
-        // check if Monday is a holiday
-        while (false === $this->getInnerIterator()->accept($date)) {
-            $date->add(new DateInterval('P1D'));
+        if (false === $this->getInnerIterator()->accept()) {
+            $date->add(new \DateInterval(DailyIterator::INTERVAL));
         }
-
-        return $date;
-    }
-
-    /**
-     * @param int $position
-     * @throws \Exception
-     */
-    public function seek($position)
-    {
-        $this->getInnerIterator()->rewind();
-        $date = $this->getInnerIterator()->current();
-        $intervalString = sprintf('P%dD', $position * 7);
-        if ($this->getInnerIterator()->getInnerIterator()->getDirection() > 1) {
-            $date->add(new \DateInterval($intervalString));
-        } else {
-            $date->sub(new \DateInterval($intervalString));
-        }
-        $this->toBeginning($date);
     }
 
     /**

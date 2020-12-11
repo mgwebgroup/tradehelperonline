@@ -92,7 +92,7 @@ class DailyIterator implements \Iterator
     public function valid()
     {
         if ($this->date instanceof \DateTime) {
-            return true;
+            return $this->checkBounds($this->date);
         } else {
             return false;
         }
@@ -117,7 +117,9 @@ class DailyIterator implements \Iterator
 
     /**
      * @param integer $direction
+     * @return DailyIterator
      * @throws Exception
+     * @throws \Exception
      */
     public function setDirection($direction)
     {
@@ -143,21 +145,30 @@ class DailyIterator implements \Iterator
 
     /**
      * @param \DateTime $date
+     * @return DailyIterator
+     * @throws \Exception
      */
     public function setStartDate($date)
     {
         if ($date instanceof \DateTime) {
-            if ($date->getTimestamp() < $this->lowerLimit) {
-                throw new Exception(sprintf('Date is older than %s', date($this->lowerLimit, 'c')));
-            }
-            if ($date->getTimestamp() > $this->upperLimit) {
-                throw new \Exception(sprintf('Date is newer that %s', date($this->upperLimit, 'c')));
-            }
+            $this->checkBounds($date);
             $this->startDate = $date;
         } else {
             throw new \Exception('Date must be instance of \DateTime');
         }
 
         return $this;
+    }
+
+    private function checkBounds($date)
+    {
+        if ($date->getTimestamp() < $this->lowerLimit) {
+            throw new \Exception(sprintf('Date is below (older than) lower boundary of %s', date('c', $this->lowerLimit)));
+        }
+        if ($date->getTimestamp() > $this->upperLimit) {
+            throw new \Exception(sprintf('Date is above (newer than) upper boundary of %s', date('c', $this->upperLimit)));
+        }
+
+        return true;
     }
 }

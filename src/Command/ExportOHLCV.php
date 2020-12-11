@@ -27,7 +27,7 @@ use App\Service\UtilityServices;
 
 class ExportOHLCV extends Command
 {
-    const LIST_PATH = 'data/source/y_universe.csv';
+    const LIST_PATH = 'data/source/x_universe.csv';
 
     const EXPORT_PATH = 'data/source/ohlcv';
 
@@ -97,7 +97,7 @@ In the first form uses a csv file with header to define list of symbols to work 
 several consecutive symbols listed in the y_universe file. To complete export of several symbols specify --offset 
 and --chunk options. Header starts with offset=0. To export all symbols don't specify these options. Example can be:
 
-bin/console price:export --provider=YAHOO [data/source/y_universe.csv] [data/source/ohlcv]
+bin/console price:export --provider=YAHOO [data/source/x_universe.csv] [data/source/ohlcv]
 
 In the second form, command will use --symbol option to look for a specific one symbol in the price history database.
  The symbol has to be listed in the y_universe, or other file if it replaces the y_universe.
@@ -114,7 +114,7 @@ If there is an existing file with .csv prices found in the (default) export dire
 EOT
         );
 
-        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] --provider=YAHOO [data/source/y_universe.csv] [data/source/ohlcv]');
+        $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] --provider=YAHOO [data/source/x_universe.csv] [data/source/ohlcv]');
         $this->addUsage('[-v] [--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] --provider=YAHOO --symbol=FB [data/source/ohlcv]');
 
         $this->addArgument('input_path', InputArgument::OPTIONAL, 'Path/to/file.csv with list of symbols to work on', self::LIST_PATH);

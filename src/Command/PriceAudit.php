@@ -27,7 +27,7 @@ use App\Service\Exchange\Catalog;
 
 class PriceAudit extends Command
 {
-    const MAIN_FILE = 'data/source/y_universe.csv';
+    const MAIN_FILE = 'data/source/x_universe.csv';
     const INTERVAL_DAILY = 'daily';
     const INTERVAL_WEEKLY = 'weekly';
     const INTERVAL_MONTHLY = 'monthly';
@@ -156,7 +156,7 @@ EOT
             , self::DAILY_BEGINNING)
         );
 
-        $this->addUsage('[-v] [--offset=int] [--chunk=int] [--interval=daily] [--from=2019-01-02] [to=2019-12-31] [data/source/y_universe.csv]');
+        $this->addUsage('[-v] [--offset=int] [--chunk=int] [--interval=daily] [--from=2019-01-02] [to=2019-12-31] [data/source/x_universe.csv]');
         $this->addUsage('[-v] [--offset=int] [--chunk=int] [--interval=daily] --symbol=FB ');
 
         $this->addArgument('list-file', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on', self::MAIN_FILE);

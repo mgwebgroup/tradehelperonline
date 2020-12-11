@@ -33,7 +33,7 @@ class ImportInstruments extends Command
      * List of current company listings can be downloaded from NASDAQ website:
      * https://www.nasdaq.com/screening/company-list.aspx
      */
-    const MAIN_FILE = 'data/source/y_universe.csv';
+    const MAIN_FILE = 'data/source/x_universe.csv';
 
     /**
      * These two designate which exchange a particular symbol belongs to
@@ -141,7 +141,7 @@ these lists. If you specify --name option, name of the traded company will be ov
 EOT
         );
 
-        $this->addUsage('[-v] [--clear-db=false] [--overwrite=false] [data/source/y_universe.csv]');
+        $this->addUsage('[-v] [--clear-db=false] [--overwrite=false] [data/source/x_universe.csv]');
         $this->addUsage('[-v] [--clear-db=false] [--overwrite=false] --symbol=TST [--name="Test symbol"]');
 
         $this->addArgument('path', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on', self::MAIN_FILE);

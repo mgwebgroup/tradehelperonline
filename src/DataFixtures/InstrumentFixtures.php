@@ -26,7 +26,7 @@ class InstrumentFixtures extends Fixture implements FixtureGroupInterface
      * List of current company listings can be downloaded from NASDAQ website:
      * https://www.nasdaq.com/screening/company-list.aspx
      */
-	const FILE = 'data/source/y_universe.csv';
+	const FILE = 'data/source/x_universe.csv';
 
     public static function getGroups(): array
     {

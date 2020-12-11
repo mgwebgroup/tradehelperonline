@@ -10,7 +10,9 @@
 
 namespace App\Tests\Service\Exchange\DailyIterator;
 
+use App\Service\Exchange\Equities\TradingCalendar;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use App\Service\Exchange\MonthlyIterator;
 
 class MonthlyIteratorTest extends KernelTestCase
 {
@@ -26,83 +28,255 @@ class MonthlyIteratorTest extends KernelTestCase
     protected function setUp(): void
     {
         self::bootKernel();
-        $this->SUT = self::$container->get(\App\Service\Exchange\MonthlyIterator::class);
+        $this->SUT = self::$container->get(MonthlyIterator::class);
+    }
+
+    public function testGetInnerIterator()
+    {
+        $innerIterator = $this->SUT->getInnerIterator();
+        $this->assertInstanceOf(TradingCalendar::class, $innerIterator);
     }
 
     /**
-     * Test that iterator returns dates
+     * StartDate is Tuesday, Jan 1st, 2019.
+     * Direction of DailyIterator is back (must not affect $date)
+     * Expected: next working day January, 2nd
      */
-//    public function testDates10()
-//    {
-//        $expected = [
-//            '20000103' => '2000-01-03', // Monday
-//            '20000110' => '2000-01-10',
-//            '20000118' => '2000-01-18'
-//        ];
-//        $counter = 0;
-//        foreach ($this->SUT as $key => $value) {
-//            if ($counter > 2) break;
-//            $this->assertSame($expected[$key], $value->format('Y-m-d'));
-//
-//            $counter++;
-//        }
-//
-//        $this->SUT->getInnerIterator()->getInnerIterator()->setDirection(-1);
-//
-//        $expected = [
-//          '21001227' => '2100-12-27',
-//          '21001220' => '2100-12-20',
-//          '21001213' => '2100-12-13'
-//        ];
-//        $counter = 0;
-//        foreach ($this->SUT as $key => $value) {
-//            if ($counter > 2) break;
-//
-//            $this->assertSame($expected[$key], $value->format('Y-m-d'));
-//
-//            $counter++;
-//        }
-//    }
+    public function testRewind10()
+    {
+        $startDate = new \DateTime('2019-01-01');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $this->SUT->rewind();
+        $date = $this->SUT->current();
+        $this->assertSame('2019-01-02', $date->format('Y-m-d'));
+    }
 
     /**
-     * Set the iterator to Monday of a known holiday and iterate for three weeks
+     * StartDate is Tuesday, Jan 1st, 2019.
+     * Direction of DailyIterator is forward (must not affect $date)
+     * Expected: next working day January, 2nd
      */
-    public function testDates20()
+    public function testRewind15()
     {
-//        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate(new \DateTime('2018-01-01')); // Monday
-//
-//        $expected = [
-//          '20180102' => '2018-01-02', // Tuesday
-//          '20180108' => '2018-01-08',
-//          '20180116' => '2018-01-16' // Monday 2018-01-15 is MLK Day so we must see next day as beginning of the week
-//        ];
-//        $counter = 0;
-//        foreach ($this->SUT as $key => $value) {
-//            if ($counter > 2) break;
-//
-//            $this->assertSame($expected[$key], $value->format('Y-m-d'));
-//
-//            $counter++;
-//        }
+        $startDate = new \DateTime('2019-01-01');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $this->SUT->rewind();
+        $date = $this->SUT->current();
+        $this->assertSame('2019-01-02', $date->format('Y-m-d'));
+    }
 
-        // iterate backwards where one of the weeks has a known holiday on Monday
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate(new \DateTime('2020-02-24')); // Monday
-        $this->SUT->getInnerIterator()->getInnerIterator()->setDirection(-1);
+    /**
+     * StartDate is Saturday, Dec 1st, 2018.
+     * Direction of DailyIterator is back (must not affect $date)
+     * Expected: Monday, Dec-3rd
+     */
+    public function testRewind20()
+    {
+        $startDate = new \DateTime('2018-12-01');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $this->SUT->rewind();
+        $date = $this->SUT->current();
+        $this->assertSame('2018-12-03', $date->format('Y-m-d'));
+    }
 
+    /**
+     * StartDate is Saturday, Dec 1st, 2018.
+     * Direction of DailyIterator is forward (must not affect $date)
+     * Expected: Monday, Dec-3rd
+     */
+    public function testRewind25()
+    {
+        $startDate = new \DateTime('2018-12-01');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $this->SUT->rewind();
+        $date = $this->SUT->current();
+        $this->assertSame('2018-12-03', $date->format('Y-m-d'));
+    }
+
+    /**
+     * StartDate is Wednesday, Jan 2nd, 2019
+     * Direction of DailyIterator is back
+     */
+    public function testRewind30()
+    {
+        $startDate = new \DateTime('2019-01-02');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $this->SUT->rewind();
+        $date = $this->SUT->current();
+        $this->assertSame('2019-01-02', $date->format('Y-m-d'));
+    }
+
+    /**
+     * StartDate is Wednesday, Dec 19th, 2018
+     * Direction of DailyIterator is back
+     */
+    public function testRewind40()
+    {
+        $startDate = new \DateTime('2018-12-19');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $this->SUT->rewind();
+        $date = $this->SUT->current();
+        $this->assertSame('2018-12-03', $date->format('Y-m-d'));
+    }
+
+    /**
+     * StartDate is Wednesday, Dec 19th, 2018
+     * Direction of DailyIterator is forward
+     */
+    public function testRewind50()
+    {
+        $startDate = new \DateTime('2018-12-19');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $this->SUT->rewind();
+        $date = $this->SUT->current();
+        $this->assertSame('2018-12-03', $date->format('Y-m-d'));
+    }
+
+    /**
+     *  Start Date is a DateTime object
+     *  Expected: $date property in DailyIterator is a cloned object
+     */
+    public function testStartDate10()
+    {
+        $startDate = new \DateTime('2000-01-01'); // Saturday
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate);
+        $date = $this->SUT->current();
+        $this->assertNotSame($startDate, $date);
+    }
+
+    /**
+     * StartDate is Tuesday, Jan-1st, 2019
+     * Iterate 3 months backward
+     */
+    public function testStepMonths10()
+    {
         $expected = [
-          '20200203' => '2020-02-03',
-          '20200102' => '2020-01-02',
-          '20191202' => '2019-12-02',
-            '20191101' => '2019-11-01'
+          '2019-01-02', '2018-12-03', '2018-11-01'
         ];
+
+        $startDate = new \DateTime('2019-01-01');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
         $counter = 0;
-        foreach ($this->SUT as $key => $value) {
-            if ($counter > 3) break;
-
-            $this->assertSame($expected[$key], $value->format('Y-m-d'));
-
+        foreach ($this->SUT as $value) {
+            if ($counter > 2) break;
+            $this->assertSame($expected[$counter], $value->format('Y-m-d'));
             $counter++;
         }
     }
 
+    /**
+     * StartDate is Monday, Dec-31st, 2018
+     * Iterate 3 months backward
+     */
+    public function testStepMonths20()
+    {
+        $expected = [
+          '2018-12-03', '2018-11-01', '2018-10-01'
+        ];
+
+        $startDate = new \DateTime('2018-12-31');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $counter = 0;
+        foreach ($this->SUT as $value) {
+            if ($counter > 2) break;
+            $this->assertSame($expected[$counter], $value->format('Y-m-d'));
+            $counter++;
+        }
+    }
+
+    /**
+     * StartDate is Tuesday, Jan-1st, 2019
+     * Iterate 3 months forward
+     */
+    public function testStepMonths30()
+    {
+        $expected = [
+          '2019-01-02', '2019-02-01', '2019-03-01'
+        ];
+
+        $startDate = new \DateTime('2019-01-02');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $counter = 0;
+        foreach ($this->SUT as $value) {
+            if ($counter > 2) break;
+            $this->assertSame($expected[$counter], $value->format('Y-m-d'));
+            $counter++;
+        }
+    }
+
+    /**
+     * StartDate is Thursday, Jan-31st, 2019
+     * Iterate 3 months forward
+     */
+    public function testStepMonths40()
+    {
+        $expected = [
+          '2019-01-02', '2019-02-01', '2019-03-01'
+        ];
+
+        $startDate = new \DateTime('2019-01-31');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $counter = 0;
+        foreach ($this->SUT as $value) {
+            if ($counter > 2) break;
+            $this->assertSame($expected[$counter], $value->format('Y-m-d'));
+            $counter++;
+        }
+    }
+
+    /**
+     * StartDate is Tuesday, Sep-2nd, 2019, Labor Day Holiday
+     * Iterate 3 months forward
+     */
+    public function testStepMonths50()
+    {
+        $expected = [
+          '2019-09-03', '2019-10-01', '2019-11-01'
+        ];
+
+        $startDate = new \DateTime('2019-09-02');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $counter = 0;
+        foreach ($this->SUT as $value) {
+            if ($counter > 2) break;
+            $this->assertSame($expected[$counter], $value->format('Y-m-d'));
+            $counter++;
+        }
+    }
+
+    /**
+     * Check Boundaries
+     * StarDate is first day of the lower date boundary.
+     * Iterate 3 months backward
+     */
+    public function testBoundaries10()
+    {
+        $startDate = new \DateTime('2000-01-01');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $counter = 0;
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Date is below (older than) lower boundary of 2000-01-01T00:00:00+00:00');
+        foreach ($this->SUT as $value) {
+            if ($counter > 2) break;
+            $counter++;
+        }
+    }
+
+    /**
+     * Check Boundaries
+     * StarDate is last day of the upper date boundary.
+     * Iterate 3 months forward
+     */
+    public function testBoundaries20()
+    {
+        $startDate = new \DateTime('2100-12-31');
+        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $counter = 0;
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Date is above (newer than) upper boundary of 2100-12-31T00:00:00+00:00');
+        foreach ($this->SUT as $value) {
+            if ($counter > 2) break;
+            $counter++;
+        }
+    }
 }
