@@ -613,24 +613,54 @@ class StudyBuilder
         $watchlist->sortValuesBy('delta P(5) prcnt', SORT_DESC);
 
         try {
-            // create sector table with week delta P, Month delta P, Quarter, etc..
-            $sectorTable = $watchlist->getCalculatedFormulas();
-            $beginningOfWeek = clone $date;
-            $this->weeklyIterator->toBeginning($beginningOfWeek);
-            $beginningOfMonth = clone $date;
-            $this->monthlyIterator->toBeginning($beginningOfMonth);
-            $beginningOfQuarter = clone $beginningOfMonth;
-            while (($beginningOfQuarter->format('n')-1)%3 > 0) {
-                $beginningOfQuarter->sub(new \DateInterval('P1M'));
-            }
-            $this->monthlyIterator->toBeginning($beginningOfQuarter);
-            $beginningOfYear = clone $beginningOfQuarter;
-            $beginningOfYear->setDate($date->format('Y'), 1, 3);
+            $this->weeklyIterator->getInnerIterator()->getInnerIterator()->setStartDate($date)->setDirection(-1);
+            $this->weeklyIterator->rewind();
+            $beginningOfWeek = clone $this->weeklyIterator->current();
 
-            $this->monthlyIterator->toBeginning($beginningOfYear);
-            foreach ($sectorTable as $symbol => $record) {
+            $this->monthlyIterator->getInnerIterator()->getInnerIterator()->setStartDate($date);
+            $this->monthlyIterator->rewind();
+            $beginningOfMonth = clone $this->monthlyIterator->current();
 
+            $aDate = clone $beginningOfMonth;
+            while (($aDate->format('n')-1)%3 > 0) {
+                $aDate->sub(new \DateInterval('P1M'));
             }
+            $this->monthlyIterator->getInnerIterator()->getInnerIterator()->setStartDate($aDate);
+            $this->monthlyIterator->rewind();
+            $beginningOfQuarter = clone $this->monthlyIterator->current();
+
+            $aDate->setDate($date->format('Y'), 1, 3);
+            $this->monthlyIterator->getInnerIterator()->getInnerIterator()->setStartDate($aDate);
+            $this->monthlyIterator->rewind();
+            $beginningOfYear = clone $this->monthlyIterator->current();
+
+            $calculated_formulas = $watchlist->getCalculatedFormulas();
+            $params = [
+              'date' => $date,
+              'wk_start' => $beginningOfWeek,
+              'mo_start' => $beginningOfMonth,
+              'qtr_start' => $beginningOfQuarter,
+              'yr_start' => $beginningOfYear
+            ];
+            array_walk($calculated_formulas, function(&$data, $symbol, $params) {
+                $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $symbol]);
+                $moreData = ['Wk delta P' => 0, 'Mo delta P' => 0, 'Qrtr delta P' => 0, 'Yr delta P' => 0];
+                if ($instrument) {
+                    $weekStartP  = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $params['wk_start']]);
+                    $moreData['Wk delta P'] = ($data['P'] - $weekStartP->getOpen()) / $weekStartP->getOpen() * 100;
+                    $monthStartP = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $params['mo_start']]);
+                    $moreData['Mo delta P'] = ($data['P'] - $monthStartP->getOpen()) / $monthStartP->getOpen() * 100;
+                    $quarterStartP = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $params['qtr_start']]);
+                    $moreData['Qrtr delta P'] = ($data['P'] - $quarterStartP->getOpen()) / $quarterStartP->getOpen() * 100;
+                    $yearStartP = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $params['yr_start']]);
+                    $moreData['Yr delta P'] = ($data['P'] - $yearStartP->getOpen()) / $yearStartP->getOpen() * 100;
+                }
+                $data = array_merge($data, $moreData);
+            }, $params);
+
+            // temporary:
+            return $calculated_formulas;
+
         } catch (\Exception $e) {
             throw new StudyException($e->getMessage());
         }
