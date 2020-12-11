@@ -12,7 +12,6 @@ namespace App\Service\Exchange;
 
 use App\Service\Exchange\Equities\TradingCalendar;
 use OuterIterator;
-use SeekableIterator;
 use DateInterval;
 
 /**
@@ -20,7 +19,7 @@ use DateInterval;
  * Plug dates into seek and receive either a date for the Monday of the week, or next day if Monday is a holiday
  * @package App\Service\Exchange
  */
-class MonthlyIterator implements SeekableIterator, OuterIterator
+class MonthlyIterator implements OuterIterator
 {
     /**
      * @var TradingCalendar
@@ -28,16 +27,15 @@ class MonthlyIterator implements SeekableIterator, OuterIterator
     protected $innerIterator;
 
     /**
-     * @var \DateInterval
+     * @var DateInterval
      */
-    protected $interval;
+    protected $monthInterval;
 
 
     public function __construct(TradingCalendar $iterator)
     {
         $this->innerIterator = $iterator;
-
-        $this->interval = new \DateInterval('P1M');
+        $this->monthInterval = new DateInterval('P1M');
     }
 
     /**
@@ -45,7 +43,7 @@ class MonthlyIterator implements SeekableIterator, OuterIterator
      */
     public function current()
     {
-        return $this->getInnerIterator()->current();
+        return $this->getInnerIterator()->getInnerIterator()->current();
     }
 
     /**
@@ -53,13 +51,24 @@ class MonthlyIterator implements SeekableIterator, OuterIterator
      */
     public function next()
     {
-        $date = $this->getInnerIterator()->current();
-        if ($this->getInnerIterator()->getInnerIterator()->getDirection() > 0) {
-            $date->add($this->interval);
+        $date = $this->getInnerIterator()->getInnerIterator()->current();
+        if ($date->format('j') != 1) {
+            if ($this->getInnerIterator()->getInnerIterator()->getDirection() < 1) {
+                $date->sub($this->monthInterval);
+            } else {
+                $date->add($this->monthInterval);
+            }
+            $date->modify(sprintf('first day of %s %s', $date->format('F'), $date->format('Y')));
         } else {
-            $date->sub($this->interval);
+            if ($this->getInnerIterator()->getInnerIterator()->getDirection() < 1) {
+                $date->sub($this->monthInterval);
+            } else {
+                $date->add($this->monthInterval);
+            }
         }
-        return $this->toBeginning($date);
+        while (false === $this->getInnerIterator()->accept()) {
+            $date->add(new \DateInterval(DailyIterator::INTERVAL));
+        }
     }
 
     /**
@@ -75,46 +84,23 @@ class MonthlyIterator implements SeekableIterator, OuterIterator
      */
     public function valid()
     {
-        return $this->getInnerIterator()->valid();
+        return $this->getInnerIterator()->getInnerIterator()->valid();
     }
 
     /**
-     * @inheritDoc
+     * Sets $date property in DailyIterator to first working day of the month. This is regardless of which
+     * direction is set.
      */
     public function rewind()
     {
-        $this->getInnerIterator()->rewind();
-        $date = $this->getInnerIterator()->current();
-        $this->toBeginning($date);
-    }
-
-    /**
-     * Determines date for beginning of the month. Usually it is date on a weekday, however takes into account holidays.
-     * @param \DateTime $date
-     * @return \DateTime
-     * @throws \Exception
-     */
-    public function toBeginning($date)
-    {
-        $date->modify(sprintf('first day of %s %s', $date->format('F'), $date->format('Y')));
-        while (false === $this->getInnerIterator()->accept($date)) {
-            $date->add(new DateInterval('P1D'));
+        $this->getInnerIterator()->getInnerIterator()->rewind();
+        $date = $this->getInnerIterator()->getInnerIterator()->current();
+        if ($date->format('j') != 1) {
+            $date->modify(sprintf('first day of %s %s', $date->format('F'), $date->format('Y')));
         }
-
-        return $date;
-    }
-
-    public function seek($position)
-    {
-        $this->getInnerIterator()->rewind();
-        $date = $this->getInnerIterator()->current();
-        $intervalString = sprintf('P%dM', $position);
-        if ($this->getInnerIterator()->getInnerIterator()->getDirection() > 1) {
-            $date->add(new \DateInterval($intervalString));
-        } else {
-            $date->sub(new \DateInterval($intervalString));
+        while (false === $this->getInnerIterator()->accept()) {
+            $date->add(new \DateInterval(DailyIterator::INTERVAL));
         }
-        $this->toBeginning($date);
     }
 
     /**
