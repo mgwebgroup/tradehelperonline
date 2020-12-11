@@ -97,10 +97,12 @@ class MonthlyIterator implements SeekableIterator, OuterIterator
     public function toBeginning($date)
     {
         $date->modify(sprintf('first day of %s %s', $date->format('F'), $date->format('Y')));
-        while (false === $this->getInnerIterator()->accept($date)) {
-            $date->add(new DateInterval('P1D'));
+        $this->getInnerIterator()->getInnerIterator()->setStartDate($date)->setDirection(1)->rewind();
+        while (false === $this->getInnerIterator()->accept()) {
+            $this->getInnerIterator()->next();
         }
 
+        $date = $this->getInnerIterator()->current();
         return $date;
     }
 

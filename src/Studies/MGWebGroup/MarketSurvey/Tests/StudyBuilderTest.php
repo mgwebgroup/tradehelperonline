@@ -501,6 +501,11 @@ class StudyBuilderTest extends KernelTestCase
 
     public function testBuildSectorTable()
     {
+        $watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => 'sectors_test']);
+        $date = $this->SUT->getStudy()->getDate();
+//        $date = new \DateTime('2020-05-11');
+        $this->SUT->buildSectorTable($watchlist, $date);
 
+//        fwrite(STDOUT, $date->format('Y-m-d'));
     }
 }

@@ -33,7 +33,7 @@ class SectorsFixtures extends Fixture implements FixtureGroupInterface
      * These are the only expressions used to formulate Actionable Symbols lists
      * @var string
      */
-    private $expressions = 'P:delta P:delta P(5)';
+    private $expressions = 'P:delta P prcnt:delta P(5) prcnt';
 
     public static function getGroups(): array
     {

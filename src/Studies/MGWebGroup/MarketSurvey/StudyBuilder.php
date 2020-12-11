@@ -9,6 +9,8 @@ use App\Repository\StudyArrayAttributeRepository;
 use App\Repository\StudyFloatAttributeRepository;
 use App\Repository\WatchlistRepository;
 use App\Service\Exchange\Equities\TradingCalendar;
+use App\Service\Exchange\MonthlyIterator;
+use App\Service\Exchange\WeeklyIterator;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
 use DateTime;
 use Symfony\Bridge\Doctrine\RegistryInterface;
@@ -60,36 +62,45 @@ class StudyBuilder
     const POS_ON_MO = 'Pos on Mo';
     const NEG_ON_MO = 'Neg on Mo';
 
-
     /**
      * @var \Doctrine\ORM\EntityManager
      */
     private $em;
 
     /**
-     * @var App\Service\Scanner\OHLCV\Scanner;
+     * @var \App\Service\Scanner\OHLCV\Scanner;
      */
     private $scanner;
 
     /**
-     * @var Symfony\Component\DependencyInjection\Container
+     * @var \Symfony\Component\DependencyInjection\Container
      */
     private $container;
 
     /**
-     * @var App\Service\ExpressionHandler\OHLCV\Calculator
+     * @var \App\Service\ExpressionHandler\OHLCV\Calculator
      */
     private $calculator;
 
     /**
-     * @var App\Entity\Study\Study
+     * @var \App\Entity\Study\Study
      */
     private $study;
 
     /**
-     * @var
+     * @var \App\Service\Exchange\Equities\TradingCalendar
      */
     private $tradeDayIterator;
+
+    /**
+     * @var \App\Service\Exchange\WeeklyIterator
+     */
+    private $weeklyIterator;
+
+    /**
+     * @var \App\Service\Exchange\MonthlyIterator
+     */
+    private $monthlyIterator;
 
 
     public function __construct(
@@ -97,7 +108,9 @@ class StudyBuilder
         ScannerInterface $scanner,
         ContainerInterface $container,
         Calculator $calculator,
-        TradingCalendar $tradingCalendar
+        TradingCalendar $tradingCalendar,
+        WeeklyIterator $weeklyIterator,
+        MonthlyIterator $monthlyIterator
     )
     {
         $this->em = $registry->getManager();
@@ -105,6 +118,8 @@ class StudyBuilder
         $this->container = $container;
         $this->calculator = $calculator;
         $this->tradeDayIterator = $tradingCalendar;
+        $this->weeklyIterator = $weeklyIterator;
+        $this->monthlyIterator = $monthlyIterator;
     }
 
     /**
@@ -589,13 +604,36 @@ class StudyBuilder
      * Saves new array attribute for the study titled 'sector-table'.
      * @param $watchlist
      * @param \DateTime $date
+     * @throws StudyException
      */
     public function buildSectorTable($watchlist, $date)
     {
         $watchlist->update($this->calculator, $date);
-        // Sort by Cum deltaP(5)
 
-        // create sector table with week delta P, Month delta P, Quarter, etc..
+        $watchlist->sortValuesBy('delta P(5) prcnt', SORT_DESC);
+
+        try {
+            // create sector table with week delta P, Month delta P, Quarter, etc..
+            $sectorTable = $watchlist->getCalculatedFormulas();
+            $beginningOfWeek = clone $date;
+            $this->weeklyIterator->toBeginning($beginningOfWeek);
+            $beginningOfMonth = clone $date;
+            $this->monthlyIterator->toBeginning($beginningOfMonth);
+            $beginningOfQuarter = clone $beginningOfMonth;
+            while (($beginningOfQuarter->format('n')-1)%3 > 0) {
+                $beginningOfQuarter->sub(new \DateInterval('P1M'));
+            }
+            $this->monthlyIterator->toBeginning($beginningOfQuarter);
+            $beginningOfYear = clone $beginningOfQuarter;
+            $beginningOfYear->setDate($date->format('Y'), 1, 3);
+
+            $this->monthlyIterator->toBeginning($beginningOfYear);
+            foreach ($sectorTable as $symbol => $record) {
+
+            }
+        } catch (\Exception $e) {
+            throw new StudyException($e->getMessage());
+        }
 
         // Figure sector positions
 

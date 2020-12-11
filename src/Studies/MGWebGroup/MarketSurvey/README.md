@@ -86,8 +86,8 @@ Use commands from the Installation section for importing study formulas.
 2. Import test watchlist and studies
 ```bash
 bin/console doctrine:fixtures:load --append --group=mgweb_watchlist
+bin/console doctrine:fixtures:load --append --group=mgweb_sectors
 bin/console doctrine:fixtures:load --append --group=mgweb_studies
-...import sectors fixtures. They must use sectors.csv file. Call the fixtures group mgweb_sectors.
 ```
 Option _--append_ makes sure existing instruments and price data will not be purged.
 
