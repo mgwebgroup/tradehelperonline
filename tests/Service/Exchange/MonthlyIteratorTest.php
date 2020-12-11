@@ -67,42 +67,42 @@ class MonthlyIteratorTest extends KernelTestCase
     /**
      * Set the iterator to Monday of a known holiday and iterate for three weeks
      */
-    public function testDates20()
-    {
-//        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate(new \DateTime('2018-01-01')); // Monday
+//    public function testDates20()
+//    {
+////        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate(new \DateTime('2018-01-01')); // Monday
+////
+////        $expected = [
+////          '20180102' => '2018-01-02', // Tuesday
+////          '20180108' => '2018-01-08',
+////          '20180116' => '2018-01-16' // Monday 2018-01-15 is MLK Day so we must see next day as beginning of the week
+////        ];
+////        $counter = 0;
+////        foreach ($this->SUT as $key => $value) {
+////            if ($counter > 2) break;
+////
+////            $this->assertSame($expected[$key], $value->format('Y-m-d'));
+////
+////            $counter++;
+////        }
+//
+//        // iterate backwards where one of the weeks has a known holiday on Monday
+//        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate(new \DateTime('2020-02-24')); // Monday
+//        $this->SUT->getInnerIterator()->getInnerIterator()->setDirection(-1);
 //
 //        $expected = [
-//          '20180102' => '2018-01-02', // Tuesday
-//          '20180108' => '2018-01-08',
-//          '20180116' => '2018-01-16' // Monday 2018-01-15 is MLK Day so we must see next day as beginning of the week
+//          '20200203' => '2020-02-03',
+//          '20200102' => '2020-01-02',
+//          '20191202' => '2019-12-02',
+//            '20191101' => '2019-11-01'
 //        ];
 //        $counter = 0;
 //        foreach ($this->SUT as $key => $value) {
-//            if ($counter > 2) break;
+//            if ($counter > 3) break;
 //
 //            $this->assertSame($expected[$key], $value->format('Y-m-d'));
 //
 //            $counter++;
 //        }
-
-        // iterate backwards where one of the weeks has a known holiday on Monday
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate(new \DateTime('2020-02-24')); // Monday
-        $this->SUT->getInnerIterator()->getInnerIterator()->setDirection(-1);
-
-        $expected = [
-          '20200203' => '2020-02-03',
-          '20200102' => '2020-01-02',
-          '20191202' => '2019-12-02',
-            '20191101' => '2019-11-01'
-        ];
-        $counter = 0;
-        foreach ($this->SUT as $key => $value) {
-            if ($counter > 3) break;
-
-            $this->assertSame($expected[$key], $value->format('Y-m-d'));
-
-            $counter++;
-        }
-    }
+//    }
 
 }

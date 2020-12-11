@@ -11,6 +11,7 @@
 namespace App\Tests\Service\Exchange\DailyIterator;
 
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use App\Service\Exchange\DailyIterator;
 
 class DailyIteratorTest extends KernelTestCase
 {
@@ -26,7 +27,7 @@ class DailyIteratorTest extends KernelTestCase
     protected function setUp(): void
     {
         self::bootKernel();
-        $this->SUT = self::$container->get(\App\Service\Exchange\DailyIterator::class);
+        $this->SUT = self::$container->get(DailyIterator::class);
     }
 
 
