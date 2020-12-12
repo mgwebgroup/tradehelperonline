@@ -599,11 +599,13 @@ class StudyBuilder
 
     /**
      * Takes sector watchlist and uses prices for sectors to figure various parameters.
-     * The sector watchlist must have P:delta P expressions associated with it. File sectors.csv already comes with
+     * The sector watchlist must have P:delta P prcnt:delta P(5) prcnt expressions associated with it. File sectors.csv already comes with
      * the sectors and formulas in it. Please refer to the study README.md file on how how to import it.
      * Saves new array attribute for the study titled 'sector-table'.
-     * @param $watchlist
+     * Will throw StudyException if 4 past Studies are not stored in database.
+     * @param $watchlist Sector Watchlist
      * @param \DateTime $date
+     * @return StudyBuilder
      * @throws StudyException
      */
     public function buildSectorTable($watchlist, $date)
@@ -640,9 +642,10 @@ class StudyBuilder
               'wk_start' => $beginningOfWeek,
               'mo_start' => $beginningOfMonth,
               'qtr_start' => $beginningOfQuarter,
-              'yr_start' => $beginningOfYear
+              'yr_start' => $beginningOfYear,
+              'pos_score' => 6
             ];
-            array_walk($calculated_formulas, function(&$data, $symbol, $params) {
+            array_walk($calculated_formulas, function(&$data, $symbol, &$params) {
                 $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $symbol]);
                 $moreData = ['Wk delta P' => 0, 'Mo delta P' => 0, 'Qrtr delta P' => 0, 'Yr delta P' => 0];
                 if ($instrument) {
@@ -654,20 +657,84 @@ class StudyBuilder
                     $moreData['Qrtr delta P'] = ($data['P'] - $quarterStartP->getOpen()) / $quarterStartP->getOpen() * 100;
                     $yearStartP = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $params['yr_start']]);
                     $moreData['Yr delta P'] = ($data['P'] - $yearStartP->getOpen()) / $yearStartP->getOpen() * 100;
+
+                    if (0 == $params['pos_score']) {
+                        $params['pos_score']--;
+                    }
+                    $moreData['Hist Pos Score']['T'] = $params['pos_score']--;
                 }
                 $data = array_merge($data, $moreData);
             }, $params);
 
-            // temporary:
-            return $calculated_formulas;
+            // Retrieve and record prior sector positions
+            $getSectorTable = new Criteria(Criteria::expr()->eq('attribute', 'sector-table'));
+
+            $this->tradeDayIterator->getInnerIterator()->setStartDate($date)->setDirection(-1);
+            $this->tradeDayIterator->getInnerIterator()->rewind();
+            for ($daysBack = 1; $daysBack < 5; $daysBack++) {
+                $this->tradeDayIterator->next();
+                $pastDate = $this->tradeDayIterator->current();
+
+                $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => $pastDate]);
+                if ($pastStudy) {
+                    /** @var App\Entity\Study\ArrayAttribute | false  $sectorTableArrayAttr */
+                    $sectorTableArrayAttr = $pastStudy->getArrayAttributes()->matching($getSectorTable)->first();
+                    if ($sectorTableArrayAttr) {
+                        $pastSectorTable = $sectorTableArrayAttr->getValue();
+                        // this is needed for summary later
+                        if (1 == $daysBack) {
+                            $pastSectorTablePrevT = $pastSectorTable;
+                        }
+                        foreach ($pastSectorTable as $symbol => $data) {
+                            $calculated_formulas[$symbol]['Hist Pos Score']['T-'.$daysBack] = $pastSectorTable[$symbol]['Hist Pos Score']['T'];
+                        }
+                    } else {
+                        array_walk($calculated_formulas, function(&$data, $symbol, $daysBack) {
+                            $data['Hist Pos Score']['T-'.$daysBack] = 0;
+                        }, $daysBack);
+                    }
+                } else {
+                    throw new StudyException(sprintf('Could not find study for date = %s', $pastDate->format('c')));
+                }
+            }
+
+            array_walk($calculated_formulas, function(&$data, $symbol) {
+                $data['Pos Score Sum'] = array_sum($data['Hist Pos Score']);
+                $data['Pos Score Grad'] = $data['Hist Pos Score']['T'] - $data['Hist Pos Score']['T-4'];
+            });
+
+            $sectorTable['table'] = $calculated_formulas;
+
+            // Add Summary
+            $summary['sum']['delta P prcnt'] = array_sum(array_column($calculated_formulas, 'delta P prcnt'));
+            $summary['sum']['delta P(5) prcnt'] = array_sum(array_column($calculated_formulas, 'delta P(5) prcnt'));
+            $summary['sum']['Wk delta P'] = array_sum(array_column($calculated_formulas, 'Wk delta P'));
+            $summary['sum']['Mo delta P'] = array_sum(array_column($calculated_formulas, 'Mo delta P'));
+            $summary['sum']['Qrtr delta P'] = array_sum(array_column($calculated_formulas, 'Qrtr delta P'));
+            $summary['sum']['Yr delta P'] = array_sum(array_column($calculated_formulas, 'Yr delta P'));
+
+            if (isset($pastSectorTablePrevT)) {
+                $summary['up_down_tick']['delta P(5) prcnt'] = $summary['sum']['delta P(5) prcnt'] - $pastSectorTablePrevT['sum']['delta P(5) prcnt'];
+                $summary['up_down_tick']['Wk delta P'] = $summary['sum']['Wk delta P'] - $pastSectorTablePrevT['sum']['Wk delta P'];
+                $summary['up_down_tick']['Mo delta P'] = $summary['sum']['Mo delta P'] - $pastSectorTablePrevT['sum']['Mo delta P'];
+                $summary['up_down_tick']['Qrtr delta P'] = $summary['sum']['Qrtr delta P'] - $pastSectorTablePrevT['sum']['Qrtr delta P'];
+                $summary['up_down_tick']['Yr delta P'] = $summary['sum']['Yr delta P'] - $pastSectorTablePrevT['sum']['Yr delta P'];
+            } else {
+                $summary['up_down_tick']['delta P(5) prcnt'] = $summary['sum']['delta P(5) prcnt'] - 0;
+                $summary['up_down_tick']['Wk delta P'] = $summary['sum']['Wk delta P'] - 0;
+                $summary['up_down_tick']['Mo delta P'] = $summary['sum']['Mo delta P'] - 0;
+                $summary['up_down_tick']['Qrtr delta P'] = $summary['sum']['Qrtr delta P'] - 0;
+                $summary['up_down_tick']['Yr delta P'] = $summary['sum']['Yr delta P'] - 0;
+            }
+
+            $sectorTable['summary'] = $summary;
 
         } catch (\Exception $e) {
             throw new StudyException($e->getMessage());
         }
 
-        // Figure sector positions
+        StudyArrayAttributeRepository::createArrayAttr($this->study, 'sector-table', $sectorTable);
 
-        // Add Summary
-
+        return $this;
     }
 }
