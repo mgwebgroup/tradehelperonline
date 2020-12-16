@@ -73,7 +73,7 @@ class StudyFixtures extends Fixture implements FixtureGroupInterface
 
         // Create 20 studies
         $periodDays = 20;
-        $date = new \DateTime('2015-05-15');
+        $date = new \DateTime('2015-20-15');
         $this->tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
         $this->tradingCalendar->getInnerIterator()->rewind();
         for ($i = 1; $i <= $periodDays; $i++) {
