@@ -93,7 +93,6 @@ class MonthlyIterator implements OuterIterator
      */
     public function rewind()
     {
-
         $this->getInnerIterator()->getInnerIterator()->rewind();
         $date = $this->getInnerIterator()->getInnerIterator()->current();
         if ($date->format('j') != 1) {
