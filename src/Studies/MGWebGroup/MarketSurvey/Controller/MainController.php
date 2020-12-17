@@ -76,6 +76,9 @@ class MainController extends AbstractController
             $getSectorTable  = new Criteria(Criteria::expr()->eq('attribute', 'sector-table'));
             $sectorTable = $study->getArrayAttributes()->matching($getSectorTable)->first()->getValue();
 
+            $getASList = new Criteria(Criteria::expr()->eq('name', 'AS'));
+            $ASList = $study->getWatchlists()->matching($getASList)->first()->getInstruments();
+
             return $this->render('@MarketSurvey/main.html.twig', [
               'date' => $date,
               'survey' => $survey,
@@ -88,6 +91,7 @@ class MainController extends AbstractController
               'score_table_rolling' => $scoreTableRolling,
               'score_table_mtd' => $scoreTableMTD,
               'sector_table' => $sectorTable,
+              'as_list' => $ASList,
               'errors' => $errors
               ]
             );

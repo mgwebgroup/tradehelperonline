@@ -346,6 +346,35 @@
                 </div>
             </div>
         </section>
+        <section class="as">
+            <div class="row">
+                <div class="col-4">
+                    <h6 class="text-center">Actionable Symbols List</h6>
+                    <table class="table table-sm">
+                        <thead>
+                        <tr>
+                            <th>#</th><th>Symbol</th><th>Name</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for instrument in as_list %}
+                            <tr><td>{{ loop.index }}</td><td>{{instrument.symbol}}</td><td>{{instrument.name}}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-8">
+                    <h6 class="text-center">Actionable Symbol Data</h6>
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title">ABX</h4>
+                            <h6 class="card-subtitle mb-2 ">Price Info</h6>
+                            <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     {% endif %}
     </div>
 {% endblock %}
