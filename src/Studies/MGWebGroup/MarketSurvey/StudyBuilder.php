@@ -456,7 +456,7 @@ class StudyBuilder
             $this->tradeDayIterator->next();
             $date = $this->tradeDayIterator->current();
 
-            $study = $this->em->getRepository(Study::class)->findOneBy(['name' => $this->study->getName(), 'date' => $date]);
+            $study = $this->em->getRepository(Study::class)->findOneBy(['date' => $date]);
             if (!$study) {
                 throw new StudyException(sprintf('Could not find study for date %s', $date->format('Y-m-d H:i:s')));
             }
@@ -578,7 +578,7 @@ class StudyBuilder
             $this->tradeDayIterator->next();
             $date = $this->tradeDayIterator->current();
 
-            $study = $this->em->getRepository(Study::class)->findOneBy(['name' => $this->study->getName(), 'date' => $date]);
+            $study = $this->em->getRepository(Study::class)->findOneBy(['date' => $date]);
             if (!$study) {
                 throw new StudyException(sprintf('Could not find study for date %s', $date->format('Y-m-d H:i:s')));
             }
@@ -685,8 +685,8 @@ class StudyBuilder
                         if (1 == $daysBack) {
                             $pastSectorTablePrevT = $pastSectorTable;
                         }
-                        foreach ($pastSectorTable as $symbol => $data) {
-                            $calculated_formulas[$symbol]['Hist Pos Score']['T-'.$daysBack] = $pastSectorTable[$symbol]['Hist Pos Score']['T'];
+                        foreach ($pastSectorTable['table'] as $symbol => $data) {
+                            $calculated_formulas[$symbol]['Hist Pos Score']['T-'.$daysBack] = $data['Hist Pos Score']['T'];
                         }
                     } else {
                         array_walk($calculated_formulas, function(&$data, $symbol, $daysBack) {
@@ -714,11 +714,12 @@ class StudyBuilder
             $summary['sum']['Yr delta P'] = array_sum(array_column($calculated_formulas, 'Yr delta P'));
 
             if (isset($pastSectorTablePrevT)) {
-                $summary['up_down_tick']['delta P(5) prcnt'] = $summary['sum']['delta P(5) prcnt'] - $pastSectorTablePrevT['sum']['delta P(5) prcnt'];
-                $summary['up_down_tick']['Wk delta P'] = $summary['sum']['Wk delta P'] - $pastSectorTablePrevT['sum']['Wk delta P'];
-                $summary['up_down_tick']['Mo delta P'] = $summary['sum']['Mo delta P'] - $pastSectorTablePrevT['sum']['Mo delta P'];
-                $summary['up_down_tick']['Qrtr delta P'] = $summary['sum']['Qrtr delta P'] - $pastSectorTablePrevT['sum']['Qrtr delta P'];
-                $summary['up_down_tick']['Yr delta P'] = $summary['sum']['Yr delta P'] - $pastSectorTablePrevT['sum']['Yr delta P'];
+                $summary['up_down_tick']['delta P(5) prcnt'] = $summary['sum']['delta P(5) prcnt'] -
+                  $pastSectorTablePrevT['summary']['sum']['delta P(5) prcnt'];
+                $summary['up_down_tick']['Wk delta P'] = $summary['sum']['Wk delta P'] - $pastSectorTablePrevT['summary']['sum']['Wk delta P'];
+                $summary['up_down_tick']['Mo delta P'] = $summary['sum']['Mo delta P'] - $pastSectorTablePrevT['summary']['sum']['Mo delta P'];
+                $summary['up_down_tick']['Qrtr delta P'] = $summary['sum']['Qrtr delta P'] - $pastSectorTablePrevT['summary']['sum']['Qrtr delta P'];
+                $summary['up_down_tick']['Yr delta P'] = $summary['sum']['Yr delta P'] - $pastSectorTablePrevT['summary']['sum']['Yr delta P'];
             } else {
                 $summary['up_down_tick']['delta P(5) prcnt'] = $summary['sum']['delta P(5) prcnt'] - 0;
                 $summary['up_down_tick']['Wk delta P'] = $summary['sum']['Wk delta P'] - 0;

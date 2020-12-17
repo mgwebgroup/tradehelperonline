@@ -73,7 +73,7 @@ class StudyFixtures extends Fixture implements FixtureGroupInterface
 
         // Create 20 studies
         $periodDays = 20;
-        $date = new \DateTime('2015-20-15');
+        $date = new \DateTime('2020-05-15');
         $this->tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
         $this->tradingCalendar->getInnerIterator()->rewind();
         for ($i = 1; $i <= $periodDays; $i++) {
@@ -83,7 +83,7 @@ class StudyFixtures extends Fixture implements FixtureGroupInterface
         $this->studyBuilder->createStudy($date, self::STUDY_NAME);
         $pastStudy = null;
         for ($i = 1; $i <= $periodDays; $i++) {
-            fwrite(STDOUT, sprintf('%2d Calculating Market Breadth...', $i));
+            fwrite(STDOUT, sprintf('%2d Calculating Market Breadth Study Date %s...', $i, $date->format('Y-m-d')));
             $startTimestamp = time();
             $this->studyBuilder->calculateMarketBreadth($watchlist);
             $endTimestamp = time();
@@ -109,7 +109,7 @@ class StudyFixtures extends Fixture implements FixtureGroupInterface
             $this->tradingCalendar->next();
             $date = $this->tradingCalendar->current();
 
-            $this->studyBuilder->createStudy($date, self::WATCHLIST_NAME);
+            $this->studyBuilder->createStudy($date, self::STUDY_NAME);
         }
 
         // create and persist full study for 2020-05-15
@@ -117,7 +117,7 @@ class StudyFixtures extends Fixture implements FixtureGroupInterface
         $pastStudy = $manager->getRepository(Study::class)->findOneBy(['date' => $pastDate]);
 
         if ($pastStudy) {
-            fwrite(STDOUT, sprintf('%2d Calculating Market Breadth...', $i));
+            fwrite(STDOUT, sprintf('%2d Calculating Market Breadth. Final Study Date %s...', $i, $date->format('Y-m-d')));
             $startTimestamp = time();
             $this->studyBuilder->calculateMarketBreadth($watchlist);
             $endTimestamp = time();
@@ -128,6 +128,7 @@ class StudyFixtures extends Fixture implements FixtureGroupInterface
             $this->studyBuilder->buildActionableSymbolsWatchlist();
             $this->studyBuilder->buildMarketScoreTableForRollingPeriod($periodDays);
             $this->studyBuilder->buildMarketScoreTableForMTD();
+            $this->studyBuilder->buildSectorTable($sectorWatchlist, $date);
 
             $manager->persist($this->studyBuilder->getStudy());
             $manager->flush();
