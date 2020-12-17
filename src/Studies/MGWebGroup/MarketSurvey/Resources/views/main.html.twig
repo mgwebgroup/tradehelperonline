@@ -260,6 +260,7 @@
             <div class="row">
                 <div class="col">
                     <h6 class="text-center">Sector Performance</h6>
+                    {% set negative = 'text-danger' %}
                     <table class="table table-sm">
                         <col>
                         <col>
@@ -275,23 +276,21 @@
                         <col>
                         <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Sector</th>
-                            <th>Closing P, %</th>
-                            <th>dP, %</th>
-                            <th>dP(5), %</th>
-                            <th>Week dP, %</th>
-                            <th>Month dP, %</th>
-                            <th>Quarter dP, %</th>
-                            <th>Year dP, %</th>
+                            <th rowspan="2">#</th>
+                            <th rowspan="2">Sector</th>
+                            <th rowspan="2">Closing P, %</th>
+                            <th rowspan="2">dP, %</th>
+                            <th rowspan="2">dP(5), %</th>
+                            <th rowspan="2">Week dP, %</th>
+                            <th rowspan="2">Month dP, %</th>
+                            <th rowspan="2">Quarter dP, %</th>
+                            <th rowspan="2">Year dP, %</th>
                             <th colspan="5" scope="colgroup">Hist. Position Score</th>
-                            <th>Sum</th>
-                            <th>Gradient</th>
+                            <th rowspan="2">Sum</th>
+                            <th rowspan="2">Gradient</th>
                         </tr>
                         <tr>
-                            <th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th>
                             <th scope="col">T-4</th><th scope="col">T-3</th><th scope="col">T-2</th><th scope="col">T-1</th><th scope="col">T</th>
-                            <th></th><th></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -300,12 +299,12 @@
                                 <td>{{loop.index}}</td>
                                 <td>{{ sector }}</td>
                                 <td>{{ '$' ~ record.P|number_format(2) }}</td>
-                                <td>{{ attribute(record, 'delta P prcnt')|number_format(2) }}</td>
-                                <td>{{ attribute(record, 'delta P(5) prcnt')|number_format(2) }}</td>
-                                <td>{{ attribute(record, 'Wk delta P')|number_format(2) }}</td>
-                                <td>{{ attribute(record, 'Mo delta P')|number_format(2) }}</td>
-                                <td>{{ attribute(record, 'Qrtr delta P')|number_format(2) }}</td>
-                                <td>{{ attribute(record, 'Yr delta P')|number_format(2) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'delta P prcnt') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'delta P(5) prcnt') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'Wk delta P') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'Mo delta P') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'Qrtr delta P') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'Yr delta P') }) }}</td>
                                 {% set hist_pos_score = attribute(record, 'Hist Pos Score') %}
                                 <td scope="col">{{ attribute(hist_pos_score, 'T-4') }}</td>
                                 <td scope="col">{{ attribute(hist_pos_score, 'T-3') }}</td>
@@ -318,13 +317,13 @@
                         {% endfor %}
                         {% set sector_table_summary = sector_table.summary %}
                         <tr class="table-info">
-                            <td></td><td></td><td></td>
-                            <td>{{ attribute(sector_table_summary.sum, 'delta P prcnt')|number_format(2) }}</td>
-                            <td>{{ attribute(sector_table_summary.sum, 'delta P(5) prcnt')|number_format(2) }}</td>
-                            <td>{{ attribute(sector_table_summary.sum, 'Wk delta P')|number_format(2) }}</td>
-                            <td>{{ attribute(sector_table_summary.sum, 'Mo delta P')|number_format(2) }}</td>
-                            <td>{{ attribute(sector_table_summary.sum, 'Qrtr delta P')|number_format(2) }}</td>
-                            <td>{{ attribute(sector_table_summary.sum, 'Yr delta P')|number_format(2) }}</td>
+                            <td>Sum:</td><td></td><td></td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P prcnt') }) }}</td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P(5) prcnt') }) }}</td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Wk delta P') }) }}</td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Mo delta P') }) }}</td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Qrtr delta P') }) }}</td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Yr delta P') }) }}</td>
                             <td scope="col"></td>
                             <td scope="col"></td>
                             <td scope="col"></td>
@@ -335,12 +334,12 @@
                         </tr>
                         {% set up_down_tick = attribute(sector_table_summary, 'up_down_tick') %}
                         <tr>
-                            <td></td><td></td><td></td><td>Up/Down Tick</td>
-                            <td>{{ attribute(up_down_tick, 'delta P(5) prcnt')|number_format(2) }}</td>
-                            <td>{{ attribute(up_down_tick, 'Wk delta P')|number_format(2) }}</td>
-                            <td>{{ attribute(up_down_tick, 'Mo delta P')|number_format(2) }}</td>
-                            <td>{{ attribute(up_down_tick, 'Qrtr delta P')|number_format(2) }}</td>
-                            <td>{{ attribute(up_down_tick, 'Yr delta P')|number_format(2) }}</td>
+                            <td>Up/Down Tick:</td><td></td><td></td><td></td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'delta P(5) prcnt') }) }}</td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Wk delta P') }) }}</td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Mo delta P') }) }}</td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Qrtr delta P') }) }}</td>
+                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Yr delta P') }) }}</td>
                         </tr>
                         </tbody>
                     </table>
