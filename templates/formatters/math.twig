@@ -1,0 +1,14 @@
+{% set color = null %}
+{% if value > 0 %}
+    {% if positive is defined  %}
+        {% set color = positive %}
+    {% endif %}
+{% elseif value < 0 %}
+    {% if negative is defined %}
+        {% set color = negative %}
+    {% endif %}
+{% endif %}
+{% if decimal_points is not defined %}
+    {% set decimal_points = 2 %}
+{% endif %}
+<span class="{{ color }}">{{ prefix is defined ? prefix }}{{ value|number_format(decimal_points) }}{{ suffix is defined ? suffix }}</span>
