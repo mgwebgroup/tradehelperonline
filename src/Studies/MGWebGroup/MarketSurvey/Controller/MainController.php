@@ -73,6 +73,9 @@ class MainController extends AbstractController
             $dateColumn = array_column($scoreTableMTD['table'], 'date');
             array_multisort($dateColumn, SORT_ASC, $scoreTableMTD['table']);
 
+            $getSectorTable  = new Criteria(Criteria::expr()->eq('attribute', 'sector-table'));
+            $sectorTable = $study->getArrayAttributes()->matching($getSectorTable)->first()->getValue();
+
             return $this->render('@MarketSurvey/main.html.twig', [
               'date' => $date,
               'survey' => $survey,
@@ -82,8 +85,11 @@ class MainController extends AbstractController
               'inswk_bobd' => $insWkBOBD,
               'insmo_bobd' => $insMoBOBD,
               'as_bobd' => $ASBOBD,
-              'score_table_rolling' => $scoreTableRolling, 'score_table_mtd' => $scoreTableMTD,
-              'errors' => $errors ]
+              'score_table_rolling' => $scoreTableRolling,
+              'score_table_mtd' => $scoreTableMTD,
+              'sector_table' => $sectorTable,
+              'errors' => $errors
+              ]
             );
 
         } else {

@@ -256,6 +256,97 @@
                 </div>
             </div>
         </section>
+        <section class="sectors">
+            <div class="row">
+                <div class="col">
+                    <h6 class="text-center">Sector Performance</h6>
+                    <table class="table table-sm">
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <colgroup span="5"></colgroup>
+                        <col>
+                        <col>
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Sector</th>
+                            <th>Closing P, %</th>
+                            <th>dP, %</th>
+                            <th>dP(5), %</th>
+                            <th>Week dP, %</th>
+                            <th>Month dP, %</th>
+                            <th>Quarter dP, %</th>
+                            <th>Year dP, %</th>
+                            <th colspan="5" scope="colgroup">Hist. Position Score</th>
+                            <th>Sum</th>
+                            <th>Gradient</th>
+                        </tr>
+                        <tr>
+                            <th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th>
+                            <th scope="col">T-4</th><th scope="col">T-3</th><th scope="col">T-2</th><th scope="col">T-1</th><th scope="col">T</th>
+                            <th></th><th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for sector, record in sector_table.table %}
+                            <tr>
+                                <td>{{loop.index}}</td>
+                                <td>{{ sector }}</td>
+                                <td>{{ '$' ~ record.P|number_format(2) }}</td>
+                                <td>{{ attribute(record, 'delta P prcnt')|number_format(2) }}</td>
+                                <td>{{ attribute(record, 'delta P(5) prcnt')|number_format(2) }}</td>
+                                <td>{{ attribute(record, 'Wk delta P')|number_format(2) }}</td>
+                                <td>{{ attribute(record, 'Mo delta P')|number_format(2) }}</td>
+                                <td>{{ attribute(record, 'Qrtr delta P')|number_format(2) }}</td>
+                                <td>{{ attribute(record, 'Yr delta P')|number_format(2) }}</td>
+                                {% set hist_pos_score = attribute(record, 'Hist Pos Score') %}
+                                <td scope="col">{{ attribute(hist_pos_score, 'T-4') }}</td>
+                                <td scope="col">{{ attribute(hist_pos_score, 'T-3') }}</td>
+                                <td scope="col">{{ attribute(hist_pos_score, 'T-2') }}</td>
+                                <td scope="col">{{ attribute(hist_pos_score, 'T-1') }}</td>
+                                <td scope="col">{{ attribute(hist_pos_score, 'T') }}</td>
+                                <td>{{ attribute(record, 'Pos Score Sum')|number_format(0) }}</td>
+                                <td>{{ attribute(record, 'Pos Score Grad')|number_format(0) }}</td>
+                            </tr>
+                        {% endfor %}
+                        {% set sector_table_summary = sector_table.summary %}
+                        <tr class="table-info">
+                            <td></td><td></td><td></td>
+                            <td>{{ attribute(sector_table_summary.sum, 'delta P prcnt')|number_format(2) }}</td>
+                            <td>{{ attribute(sector_table_summary.sum, 'delta P(5) prcnt')|number_format(2) }}</td>
+                            <td>{{ attribute(sector_table_summary.sum, 'Wk delta P')|number_format(2) }}</td>
+                            <td>{{ attribute(sector_table_summary.sum, 'Mo delta P')|number_format(2) }}</td>
+                            <td>{{ attribute(sector_table_summary.sum, 'Qrtr delta P')|number_format(2) }}</td>
+                            <td>{{ attribute(sector_table_summary.sum, 'Yr delta P')|number_format(2) }}</td>
+                            <td scope="col"></td>
+                            <td scope="col"></td>
+                            <td scope="col"></td>
+                            <td scope="col"></td>
+                            <td scope="col"></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        {% set up_down_tick = attribute(sector_table_summary, 'up_down_tick') %}
+                        <tr>
+                            <td></td><td></td><td></td><td>Up/Down Tick</td>
+                            <td>{{ attribute(up_down_tick, 'delta P(5) prcnt')|number_format(2) }}</td>
+                            <td>{{ attribute(up_down_tick, 'Wk delta P')|number_format(2) }}</td>
+                            <td>{{ attribute(up_down_tick, 'Mo delta P')|number_format(2) }}</td>
+                            <td>{{ attribute(up_down_tick, 'Qrtr delta P')|number_format(2) }}</td>
+                            <td>{{ attribute(up_down_tick, 'Yr delta P')|number_format(2) }}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     {% endif %}
     </div>
 {% endblock %}
