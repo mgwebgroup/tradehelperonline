@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Expression;
+use App\Exception\ExpressionException;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
@@ -32,32 +33,24 @@ class ExpressionRepository extends ServiceEntityRepository
         return $expression;
     }
 
-    // /**
-    //  * @return Expression[] Returns an array of Expression objects
-    //  */
-    /*
-    public function findByExampleField($value)
+    /**
+     * Finds several expressions using list of expression names
+     * @param $exprList String[]
+     * @return array Expression[]
+     * @throws ExpressionException
+     */
+    public function findExpressions($exprList)
     {
-        return $this->createQueryBuilder('e')
-            ->andWhere('e.exampleField = :val')
-            ->setParameter('val', $value)
-            ->orderBy('e.id', 'ASC')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult()
-        ;
-    }
-    */
+        $expressions = [];
+        foreach ($exprList as $name) {
+            $expression = $this->findOneBy(['name' => $name]);
+            if (!$expression) {
+                throw new ExpressionException(sprintf('Could not find expression named %s', $name));
+                break;
+            }
+            $expressions[] = $expression;
+        }
 
-    /*
-    public function findOneBySomeField($value): ?Expression
-    {
-        return $this->createQueryBuilder('e')
-            ->andWhere('e.exampleField = :val')
-            ->setParameter('val', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
+        return $expressions;
     }
-    */
 }

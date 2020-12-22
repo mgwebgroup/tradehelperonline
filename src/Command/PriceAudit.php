@@ -109,7 +109,7 @@ class PriceAudit extends Command
       Filesystem $fileSystem,
       Catalog $catalog
     ) {
-        $this->em = $doctrine->getManager();;
+        $this->em = $doctrine->getManager();
         $this->utilities = $utilities;
         $this->fileSystem = $fileSystem;
         $this->catalog = $catalog;
