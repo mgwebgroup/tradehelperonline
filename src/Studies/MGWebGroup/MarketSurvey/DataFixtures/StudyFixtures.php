@@ -80,7 +80,7 @@ class StudyFixtures extends Fixture implements FixtureGroupInterface
             $this->tradingCalendar->next();
         }
         $date = $this->tradingCalendar->current();
-        $this->studyBuilder->createStudy($date, self::STUDY_NAME);
+        $this->studyBuilder->initStudy($date, self::STUDY_NAME);
         $pastStudy = null;
         for ($i = 1; $i <= $periodDays; $i++) {
             fwrite(STDOUT, sprintf('%2d Calculating Market Breadth Study Date %s...', $i, $date->format('Y-m-d')));
@@ -109,7 +109,7 @@ class StudyFixtures extends Fixture implements FixtureGroupInterface
             $this->tradingCalendar->next();
             $date = $this->tradingCalendar->current();
 
-            $this->studyBuilder->createStudy($date, self::STUDY_NAME);
+            $this->studyBuilder->initStudy($date, self::STUDY_NAME);
         }
 
         // create and persist full study for 2020-05-15

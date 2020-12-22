@@ -1,3 +1,5 @@
 Interval,Name,Formula,Criterion,Description
+daily,V,Volume(0),= true
+daily,P,Close(0),= true
 daily,delta P prcnt,(Close(0)-Close(1))/Close(1)*100,= true
 daily,delta P(5) prcnt,(Close(0)-Close(5))/Close(5)*100,= true

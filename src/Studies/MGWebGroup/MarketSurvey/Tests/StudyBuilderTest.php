@@ -56,7 +56,7 @@ class StudyBuilderTest extends KernelTestCase
         $this->watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => self::WATCHLIST_NAME]);
 
         $date = new \DateTime('2020-05-15');
-        $this->SUT->createStudy($date, self::STUDY_NAME);
+        $this->SUT->initStudy($date, self::STUDY_NAME);
     }
 
     public function testMarketBreadth_15May2020_MarketBreadth()
@@ -155,7 +155,7 @@ class StudyBuilderTest extends KernelTestCase
 
         $date2 = new \DateTime('2020-05-15');
         $name = 'test_market_study';
-        $this->SUT->createStudy($date2, $name);
+        $this->SUT->initStudy($date2, $name);
 
         $this->SUT->figureInsideBarBOBD($pastStudy, $date2);
 
@@ -251,7 +251,7 @@ class StudyBuilderTest extends KernelTestCase
 
         $date2 = new \DateTime('2020-05-15');
         $name = 'test_market_study';
-        $this->SUT->createStudy($date2, $name);
+        $this->SUT->initStudy($date2, $name);
 
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
         $this->SUT->calculateMarketBreadth($this->watchlist);
@@ -414,7 +414,7 @@ class StudyBuilderTest extends KernelTestCase
         }
 
         $name = 'test_market_study';
-        $this->SUT->createStudy($date2, $name);
+        $this->SUT->initStudy($date2, $name);
         $this->SUT->figureASBOBD($pastStudy, $date2);
 
         $getASBOBD = new Criteria(Criteria::expr()->eq('attribute', 'as-bobd'));

@@ -1,6 +1,4 @@
 Interval,Name,Formula,Criterion,Description
-daily,V,Volume(0),= true
-daily,P,Close(0),= true
 daily,Ins D & Up,(High(2) >= High(1)) and (Low(2) <= Low(1)) and (Close(0) >= High(1)),= true
 weekly,Ins Wk & Up,(High(2) >= High(1)) and (Low(2) <= Low(1)) and (Close(0) >= High(1)),= true
 monthly,Ins Mo & Up,(High(2) >= High(1)) and (Low(2) <= Low(1)) and (Close(0) >= High(1)),= true

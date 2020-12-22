@@ -5,6 +5,8 @@ use App\Entity\Expression;
 use App\Entity\Instrument;
 use App\Entity\OHLCV\History;
 use App\Entity\Study\Study;
+use App\Exception\ExpressionException;
+use App\Exception\PriceHistoryException;
 use App\Repository\StudyArrayAttributeRepository;
 use App\Repository\StudyFloatAttributeRepository;
 use App\Repository\WatchlistRepository;
@@ -13,6 +15,8 @@ use App\Service\Exchange\MonthlyIterator;
 use App\Service\Exchange\WeeklyIterator;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
 use DateTime;
+use MathPHP\Exception\BadDataException;
+use MathPHP\Exception\OutOfBoundsException;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use App\Service\Scanner\ScannerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -24,7 +28,7 @@ use Doctrine\ORM\PersistentCollection;
 /**
  * Implements all calculations necessary for the Market Survey. Based on procedures of October 2018.
  * The Market Survey study has 6 areas:
- *   - Market Breadth table (is a basis for Inside Bar watchlists, Market Score and Actionable Symbols list)
+ *   - Market Breadth table (is a basis for Inside Bar watch lists, Market Score and Actionable Symbols list)
  *   - Inside Bar Breakout/Breakdown table
  *   - Actionable Symbols list
  *   - Actionable Symbols Breakout/Breakdown table
@@ -38,17 +42,14 @@ class StudyBuilder
     const INSIDE_BAR_DAY = 'Ins D';
     const INSIDE_BAR_WK = 'Ins Wk';
     const INSIDE_BAR_MO = 'Ins Mo';
-
     const INS_D_AND_UP = 'Ins D & Up';
     const D_HAMMER = 'D Hammer';
     const D_HAMMER_AND_UP = 'D Hammer & Up';
     const D_BULLISH_ENG = 'D Bullish Eng';
-
     const INS_D_AND_DWN = 'Ins D & Dwn';
     const D_SHTNG_STAR = 'D Shtng Star';
     const D_SHTNG_STAR_AND_DWN = 'D Shtng Star & Down';
     const D_BEARISH_ENG = 'D Bearish Eng';
-
     const D_BO = 'D BO';
     const D_BD = 'D BD';
     const POS_ON_D = 'Pos on D';
@@ -61,6 +62,9 @@ class StudyBuilder
     const MO_BD = 'Mo BD';
     const POS_ON_MO = 'Pos on Mo';
     const NEG_ON_MO = 'Neg on Mo';
+
+    const P_DAILY = 'P';
+    const DELTA_P_PRCNT = 'delta P prcnt';
 
     /**
      * @var \Doctrine\ORM\EntityManager
@@ -128,13 +132,13 @@ class StudyBuilder
      * @param $name
      * @return Study|App\Entity\Study\Study
      */
-    public function createStudy($date, $name)
+    public function initStudy($date, $name)
     {
         $this->study = new Study();
         $this->study->setDate($date);
         $this->study->setName($name);
 
-        return $this->study;
+        return $this;
     }
 
     public function getStudy()
@@ -148,14 +152,15 @@ class StudyBuilder
      *   'Ins Wk & Up' => App\Entity\Instrument[]
      *   ...
      * ]
-     * and saves it as 'market-breadth' array attribute in $this->study.
+     * and saves it as 'market-breadth' array attribute in $this->study. If no instruments met a criteria, empty
+     * instrument array will be present. For example, 'Ins D' => []
      *
      * Calculates market score according to the metric stored in mgweb.yaml parameters, and saves it as 'market-score'
      * float attribute in $this->study.
      *
-     * Creates Inside Bar Daily, Weekly, Monthly watchlists. Also creates bullish and bearish watchlists, which are
+     * Creates Inside Bar Daily, Weekly, Monthly watch lists. Also creates bullish and bearish watch lists, which are
      * later used in Inside Bar Breakouts/Breakdowns analysis as well as to build Actionable Symbols lists in
-     * other functions of the StudyBuilder. These watchlists are added to $this->study into its $watchlists property.
+     * other functions of the StudyBuilder. These watch lists are added to $this->study into its $watchlists property.
      *
      * @param \App\Entity\Watchlist $watchlist must have expressions associated with it for daily breakouts,
      * breakdowns, and volume:
@@ -265,12 +270,12 @@ class StudyBuilder
     }
 
     /**
-     * Given the study, scans its Inside Bar watchlists for Breakouts/Breakdowns (formula
+     * Given a past study, scans its Inside Bar watch lists for Breakouts/Breakdowns (formula
      * quartets) for the $effectiveDate. Saves results as array attributes 'bobd-daily', 'bobd-weekly',
      * 'bobd-monthly' in $this->study.
      *
-     * @param App\Entity\Study\Study $study past study which has Inside Bar watchlists.
-     * @param DateTime $effectiveDate date for which to run expressions on Inside Bar watchlists
+     * @param App\Entity\Study\Study $study past study which has Inside Bar watch lists.
+     * @param DateTime $effectiveDate date for which to run expressions on Inside Bar watch lists
      * @return StudyBuilder
      */
     public function figureInsideBarBOBD($study, $effectiveDate)
@@ -311,10 +316,10 @@ class StudyBuilder
     }
 
     /**
-     * Given the study, scans its Actionable Symbols (AS) watchlist for Breakouts/Breakdowns (formula
+     * Given the study, scans its Actionable Symbols (AS) watch list for Breakouts/Breakdowns (formula
      * quartets) for the $effectiveDate. Saves results as array attribute 'as-bobd' in $this->study.
-     * @param App\Entity\Study\Study $study past study which has Actionable Symbols watchlist.
-     * @param DateTime $effectiveDate date for which to run expressions on AS watchlist
+     * @param App\Entity\Study\Study $study past study which has Actionable Symbols watch list.
+     * @param DateTime $effectiveDate date for which to run expressions on AS watch list
      * @return StudyBuilder
      */
     public function figureASBOBD($study, $effectiveDate)
@@ -323,8 +328,7 @@ class StudyBuilder
             $study->getWatchlists()->initialize();
         }
 
-        $comparison = Criteria::expr()->eq('name', 'AS');
-        $getASWatchlist = new Criteria($comparison);
+        $getASWatchlist = new Criteria(Criteria::expr()->eq('name', 'AS'));
         $ASWatchlist = $study->getWatchlists()->matching($getASWatchlist)->first();
 
         $exprList = [
@@ -342,7 +346,7 @@ class StudyBuilder
     }
 
     /**
-     * Performs watchlist scan using list of expression names as strings.
+     * Performs watch list scan using list of expression names as strings.
      * @param DateTime $date
      * @param App\Entity\Watchlist $watchlist
      * @param array $exprList String[]
@@ -353,15 +357,18 @@ class StudyBuilder
      *      ],
      *      'count' => integer
      *   ]
+     * @throws StudyException
      */
     private function makeSurvey($date, $watchlist, $exprList)
     {
         $bobdTable = [];
-        $expressions = [];
-        foreach ($exprList as $name) {
-            $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $name]);
-            $expressions[] = $expression;
+
+        try {
+            $expressions = $this->em->getRepository(Expression::class)->findExpressions($exprList);
+        } catch (ExpressionException $e) {
+            throw new StudyException($e->getMessage());
         }
+
         $bobdTable['survey'] = $this->doScan($date, $watchlist, $expressions);
         $bobdTable['count'] = $watchlist->getInstruments()->count();
 
@@ -369,10 +376,11 @@ class StudyBuilder
     }
 
     /**
-     * Takes specific watchlists already attached to the study and selects top 10 instruments from some lists by price
-     * and from other lists by price and volume to formulate the Actionable Symbols (AS) watchlist. This AS watchlist is
+     * Takes specific watch lists already attached to the study and selects top 10 instruments from some lists by price
+     * and from other lists by price and volume to formulate the Actionable Symbols ('AS') watch list. This AS watch list is
      * attached to the study.
      * @return StudyBuilder
+     * @throws StudyException
      */
     public function buildActionableSymbolsWatchlist()
     {
@@ -381,9 +389,15 @@ class StudyBuilder
           self::INS_D_AND_UP, self::D_HAMMER, self::D_HAMMER_AND_UP, self::D_BULLISH_ENG,
           self::INS_D_AND_DWN, self::D_SHTNG_STAR, self::D_SHTNG_STAR_AND_DWN, self::D_BEARISH_ENG
           ];
-        $comparison = Criteria::expr()->in('name', $watchlistsOfInterest);
-        $watchlistsOfInterestCriterion = new Criteria($comparison);
+
+        $watchlistsOfInterestCriterion = new Criteria(Criteria::expr()->in('name', $watchlistsOfInterest));
         $actionableInstrumentsArray = [];
+
+        try {
+            $expressions = $this->em->getRepository(Expression::class)->findExpressions([self::P_DAILY, self::DELTA_P_PRCNT]);
+        } catch (ExpressionException $e) {
+            throw new StudyException($e->getMessage());
+        }
 
         foreach ($this->study->getWatchlists()->matching($watchlistsOfInterestCriterion) as $watchlist) {
             switch ($watchlist->getName()) {
@@ -410,7 +424,7 @@ class StudyBuilder
                   $symbol]);
             }
         }
-        $actionableSymbolsWatchlist = WatchlistRepository::createWatchlist('AS', null, [], $actionableInstrumentsArray);
+        $actionableSymbolsWatchlist = WatchlistRepository::createWatchlist('AS', null, $expressions, $actionableInstrumentsArray);
         $this->study->addWatchlist($actionableSymbolsWatchlist);
 
         return $this;
@@ -421,14 +435,14 @@ class StudyBuilder
      * standard deviations from average the score and the score deltas are for each day. These numbers are used to
      * mark significant levels for SPY, called the Levels Map.
      * In order to calculate the table correctly, current study must already have attributes 'market-score' and 'score-delta'
-     * calculated. Also, studies for the $daysBack must already be saved in database.
+     * calculated. Also, studies for the $daysBack must already be saved in database with the same attributes available.
      * Function attaches new array attribute 'score-table-rolling' to the $study.
      * @param integer $daysBack
      * @return StudyBuilder
      * @throws StudyException
-     * @throws \App\Exception\PriceHistoryException
-     * @throws \MathPHP\Exception\BadDataException
-     * @throws \MathPHP\Exception\OutOfBoundsException
+     * @throws PriceHistoryException
+     * @throws BadDataException
+     * @throws OutOfBoundsException
      */
     public function buildMarketScoreTableForRollingPeriod($daysBack)
     {
@@ -446,7 +460,6 @@ class StudyBuilder
         $date = clone $this->study->getDate();
 
         $studyParams = $this->getScoreTableParams($this->study, $SPY, $interval);
-//        $studyParams = ['score' => 238.75, 'delta' => -51.75, 'P' => 286.28];
         $studyParams['date'] = $date;
         $scoreTableRolling['table'][] = $studyParams;
 
@@ -552,6 +565,13 @@ class StudyBuilder
         return ['score' => $score, 'delta' => $scoreDelta, 'P' => $h->getClose()];
     }
 
+    /**
+     * Same as method buildMarketScoreTableForRollingPeriod, but starts from beginning of month. Saves results in
+     * new array attribute 'score-table-mtd'.
+     * @return $this
+     * @throws PriceHistoryException
+     * @throws StudyException
+     */
     public function buildMarketScoreTableForMTD()
     {
         /** @var App\Entity\Instrument | null $SPY */
@@ -598,8 +618,8 @@ class StudyBuilder
     }
 
     /**
-     * Takes sector watchlist and uses prices for sectors to figure various parameters.
-     * The sector watchlist must have P:delta P prcnt:delta P(5) prcnt expressions associated with it. File sectors.csv already comes with
+     * Takes sector watch list and uses prices for sectors to figure various parameters.
+     * The sector watch list must have P:delta P prcnt:delta P(5) prcnt expressions associated with it. File sectors.csv already comes with
      * the sectors and formulas in it. Please refer to the study README.md file on how how to import it.
      * Saves new array attribute for the study titled 'sector-table'.
      * Will throw StudyException if 4 past Studies are not stored in database.

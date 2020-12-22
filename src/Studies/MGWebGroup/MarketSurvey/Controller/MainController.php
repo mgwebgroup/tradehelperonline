@@ -10,6 +10,7 @@
 
 namespace App\Studies\MGWebGroup\MarketSurvey\Controller;
 
+use App\Service\ExpressionHandler\OHLCV\Calculator;
 use Doctrine\Common\Collections\Criteria;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,7 +20,7 @@ use Symfony\Component\Validator\Constraints\Date as DateConstraint;
 
 class MainController extends AbstractController
 {
-    public function index(Request $request, ValidatorInterface $validator)
+    public function index(Request $request, ValidatorInterface $validator, Calculator $calculator)
     {
         $dateString = $request->attributes->get('date');
 
@@ -49,35 +50,62 @@ class MainController extends AbstractController
             $survey = $study->getArrayAttributes()->matching($getMarketBreadth)->first()->getValue();
 
             $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
-            $score = $study->getFloatAttributes()->matching($getScore)->first()->getValue();
+            $scoreAttr = $study->getFloatAttributes()->matching($getScore)->first();
+            $score = $scoreAttr ? $scoreAttr->getValue() : 'N/A';
+
             $getScoreDelta = new Criteria(Criteria::expr()->eq('attribute', 'score-delta'));
-            $scoreDelta = $study->getFloatAttributes()->matching($getScoreDelta)->first()->getValue();
+            $scoreDeltaAttr = $study->getFloatAttributes()->matching($getScoreDelta)->first();
+            $scoreDelta = $scoreDeltaAttr ? $scoreDeltaAttr->getValue() : 'N/A';
 
             $getInsDBOBD = new Criteria(Criteria::expr()->eq('attribute', 'bobd-daily'));
             $getInsWkBOBD = new Criteria(Criteria::expr()->eq('attribute', 'bobd-weekly'));
             $getInsMoBOBD = new Criteria(Criteria::expr()->eq('attribute', 'bobd-monthly'));
-            $insDBOBD = $study->getArrayAttributes()->matching($getInsDBOBD)->first()->getValue();
-            $insWkBOBD = $study->getArrayAttributes()->matching($getInsWkBOBD)->first()->getValue();
-            $insMoBOBD = $study->getArrayAttributes()->matching($getInsMoBOBD)->first()->getValue();
+            $insDBOBDAttr = $study->getArrayAttributes()->matching($getInsDBOBD)->first();
+            $insDBOBD = $insDBOBDAttr ? $insDBOBDAttr->getValue() : ['count' => 0];
+            $insWkBOBDAttr = $study->getArrayAttributes()->matching($getInsWkBOBD)->first();
+            $insWkBOBD = $insWkBOBDAttr ? $insWkBOBDAttr->getValue() : ['count' => 0];
+            $insMoBOBDAttr = $study->getArrayAttributes()->matching($getInsMoBOBD)->first();
+            $insMoBOBD = $insMoBOBDAttr ? $insMoBOBDAttr->getValue() : ['count' => 0];
 
             $getASBOBD = new Criteria(Criteria::expr()->eq('attribute', 'as-bobd'));
-            $ASBOBD = $study->getArrayAttributes()->matching($getASBOBD)->first()->getValue();
+            $ASBOBDAttr = $study->getArrayAttributes()->matching($getASBOBD)->first();
+            $ASBOBD = $ASBOBDAttr ? $ASBOBDAttr->getValue() : ['count' => 0];
 
             $getScoreTableRolling = new Criteria(Criteria::expr()->eq('attribute', 'score-table-rolling'));
-            $scoreTableRolling = $study->getArrayAttributes()->matching($getScoreTableRolling)->first()->getValue();
-            $dateColumn = array_column($scoreTableRolling['table'], 'date');
-            array_multisort($dateColumn, SORT_ASC, $scoreTableRolling['table']);
+            $scoreTableRollingAttr = $study->getArrayAttributes()->matching($getScoreTableRolling)->first();
+            if ($scoreTableRollingAttr) {
+                $scoreTableRolling = $scoreTableRollingAttr->getValue();
+                $dateColumn = array_column($scoreTableRolling['table'], 'date');
+                array_multisort($dateColumn, SORT_ASC, $scoreTableRolling['table']);
+            } else {
+                $scoreTableRolling = [];
+            }
 
             $getScoreTableMTD = new Criteria(Criteria::expr()->eq('attribute', 'score-table-mtd'));
-            $scoreTableMTD = $study->getArrayAttributes()->matching($getScoreTableMTD)->first()->getValue();
-            $dateColumn = array_column($scoreTableMTD['table'], 'date');
-            array_multisort($dateColumn, SORT_ASC, $scoreTableMTD['table']);
+            $scoreTableMTDAttr = $study->getArrayAttributes()->matching($getScoreTableMTD)->first();
+            if ($scoreTableMTDAttr) {
+                $scoreTableMTD = $scoreTableMTDAttr->getValue();
+                $dateColumn = array_column($scoreTableMTD['table'], 'date');
+                array_multisort($dateColumn, SORT_ASC, $scoreTableMTD['table']);
+            } else {
+                $scoreTableMTD = [];
+            }
 
             $getSectorTable  = new Criteria(Criteria::expr()->eq('attribute', 'sector-table'));
-            $sectorTable = $study->getArrayAttributes()->matching($getSectorTable)->first()->getValue();
+            $sectorTableAttr = $study->getArrayAttributes()->matching($getSectorTable)->first();
+            if ($sectorTableAttr) {
+                $sectorTable = $sectorTableAttr->getValue();
+            } else {
+                $sectorTable = [];
+            }
 
             $getASList = new Criteria(Criteria::expr()->eq('name', 'AS'));
-            $ASList = $study->getWatchlists()->matching($getASList)->first()->getInstruments();
+            $ASWatchlist = $study->getWatchlists()->matching($getASList)->first();
+            if ($ASWatchlist) {
+                $ASWatchlist->update($calculator, $date);
+//                $calculatedFormulas = $ASWatchlist->getCalculatedFormulas();
+            }
+
 
             return $this->render('@MarketSurvey/main.html.twig', [
               'date' => $date,
@@ -91,7 +119,7 @@ class MainController extends AbstractController
               'score_table_rolling' => $scoreTableRolling,
               'score_table_mtd' => $scoreTableMTD,
               'sector_table' => $sectorTable,
-              'as_list' => $ASList,
+              'as_watchlist' => $ASWatchlist,
               'errors' => $errors
               ]
             );

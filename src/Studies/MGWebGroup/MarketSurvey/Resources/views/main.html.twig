@@ -94,29 +94,29 @@
                         <tr>
                             {% for i in 0..3 %}
                                 {% set expr_name = cycle(order_of_quartets, i) %}
-                                <td>{{ attribute(insmo_bobd.survey, expr_name)|length }}</td>
+                                <td>{{ insmo_bobd.survey is defined ? attribute(insmo_bobd.survey, expr_name)|length : 0 }}</td>
                             {% endfor %}
                             {% for i in 4..7 %}
                                 {% set expr_name = cycle(order_of_quartets, i) %}
-                                <td>{{ attribute(inswk_bobd.survey, expr_name)|length }}</td>
+                                <td>{{ inswk_bobd.survey is defined ? attribute(inswk_bobd.survey, expr_name)|length : 0 }}</td>
                             {% endfor %}
                             {% for i in 8..11 %}
                                 {% set expr_name = cycle(order_of_quartets, i) %}
-                                <td>{{ attribute(insd_bobd.survey, expr_name)|length }}</td>
+                                <td>{{ insd_bobd.survey is defined ? attribute(insd_bobd.survey, expr_name)|length : 0 }}</td>
                             {% endfor %}
                         </tr>
                         <tr>
                             {% for i in 0..3 %}
                                 {% set expr_name = cycle(order_of_quartets, i) %}
-                                <td>{{ (attribute(insmo_bobd.survey, expr_name)|length / insmo_bobd.count * 100)|number_format(2) ~ '%' }}</td>
+                                <td>{{ insmo_bobd.survey is defined ? (attribute(insmo_bobd.survey, expr_name)|length / insmo_bobd.count * 100)|number_format(2) ~ '%' : 'N/A' }}</td>
                             {% endfor %}
                             {% for i in 4..7 %}
                                 {% set expr_name = cycle(order_of_quartets, i) %}
-                                <td>{{ (attribute(inswk_bobd.survey, expr_name)|length / inswk_bobd.count * 100)|number_format(2) ~ '%' }}</td>
+                                <td>{{ inswk_bobd.survey is defined ? (attribute(inswk_bobd.survey, expr_name)|length / inswk_bobd.count * 100)|number_format(2) ~ '%' : 'N/A' }}</td>
                             {% endfor %}
                             {% for i in 8..11 %}
                                 {% set expr_name = cycle(order_of_quartets, i) %}
-                                <td>{{ (attribute(insd_bobd.survey, expr_name)|length / insd_bobd.count * 100)|number_format(2) ~ '%' }}</td>
+                                <td>{{ insd_bobd.survey is defined ? (attribute(insd_bobd.survey, expr_name)|length / insd_bobd.count * 100)|number_format(2) ~ '%' : 'N/A' }}</td>
                             {% endfor %}
                         </tr>
                         </tbody>
@@ -140,13 +140,13 @@
                         <tr>
                             {% for i in 0..11 %}
                                 {% set expr_name = cycle(order_of_quartets, i) %}
-                                <td>{{ attribute(as_bobd.survey, expr_name)|length }}</td>
+                                <td>{{ as_bobd.survey is defined ? attribute(as_bobd.survey, expr_name)|length : 0 }}</td>
                             {% endfor %}
                         </tr>
                         <tr>
                             {% for i in 0..11 %}
                                 {% set expr_name = cycle(order_of_quartets, i) %}
-                                <td>{{ (attribute(as_bobd.survey, expr_name)|length / as_bobd.count * 100)|number_format(2) ~ '%' }}</td>
+                                <td>{{ as_bobd.count > 0 ? (attribute(as_bobd.survey, expr_name)|length / as_bobd.count * 100)|number_format(2) ~ '%' : 'N/A' }}</td>
                             {% endfor %}
                         </tr>
                         </tbody>
@@ -165,43 +165,47 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {% for record in score_table_mtd.table %}
-                            <tr>
-                                <td>{{record.date|date('m/d/y')}}</td>
-                                {% set add_class = record.score == attribute(score_table_mtd.summary, 'score-max') ? 'table-success': null %}
-                                {% set add_class = record.score == attribute(score_table_mtd.summary, 'score-min') ? 'table-danger': add_class %}
-                                <td class="{{ add_class }}">{{record.score|number_format(2)}}</td><td>{{ attribute(record, 'score-std_div_qty')|number_format(2) }}</td>
-                                {% set add_class = record.delta == attribute(score_table_mtd.summary, 'delta-max') ? 'table-success': null %}
-                                {% set add_class = record.delta == attribute(score_table_mtd.summary, 'delta-min') ? 'table-danger': add_class %}
-                                <td class="{{ add_class }}">{{ record.delta|number_format(2) }}</td><td>{{ attribute(record, 'delta-std_div_qty')|number_format(2) }}</td>
-                                {% set add_class = attribute(record, 'delta-std_div_qty') > 1 or attribute(record, 'delta-std_div_qty') < -1 ? 'table-active' : null %}
-                                <td class="{{ add_class }}">{{ record.P|number_format(2) }}</td>
+                        {% if score_table_mtd.table is defined %}
+                            {% for record in score_table_mtd.table %}
+                                <tr>
+                                    <td>{{record.date|date('m/d/y')}}</td>
+                                    {% set add_class = record.score == attribute(score_table_mtd.summary, 'score-max') ? 'table-success': null %}
+                                    {% set add_class = record.score == attribute(score_table_mtd.summary, 'score-min') ? 'table-danger': add_class %}
+                                    <td class="{{ add_class }}">{{record.score|number_format(2)}}</td><td>{{ attribute(record, 'score-std_div_qty')|number_format(2) }}</td>
+                                    {% set add_class = record.delta == attribute(score_table_mtd.summary, 'delta-max') ? 'table-success': null %}
+                                    {% set add_class = record.delta == attribute(score_table_mtd.summary, 'delta-min') ? 'table-danger': add_class %}
+                                    <td class="{{ add_class }}">{{ record.delta|number_format(2) }}</td><td>{{ attribute(record, 'delta-std_div_qty')|number_format(2) }}</td>
+                                    {% set add_class = attribute(record, 'delta-std_div_qty') > 1 or attribute(record, 'delta-std_div_qty') < -1 ? 'table-active' : null %}
+                                    <td class="{{ add_class }}">{{ record.P|number_format(2) }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                        {% if score_table_mtd.summary is defined %}
+                            <tr class="table-info">
+                                <td>Avg</td><td>{{ attribute(score_table_mtd.summary, 'score-avg')|number_format(2) }}</td><td></td>
+                                <td>{{ attribute(score_table_mtd.summary, 'delta-avg')|number_format(2) }}</td><td></td><td>{{ attribute(score_table_mtd.summary, 'P-avg')|number_format(2) }}</td>
                             </tr>
-                        {% endfor %}
-                        <tr class="table-info">
-                            <td>Avg</td><td>{{ attribute(score_table_mtd.summary, 'score-avg')|number_format(2) }}</td><td></td>
-                            <td>{{ attribute(score_table_mtd.summary, 'delta-avg')|number_format(2) }}</td><td></td><td>{{ attribute(score_table_mtd.summary, 'P-avg')|number_format(2) }}</td>
-                        </tr>
-                        <tr>
-                            <td>Max</td><td>{{ attribute(score_table_mtd.summary, 'score-max')|number_format(2) }}</td><td></td>
-                            <td>{{ attribute(score_table_mtd.summary, 'delta-max')|number_format(2) }}</td><td></td><td></td>
-                        </tr>
-                        <tr>
-                            <td>Min</td><td>{{ attribute(score_table_mtd.summary, 'score-min')|number_format(2) }}</td><td></td>
-                            <td>{{ attribute(score_table_mtd.summary, 'delta-min')|number_format(2) }}</td><td></td><td></td>
-                        </tr>
-                        <tr>
-                            <td>Std Dev</td><td>{{ attribute(score_table_mtd.summary, 'score-std_div')|number_format(2) }}</td><td></td>
-                            <td>{{ attribute(score_table_mtd.summary, 'delta-std_div')|number_format(2) }}</td><td></td><td></td>
-                        </tr>
-                        <tr>
-                            <td>Days Pos</td><td>{{ attribute(score_table_mtd.summary, 'score-days_pos') }}</td><td></td>
-                            <td></td><td></td><td></td>
-                        </tr>
-                        <tr>
-                            <td>Days Neg</td><td>{{ attribute(score_table_mtd.summary, 'score-days_neg') }}</td><td></td>
-                            <td></td><td></td><td></td>
-                        </tr>
+                            <tr>
+                                <td>Max</td><td>{{ attribute(score_table_mtd.summary, 'score-max')|number_format(2) }}</td><td></td>
+                                <td>{{ attribute(score_table_mtd.summary, 'delta-max')|number_format(2) }}</td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Min</td><td>{{ attribute(score_table_mtd.summary, 'score-min')|number_format(2) }}</td><td></td>
+                                <td>{{ attribute(score_table_mtd.summary, 'delta-min')|number_format(2) }}</td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Std Dev</td><td>{{ attribute(score_table_mtd.summary, 'score-std_div')|number_format(2) }}</td><td></td>
+                                <td>{{ attribute(score_table_mtd.summary, 'delta-std_div')|number_format(2) }}</td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Days Pos</td><td>{{ attribute(score_table_mtd.summary, 'score-days_pos') }}</td><td></td>
+                                <td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Days Neg</td><td>{{ attribute(score_table_mtd.summary, 'score-days_neg') }}</td><td></td>
+                                <td></td><td></td><td></td>
+                            </tr>
+                        {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -214,43 +218,47 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {% for record in score_table_rolling.table %}
-                            <tr>
-                                <td>{{record.date|date('m/d/y')}}</td>
-                                {% set add_class = record.score == attribute(score_table_rolling.summary, 'score-max') ? 'table-success': null %}
-                                {% set add_class = record.score == attribute(score_table_rolling.summary, 'score-min') ? 'table-danger': add_class %}
-                                <td class="{{ add_class }}">{{record.score|number_format(2)}}</td><td>{{ attribute(record, 'score-std_div_qty')|number_format(2) }}</td>
-                                {% set add_class = record.delta == attribute(score_table_rolling.summary, 'delta-max') ? 'table-success': null %}
-                                {% set add_class = record.delta == attribute(score_table_rolling.summary, 'delta-min') ? 'table-danger': add_class %}
-                                <td class="{{ add_class }}">{{ record.delta|number_format(2) }}</td><td>{{ attribute(record, 'delta-std_div_qty')|number_format(2) }}</td>
-                                {% set add_class = attribute(record, 'delta-std_div_qty') > 1 or attribute(record, 'delta-std_div_qty') < -1 ? 'table-active' : null %}
-                                <td class="{{ add_class }}">{{ record.P|number_format(2) }}</td>
+                        {% if score_table_rolling.table is defined %}
+                            {% for record in score_table_rolling.table %}
+                                <tr>
+                                    <td>{{record.date|date('m/d/y')}}</td>
+                                    {% set add_class = record.score == attribute(score_table_rolling.summary, 'score-max') ? 'table-success': null %}
+                                    {% set add_class = record.score == attribute(score_table_rolling.summary, 'score-min') ? 'table-danger': add_class %}
+                                    <td class="{{ add_class }}">{{record.score|number_format(2)}}</td><td>{{ attribute(record, 'score-std_div_qty')|number_format(2) }}</td>
+                                    {% set add_class = record.delta == attribute(score_table_rolling.summary, 'delta-max') ? 'table-success': null %}
+                                    {% set add_class = record.delta == attribute(score_table_rolling.summary, 'delta-min') ? 'table-danger': add_class %}
+                                    <td class="{{ add_class }}">{{ record.delta|number_format(2) }}</td><td>{{ attribute(record, 'delta-std_div_qty')|number_format(2) }}</td>
+                                    {% set add_class = attribute(record, 'delta-std_div_qty') > 1 or attribute(record, 'delta-std_div_qty') < -1 ? 'table-active' : null %}
+                                    <td class="{{ add_class }}">{{ record.P|number_format(2) }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                        {% if score_table_rolling.summary is defined %}
+                            <tr class="table-info">
+                                <td>Avg</td><td>{{ attribute(score_table_rolling.summary, 'score-avg')|number_format(2) }}</td><td></td>
+                                <td>{{ attribute(score_table_rolling.summary, 'delta-avg')|number_format(2) }}</td><td></td><td>{{ attribute(score_table_rolling.summary, 'P-avg')|number_format(2) }}</td>
                             </tr>
-                        {% endfor %}
-                        <tr class="table-info">
-                            <td>Avg</td><td>{{ attribute(score_table_rolling.summary, 'score-avg')|number_format(2) }}</td><td></td>
-                            <td>{{ attribute(score_table_rolling.summary, 'delta-avg')|number_format(2) }}</td><td></td><td>{{ attribute(score_table_rolling.summary, 'P-avg')|number_format(2) }}</td>
-                        </tr>
-                        <tr>
-                            <td>Max</td><td>{{ attribute(score_table_rolling.summary, 'score-max')|number_format(2) }}</td><td></td>
-                            <td>{{ attribute(score_table_rolling.summary, 'delta-max')|number_format(2) }}</td><td></td><td></td>
-                        </tr>
-                        <tr>
-                            <td>Min</td><td>{{ attribute(score_table_rolling.summary, 'score-min')|number_format(2) }}</td><td></td>
-                            <td>{{ attribute(score_table_rolling.summary, 'delta-min')|number_format(2) }}</td><td></td><td></td>
-                        </tr>
-                        <tr>
-                            <td>Std Dev</td><td>{{ attribute(score_table_rolling.summary, 'score-std_div')|number_format(2) }}</td><td></td>
-                            <td>{{ attribute(score_table_rolling.summary, 'delta-std_div')|number_format(2) }}</td><td></td><td></td>
-                        </tr>
-                        <tr>
-                            <td>Days Pos</td><td>{{ attribute(score_table_rolling.summary, 'score-days_pos') }}</td><td></td>
-                            <td></td><td></td><td></td>
-                        </tr>
-                        <tr>
-                            <td>Days Neg</td><td>{{ attribute(score_table_rolling.summary, 'score-days_neg') }}</td><td></td>
-                            <td></td><td></td><td></td>
-                        </tr>
+                            <tr>
+                                <td>Max</td><td>{{ attribute(score_table_rolling.summary, 'score-max')|number_format(2) }}</td><td></td>
+                                <td>{{ attribute(score_table_rolling.summary, 'delta-max')|number_format(2) }}</td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Min</td><td>{{ attribute(score_table_rolling.summary, 'score-min')|number_format(2) }}</td><td></td>
+                                <td>{{ attribute(score_table_rolling.summary, 'delta-min')|number_format(2) }}</td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Std Dev</td><td>{{ attribute(score_table_rolling.summary, 'score-std_div')|number_format(2) }}</td><td></td>
+                                <td>{{ attribute(score_table_rolling.summary, 'delta-std_div')|number_format(2) }}</td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Days Pos</td><td>{{ attribute(score_table_rolling.summary, 'score-days_pos') }}</td><td></td>
+                                <td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Days Neg</td><td>{{ attribute(score_table_rolling.summary, 'score-days_neg') }}</td><td></td>
+                                <td></td><td></td><td></td>
+                            </tr>
+                        {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -294,53 +302,57 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {% for sector, record in sector_table.table %}
-                            <tr>
-                                <td>{{loop.index}}</td>
-                                <td>{{ sector }}</td>
-                                <td>{{ '$' ~ record.P|number_format(2) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'delta P prcnt') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'delta P(5) prcnt') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'Wk delta P') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'Mo delta P') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'Qrtr delta P') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(record, 'Yr delta P') }) }}</td>
-                                {% set hist_pos_score = attribute(record, 'Hist Pos Score') %}
-                                <td scope="col">{{ attribute(hist_pos_score, 'T-4') }}</td>
-                                <td scope="col">{{ attribute(hist_pos_score, 'T-3') }}</td>
-                                <td scope="col">{{ attribute(hist_pos_score, 'T-2') }}</td>
-                                <td scope="col">{{ attribute(hist_pos_score, 'T-1') }}</td>
-                                <td scope="col">{{ attribute(hist_pos_score, 'T') }}</td>
-                                <td>{{ attribute(record, 'Pos Score Sum')|number_format(0) }}</td>
-                                <td>{{ attribute(record, 'Pos Score Grad')|number_format(0) }}</td>
+                        {% if sector_table.table is defined %}
+                            {% for sector, record in sector_table.table %}
+                                <tr>
+                                    <td>{{loop.index}}</td>
+                                    <td>{{ sector }}</td>
+                                    <td>{{ '$' ~ record.P|number_format(2) }}</td>
+                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'delta P prcnt') }) }}</td>
+                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'delta P(5) prcnt') }) }}</td>
+                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'Wk delta P') }) }}</td>
+                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'Mo delta P') }) }}</td>
+                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'Qrtr delta P') }) }}</td>
+                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'Yr delta P') }) }}</td>
+                                    {% set hist_pos_score = attribute(record, 'Hist Pos Score') %}
+                                    <td scope="col">{{ attribute(hist_pos_score, 'T-4') }}</td>
+                                    <td scope="col">{{ attribute(hist_pos_score, 'T-3') }}</td>
+                                    <td scope="col">{{ attribute(hist_pos_score, 'T-2') }}</td>
+                                    <td scope="col">{{ attribute(hist_pos_score, 'T-1') }}</td>
+                                    <td scope="col">{{ attribute(hist_pos_score, 'T') }}</td>
+                                    <td>{{ attribute(record, 'Pos Score Sum')|number_format(0) }}</td>
+                                    <td>{{ attribute(record, 'Pos Score Grad')|number_format(0) }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                        {% if sector_table.summary is defined %}
+                            {% set sector_table_summary = sector_table.summary %}
+                            <tr class="table-info">
+                                <td>Sum:</td><td></td><td></td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P prcnt') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P(5) prcnt') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Wk delta P') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Mo delta P') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Qrtr delta P') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Yr delta P') }) }}</td>
+                                <td scope="col"></td>
+                                <td scope="col"></td>
+                                <td scope="col"></td>
+                                <td scope="col"></td>
+                                <td scope="col"></td>
+                                <td></td>
+                                <td></td>
                             </tr>
-                        {% endfor %}
-                        {% set sector_table_summary = sector_table.summary %}
-                        <tr class="table-info">
-                            <td>Sum:</td><td></td><td></td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P prcnt') }) }}</td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P(5) prcnt') }) }}</td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Wk delta P') }) }}</td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Mo delta P') }) }}</td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Qrtr delta P') }) }}</td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Yr delta P') }) }}</td>
-                            <td scope="col"></td>
-                            <td scope="col"></td>
-                            <td scope="col"></td>
-                            <td scope="col"></td>
-                            <td scope="col"></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        {% set up_down_tick = attribute(sector_table_summary, 'up_down_tick') %}
-                        <tr>
-                            <td>Up/Down Tick:</td><td></td><td></td><td></td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'delta P(5) prcnt') }) }}</td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Wk delta P') }) }}</td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Mo delta P') }) }}</td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Qrtr delta P') }) }}</td>
-                            <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Yr delta P') }) }}</td>
-                        </tr>
+                            {% set up_down_tick = attribute(sector_table_summary, 'up_down_tick') %}
+                            <tr>
+                                <td>Up/Down Tick:</td><td></td><td></td><td></td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'delta P(5) prcnt') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Wk delta P') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Mo delta P') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Qrtr delta P') }) }}</td>
+                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Yr delta P') }) }}</td>
+                            </tr>
+                        {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -353,13 +365,25 @@
                     <table class="table table-sm">
                         <thead>
                         <tr>
-                            <th>#</th><th>Symbol</th><th>Name</th>
+                            <th>#</th><th>P</th><th>dP, %</th><th>Symbol</th><th>Name</th>
                         </tr>
                         </thead>
                         <tbody>
-                        {% for instrument in as_list %}
-                            <tr><td>{{ loop.index }}</td><td>{{instrument.symbol}}</td><td>{{instrument.name}}</td></tr>
-                        {% endfor %}
+                        {% if as_watchlist %}
+                            {% set calculated_formulas = as_watchlist.calculatedFormulas %}
+                            {% for instrument in as_watchlist.instruments %}
+                                {% set symbol = instrument.symbol %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ calculated_formulas[symbol].P is defined ? include('formatters/math.twig', { value: attribute(calculated_formulas[symbol], 'P'), prefix: '$' }) : 'N/A' }}</td>
+                                    <td>{{ attribute(calculated_formulas[symbol], 'delta P prcnt') is defined ? include('formatters/math.twig', {value: attribute(calculated_formulas[symbol], 'delta P prcnt'), positive: 'text-success'}) : 'N/A' }}</td>
+                                    <td>{{symbol}}</td>
+                                    <td>{{instrument.name}}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td></td><td>N/A</td><td>N/A</td></tr>
+                        {% endif %}
                         </tbody>
                     </table>
                 </div>
