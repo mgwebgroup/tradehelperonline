@@ -43,7 +43,7 @@ class ChartBuilderTest extends KernelTestCase
     {
         $date = new \DateTime('2020-05-15');
         $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
-        $FQFN = sprintf('public/%s_%s', $this->instrument->getSymbol(), $date->format('Ymd'));
+        $FQFN = sprintf('public/%s_%s.png', $this->instrument->getSymbol(), $date->format('Ymd'));
         $this->SUT->buildMedium($this->instrument, $date, $interval, $FQFN);
         $this->assertFileExists($FQFN);
         unlink($FQFN);

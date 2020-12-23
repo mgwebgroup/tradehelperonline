@@ -96,9 +96,10 @@ class Style implements StyleInterface
     /**
      * @param string $name
      */
-    public function __construct($name='default')
+    public function __construct( $name = 'default' )
     {
         $this->name = $name;
+
         $this->x_axis = [
           'show' => TRUE,
           'min' => 0, 'max' => 300, 'upp' => 0,

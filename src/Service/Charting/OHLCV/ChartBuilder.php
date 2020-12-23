@@ -76,7 +76,7 @@ class ChartBuilder implements ChartBuilderInterface
         }
 
         if ($FQFN) {
-            $style->chart_path = $FQFN;
+            $style->chart_path .= '/'.$FQFN;
         }
 
         $chart = $this->chartFactory::create($style, $history);

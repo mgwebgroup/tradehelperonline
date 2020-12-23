@@ -72,6 +72,8 @@ class ChartTest extends KernelTestCase
 
         $chart = ChartFactory::create($style, $history);
         $chart->save_chart(['path' => 'public/candle_shapes.png']);
+
+        $this->assertFileExists('public/candle_shapes.png');
     }
 
 }
