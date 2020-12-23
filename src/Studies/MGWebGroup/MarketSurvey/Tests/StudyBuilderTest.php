@@ -6,6 +6,7 @@ use App\Entity\Instrument;
 use App\Entity\Study\ArrayAttribute;
 use App\Entity\Watchlist;
 use App\Entity\Study\Study;
+use App\Service\Charting\OHLCV\StyleLibrary;
 use App\Studies\MGWebGroup\MarketSurvey\StudyBuilder;
 use League\Csv\Reader;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -21,6 +22,7 @@ class StudyBuilderTest extends KernelTestCase
 
     const WATCHLIST_NAME = 'watchlist_test';
     const STUDY_NAME = 'test_market_study';
+    const SECTORS_WATCHLIST = 'sectors_test';
 
     /**
      * @var
@@ -501,11 +503,27 @@ class StudyBuilderTest extends KernelTestCase
 
     public function testBuildSectorTable()
     {
-        $watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => 'sectors_test']);
+        $watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => self::SECTORS_WATCHLIST]);
         $date = $this->SUT->getStudy()->getDate();
 //        $date = new \DateTime('2020-05-11');
         $this->SUT->buildSectorTable($watchlist, $date);
 
 //        fwrite(STDOUT, $date->format('Y-m-d'));
+    }
+
+    public function testBuildCharts()
+    {
+        $watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => self::SECTORS_WATCHLIST]);
+
+        $styleLibrary = self::$container->get(StyleLibrary::class);
+        $style = $styleLibrary->getStyle('medium');
+
+        $this->SUT->buildCharts($watchlist, $style);
+
+        $date = $this->SUT->getStudy()->getDate();
+        foreach ($watchlist->getInstruments() as $instrument) {
+            $fileName = sprintf('%s_%s.png', $instrument->getSymbol(), $date->format('Ymd'));
+            $this->assertFileExists('public/'.$fileName);
+        }
     }
 }

@@ -10,6 +10,7 @@ use App\Exception\PriceHistoryException;
 use App\Repository\StudyArrayAttributeRepository;
 use App\Repository\StudyFloatAttributeRepository;
 use App\Repository\WatchlistRepository;
+use App\Service\Charting\OHLCV\ChartFactory;
 use App\Service\Exchange\Equities\TradingCalendar;
 use App\Service\Exchange\MonthlyIterator;
 use App\Service\Exchange\WeeklyIterator;
@@ -277,6 +278,7 @@ class StudyBuilder
      * @param App\Entity\Study\Study $study past study which has Inside Bar watch lists.
      * @param DateTime $effectiveDate date for which to run expressions on Inside Bar watch lists
      * @return StudyBuilder
+     * @throws StudyException
      */
     public function figureInsideBarBOBD($study, $effectiveDate)
     {
@@ -321,6 +323,7 @@ class StudyBuilder
      * @param App\Entity\Study\Study $study past study which has Actionable Symbols watch list.
      * @param DateTime $effectiveDate date for which to run expressions on AS watch list
      * @return StudyBuilder
+     * @throws StudyException
      */
     public function figureASBOBD($study, $effectiveDate)
     {
@@ -588,7 +591,6 @@ class StudyBuilder
         $date = clone $this->study->getDate();
 
         $studyParams = $this->getScoreTableParams($this->study, $SPY, $interval);
-//        $studyParams = ['score' => 238.75, 'delta' => -51.75, 'P' => 286.28];
         $studyParams['date'] = $date;
         $scoreTableMTD['table'][] = $studyParams;
 
@@ -755,6 +757,60 @@ class StudyBuilder
         }
 
         StudyArrayAttributeRepository::createArrayAttr($this->study, 'sector-table', $sectorTable);
+
+        return $this;
+    }
+
+    /**
+     * Builds charts for symbols in watchlist using same style. Saves all charts to disk. Chart files have names
+     * similar to: LIN_20200515.png
+     * @param Watchlist $watchlist
+     * @param App\Service\Charting\StyleInterface $style
+     * @return StudyBuilder
+     * @throws PriceHistoryException
+     * @throws StudyException
+     * @throws \App\Exception\ChartException
+     */
+    public function buildCharts($watchlist, $style)
+    {
+        $instruments = $watchlist->getInstruments();
+        $studyDate = $this->getStudy()->getDate();
+
+        foreach ($instruments as $instrument) {
+            $this->tradeDayIterator->getInnerIterator()->setStartDate($studyDate)->setDirection(-1);
+            $offset = 100;
+            $limitIterator = new \LimitIterator($this->tradeDayIterator, $offset, 1);
+            $limitIterator->rewind();
+            $fromDate = $limitIterator->current();
+            $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
+            $history = $this->em->getRepository(History::class)
+              ->retrieveHistory($instrument, $interval, $fromDate, $studyDate);
+            if (!$history) {
+                throw new StudyException(
+                  sprintf('Could not retrieve price history from %s through %s for daily interval for instrument %s',
+                          $fromDate->format('Y-m-d'), $studyDate->format('Y-m-d'), $instrument->getSymbol())
+                );
+            }
+
+            $style->categories = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $history);
+            $keys = array_keys($history);
+            $lastPriceHistoryKey = array_pop($keys);
+            $this->tradeDayIterator->getInnerIterator()->setStartDate($history[$lastPriceHistoryKey]->getTimeStamp())
+              ->setDirection(1);
+            $this->tradeDayIterator->rewind();
+            $keys = array_keys($style->categories);
+            $key = array_pop($keys);
+
+            while ($key <= $style->x_axis['max']) {
+                $style->categories[$key] = $this->tradeDayIterator->current()->format('m/d');
+                $this->tradeDayIterator->next();
+                $key++;
+            }
+
+            $style->chart_path = sprintf('public/%s_%s.png', $instrument->getSymbol(), $studyDate->format('Ymd'));
+            $chart = ChartFactory::create($style, $history);
+            $chart->save_chart();
+        }
 
         return $this;
     }
