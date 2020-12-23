@@ -23,3 +23,4 @@ parameters:
       Mo Bearish Eng: -2
       D Hammer & Up: 3.75
       D Shtng Star & Down: -3.75
+  chart-path: 'public/charts'

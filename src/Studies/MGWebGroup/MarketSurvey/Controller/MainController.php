@@ -11,15 +11,17 @@
 namespace App\Studies\MGWebGroup\MarketSurvey\Controller;
 
 use App\Entity\OHLCV\History;
-use App\Service\Charting\OHLCV\ChartFactory;
+use App\Service\Charting\ChartBuilderInterface;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
-use App\Studies\MGWebGroup\MarketSurvey\Exception\StudyException;
 use Doctrine\Common\Collections\Criteria;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Entity\Study\Study;
+use App\Entity\Instrument;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\Constraints\Date as DateConstraint;
+
 
 class MainController extends AbstractController
 {
@@ -106,7 +108,6 @@ class MainController extends AbstractController
             $ASWatchlist = $study->getWatchlists()->matching($getASList)->first();
             if ($ASWatchlist) {
                 $ASWatchlist->update($calculator, $date);
-//                $calculatedFormulas = $ASWatchlist->getCalculatedFormulas();
             }
 
 
@@ -123,7 +124,6 @@ class MainController extends AbstractController
               'score_table_mtd' => $scoreTableMTD,
               'sector_table' => $sectorTable,
               'as_watchlist' => $ASWatchlist,
-              'errors' => $errors
               ]
             );
 
@@ -132,8 +132,28 @@ class MainController extends AbstractController
         }
     }
 
-    public function chartWindow(Request $request)
+    public function chartWindow(Request $request, ValidatorInterface $validator, Filesystem $filesystem,
+      ChartBuilderInterface $chartBuilder)
     {
-
+        $errors = [];
+        $dateString = $request->attributes->get('date');
+        $violations = $validator->validate($dateString, new DateConstraint());
+        if ($violations->count() > 0) {
+            // formulate errors array here
+            // ...
+        } else {
+            $date = new \DateTime($dateString);
+        }
+        $symbol = $request->attributes->get('symbol');
+        $instrument = $this->getDoctrine()->getRepository(Instrument::class)->findOneBy(['symbol' => $symbol]);
+        if (empty($instrument)) {
+            $errors[] = sprintf('Could not find instrument for symbol `%s`', $symbol);
+        }
+        $chartPath = trim($this->getParameter('chart-path'), '/');
+        $chartPathAndName = sprintf('%s/%s_%s.png', $chartPath, $instrument->getSymbol(), $date->format('Ymd'));
+        if (!$filesystem->exists(realpath('../'.$chartPathAndName))) {
+            $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
+            $chartBuilder->buildMedium($instrument, $date, $interval, $chartPathAndName);
+        }
     }
 }
