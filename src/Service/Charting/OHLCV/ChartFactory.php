@@ -21,11 +21,11 @@ class ChartFactory
 {
     /**
      * @param Style $style
-     * @param OHLCVHistory[]
+     * @param array $data OHLCVHistory[]
      * @return App\Service\Charting\OHLCV\Chart $chart
      * @throws \App\Exception\ChartException
      */
-    public static function create(Style $style, $history)
+    public static function create(Style $style, array $data)
     {
         $canvas = [
           'path' => $style->chart_path,
@@ -38,10 +38,10 @@ class ChartFactory
           'chart_background' => 'white',
         ];
 
-        $open = array_map(function($p) { return $p->getOpen(); }, $history);
-        $high = array_map(function($p) { return $p->getHigh(); }, $history);
-        $low = array_map(function($p) { return $p->getLow(); }, $history);
-        $close = array_map(function($p) { return $p->getClose(); }, $history);
+        $open = array_map(function($p) { return $p->getOpen(); }, $data);
+        $high = array_map(function($p) { return $p->getHigh(); }, $data);
+        $low = array_map(function($p) { return $p->getLow(); }, $data);
+        $close = array_map(function($p) { return $p->getClose(); }, $data);
 
         $x_axis = $style->x_axis;
 
@@ -49,7 +49,7 @@ class ChartFactory
         if (!empty($style->categories)) {
             $x_axis['categories'] = $style->categories;
         } else {
-            $x_axis['categories'] = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $history);
+            $x_axis['categories'] = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $data);
         }
 
         $y_axis = $style->y_axis;

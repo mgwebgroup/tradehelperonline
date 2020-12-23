@@ -56,9 +56,13 @@ class ChartTest extends KernelTestCase
         $history = $OHLCVHistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
 
         $style = $this->styleLibrary->getStyle('default');
+        $style->chart_path .= '/public/default_chart.png';
 
         $chart = ChartFactory::create($style, $history);
         $chart->save_chart();
+
+        $this->assertFileExists('public/default_chart.png');
+        unlink('public/default_chart.png');
     }
 
     public function testSmallStyle10()
@@ -78,6 +82,7 @@ class ChartTest extends KernelTestCase
         $history = $HistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
 
         $style = $this->styleLibrary->getStyle('small');
+        $style->chart_path .= '/public/small_chart.png';
         $style->symbol = $this->instrument->getSymbol();
         $style->categories = array_map(function($p) { return $p->getTimestamp()->format('d'); }, $history);
 
@@ -98,6 +103,9 @@ class ChartTest extends KernelTestCase
 
         $chart = ChartFactory::create($style, $history);
         $chart->save_chart();
+
+        $this->assertFileExists('public/small_chart.png');
+        unlink('public/small_chart.png');
     }
 
     public function testMediumStyle10()
@@ -117,6 +125,7 @@ class ChartTest extends KernelTestCase
         $history = $historyRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
 
         $style = $this->styleLibrary->getStyle('medium');
+        $style->chart_path .= '/public/medium_chart.png';
         $style->symbol = $this->instrument->getSymbol();
         $style->categories = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $history);
 
@@ -144,6 +153,9 @@ class ChartTest extends KernelTestCase
           'font_size' => '18'
         ]);
         $chart->save_chart();
+
+        $this->assertFileExists('public/medium_chart.png');
+        unlink('public/medium_chart.png');
     }
 
     public function testMediumStyle20()
@@ -163,6 +175,7 @@ class ChartTest extends KernelTestCase
         $history = $OHLCVHistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
 
         $style = $this->styleLibrary->getStyle('medium_b&b');
+        $style->chart_path .= '/public/medium_chart.png';
         $style->symbol = $this->instrument->getSymbol();
         $style->categories = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $history);
 
@@ -189,5 +202,8 @@ class ChartTest extends KernelTestCase
         }
 
         $chart->save_chart();
+
+        $this->assertFileExists('public/medium_chart.png');
+        unlink('public/medium_chart.png');
     }
 }

@@ -34,6 +34,8 @@ services:
   App\Service\Charting\OHLCV\StyleLibrary:
     public: true
     autowire: true
+    arguments:
+      $projectRootDir: '%kernel.project_dir%'
   App\Service\Watchlist\Factory:
     public: true
     autowire: true

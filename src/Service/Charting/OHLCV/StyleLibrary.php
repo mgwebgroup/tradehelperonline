@@ -19,9 +19,10 @@ use App\Service\Charting\StyleLibraryManager;
  */
 class StyleLibrary extends StyleLibraryManager
 {
-    public function __construct()
+    public function __construct(string $projectRootDir)
     {
         $default = new Style();
+        $default->chart_path = $projectRootDir;
         $this->addStyle($default);
 
         $style = new Style('small');
@@ -35,7 +36,7 @@ class StyleLibrary extends StyleLibraryManager
         $style->y_axis['major_tick_size'] = 2;
         $style->y_axis['minor_tick_size'] = 0;
         $style->y_axis['precision'] = 0;
-        $style->chart_path = 'public/chart_small.png';
+        $style->chart_path = $projectRootDir;
         $style->percent_chart_area = 70;
         $style->x_axis['min'] = -1;
         $style->x_axis['max'] = 55;
@@ -47,6 +48,7 @@ class StyleLibrary extends StyleLibraryManager
         $style->x_axis['minor_tick_size'] = 0;
         $style->x_axis['print_offset_major'] = 14;
         $style->x_axis['show_major_grid'] = FALSE;
+        $style->font = $projectRootDir.'/'.$style->font;
         $this->addStyle($style);
 
         $style = new Style('medium');
@@ -60,7 +62,7 @@ class StyleLibrary extends StyleLibraryManager
         $style->y_axis['major_tick_size'] = 4;
         $style->y_axis['minor_tick_size'] = 0;
         $style->y_axis['precision'] = 0;
-        $style->chart_path = 'public/chart_medium.png';
+        $style->chart_path = $projectRootDir;
         $style->percent_chart_area = 70;
         $style->x_axis['min'] = -1;
         $style->x_axis['max'] = 105;
@@ -72,6 +74,7 @@ class StyleLibrary extends StyleLibraryManager
         $style->x_axis['minor_tick_size'] = 0;
         $style->x_axis['print_offset_major'] = 32;
         $style->x_axis['show_major_grid'] = FALSE;
+        $style->font = $projectRootDir.'/'.$style->font;
         $this->addStyle($style);
 
         $style = new Style('medium_b&b');
@@ -85,7 +88,7 @@ class StyleLibrary extends StyleLibraryManager
         $style->y_axis['major_tick_size'] = 4;
         $style->y_axis['minor_tick_size'] = 0;
         $style->y_axis['precision'] = 0;
-        $style->chart_path = 'public/chart_medium_b&b.png';
+        $style->chart_path = $projectRootDir;
         $style->percent_chart_area = 70;
         $style->x_axis['min'] = -1;
         $style->x_axis['max'] = 105;
@@ -99,6 +102,7 @@ class StyleLibrary extends StyleLibraryManager
         $style->x_axis['show_major_grid'] = FALSE;
         $style->color_up = 'blue';
         $style->color_down = 'black';
+        $style->font = $projectRootDir.'/'.$style->font;
         $this->addStyle($style);
     }
 }

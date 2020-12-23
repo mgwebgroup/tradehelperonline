@@ -216,7 +216,7 @@ class Chart
         if ( isset( $args[0]['width'] ) && is_numeric( $args[0]['width'] ) && $args[0]['width'] > 0 ) $this->canvas['width'] = (int) $args[0]['width'];
         if ( isset( $args[0]['height'] ) && is_numeric( $args[0]['height'] ) && $args[0]['height'] > 0 ) $this->canvas['height'] = (int) $args[0]['height'];
         if ( isset( $args[0]['symbol'] ) && is_string( $args[0]['symbol'] ) && strlen( $args[0]['symbol'] ) <= 10 && ctype_alnum( $args[0]['symbol'] ) ) $this->canvas['symbol'] = $args[0]['symbol'];
-        $this->canvas['ttf_font'] = realpath( $this->canvas['ttf_font'] );
+        $this->canvas['ttf_font'] = isset($args[0]['ttf_font']) ? realpath($args[0]['ttf_font']) : realpath( $this->canvas['ttf_font'] );
         if ( !is_file( $this->canvas['ttf_font'] ) ) throw new ChartException( $this->errors['102'] );
         if ( isset( $args[0]['ttf_font'] ) && is_file( $args[0]['ttf_font'] ) ) $this->canvas['ttf_font'] = $args[0]['ttf_font'];
         if ( isset( $args[0]['percent_chart_area'] ) && $args[0]['percent_chart_area'] <= 100 && $args[0]['percent_chart_area'] > 0 ) $this->canvas['percent_chart_area'] = $args[0]['percent_chart_area'];
