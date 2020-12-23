@@ -40,4 +40,7 @@ services:
   App\Studies\MGWebGroup\MarketSurvey\StudyBuilder:
     public: true
     autowire: true
+  App\Service\Charting\OHLCV\ChartBuilder:
+    public: true
+    autowire: true
 
