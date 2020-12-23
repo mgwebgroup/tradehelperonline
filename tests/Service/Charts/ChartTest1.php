@@ -64,7 +64,7 @@ class ChartTest extends KernelTestCase
     public function testSmallStyle10()
     {
         $interval = new \DateInterval('P1D');
-        $OHLCVHistoryRepository = $this->em->getRepository(OHLCVHistory::class);
+        $HistoryRepository = $this->em->getRepository(History::class);
 
         $tradingCalendar  = $this->catalog->getExchangeFor($this->instrument)->getTradingCalendar();
         $today = new \DateTime('2020-05-16');
@@ -75,7 +75,7 @@ class ChartTest extends KernelTestCase
         $fromDate = $limitIterator->current();
 
         $priceProvider = null;
-        $history = $OHLCVHistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
+        $history = $HistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
 
         $style = $this->styleLibrary->getStyle('small');
         $style->symbol = $this->instrument->getSymbol();
@@ -103,7 +103,7 @@ class ChartTest extends KernelTestCase
     public function testMediumStyle10()
     {
         $interval = new \DateInterval('P1D');
-        $OHLCVHistoryRepository = $this->em->getRepository(OHLCVHistory::class);
+        $historyRepository = $this->em->getRepository(History::class);
 
         $tradingCalendar  = $this->catalog->getExchangeFor($this->instrument)->getTradingCalendar();
         $today = new \DateTime('2020-05-16');
@@ -114,7 +114,7 @@ class ChartTest extends KernelTestCase
         $fromDate = $limitIterator->current();
 
         $priceProvider = null;
-        $history = $OHLCVHistoryRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
+        $history = $historyRepository->retrieveHistory($this->instrument, $interval, $fromDate, $today, $priceProvider);
 
         $style = $this->styleLibrary->getStyle('medium');
         $style->symbol = $this->instrument->getSymbol();
@@ -136,13 +136,20 @@ class ChartTest extends KernelTestCase
         }
 
         $chart = ChartFactory::create($style, $history);
+        $chart->place_text([
+          'sx' => 0,
+          'sy' => round($chart->y_axis[0]['max'] * 0.99, 0),
+          'text' => $this->instrument->getSymbol(),
+          'color' => 'gray',
+          'font_size' => '18'
+        ]);
         $chart->save_chart();
     }
 
     public function testMediumStyle20()
     {
         $interval = new \DateInterval('P1D');
-        $OHLCVHistoryRepository = $this->em->getRepository(OHLCVHistory::class);
+        $OHLCVHistoryRepository = $this->em->getRepository(History::class);
 
         $tradingCalendar  = $this->catalog->getExchangeFor($this->instrument)->getTradingCalendar();
         $today = new \DateTime('2020-05-16');

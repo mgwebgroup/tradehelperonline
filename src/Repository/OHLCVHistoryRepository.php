@@ -70,6 +70,7 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
      * @param DateTime $toDate | null
      * @param DateInterval entries for which time period supposed to be deleted
      * @param string $provider if no provider supplied price records for all providers will be removed
+     * @throws PriceHistoryException
      */
     public function deleteHistory($instrument, $fromDate = null, $toDate = null, $interval, $provider = null)
     {
@@ -85,15 +86,10 @@ class OHLCVHistoryRepository extends ServiceEntityRepository
         ;
 
         if ($provider) $qb->andWhere('o.provider = :provider')->setParameter('provider', $provider);
-
         if ($fromDate) $qb->andWhere('o.timestamp >= :fromDate')->setParameter('fromDate', $fromDate);
-
         if ($toDate) $qb->andWhere('o.timestamp <= :toDate')->setParameter('toDate', $toDate);
 
         $query = $qb->getQuery();
-
-        // $result = $query->getResult();
-        // var_dump($result);
         $query->execute();
     }
 }
