@@ -10,7 +10,10 @@
 
 namespace App\Studies\MGWebGroup\MarketSurvey\Controller;
 
+use App\Entity\OHLCV\History;
+use App\Service\Charting\OHLCV\ChartFactory;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
+use App\Studies\MGWebGroup\MarketSurvey\Exception\StudyException;
 use Doctrine\Common\Collections\Criteria;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -127,5 +130,10 @@ class MainController extends AbstractController
         } else {
             return $this->render('@MarketSurvey/main.html.twig', ['date' => $date, 'errors' => $errors]);
         }
+    }
+
+    public function chartWindow(Request $request)
+    {
+
     }
 }
