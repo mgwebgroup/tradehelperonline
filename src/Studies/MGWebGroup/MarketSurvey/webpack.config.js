@@ -25,7 +25,7 @@ Encore
      */
     .addEntry('app', './assets/js/app.js')
     // Install this bundle's assets first with bin/console assets:install public --symlink
-    .addEntry('page1', './public/bundles/marketsurvey/assets/js/page1.js')
+    .addEntry('market_survey', './public/bundles/marketsurvey/assets/js/market_survey.js')
     //.addEntry('page2', './assets/js/page2.js')
 
     // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.

@@ -1,0 +1,13 @@
+<div class="chart-window-wrapper">
+    <div>
+        <h4>{{symbol}}</h4>
+        <ul>
+            <li>Open: {{ include('formatters/math.twig', { value: p_data.open, prefix: '$' }) }}</li>
+            <li>High: {{ include('formatters/math.twig', { value: p_data.high, prefix: '$' }) }}</li>
+            <li>Low: {{ include('formatters/math.twig', { value: p_data.low, prefix: '$' }) }}</li>
+            <li>Close: {{ include('formatters/math.twig', { value: p_data.close, prefix: '$' }) }}</li>
+            <li>Volume: {{ include('formatters/math.twig', { value: p_data.volume, decimal_points: 0 }) }}</li>
+        </ul>
+    </div>
+    <div><img src="{{ asset(chart_path) }}"></div>
+</div>

@@ -39,6 +39,11 @@ class ChartBuilder implements ChartBuilderInterface
         $this->catalog = $catalog;
     }
 
+    public function getStyleLibrary()
+    {
+        return $this->styleLibrary;
+    }
+
     /**
      * Builds a medium-sized chart with 100 candle bars
      * @param App\Entity\Instrument $instrument
@@ -56,23 +61,25 @@ class ChartBuilder implements ChartBuilderInterface
         $limitIterator->rewind();
         $fromDate = $limitIterator->current();
 
-        $history = $this->em->getRepository(History::class)->retrieveHistory($instrument, $interval, $fromDate,
-                                                                             $date);
+        $history = $this->em->getRepository(History::class)->retrieveHistory($instrument, $interval, $fromDate, $date);
+        $priceForDate = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp'
+        => $date, 'timeinterval' => $interval]);
+        $history[] = $priceForDate;
+
         $style = $this->styleLibrary->getStyle('medium');
         $style->symbol = $instrument->getSymbol();
         $style->categories = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $history);
 
-        $keys = array_keys($history);
-        $lastPriceHistoryKey = array_pop($keys);
-        $tradingCalendar->getInnerIterator()->setStartDate($history[$lastPriceHistoryKey]->getTimeStamp())
-          ->setDirection(1);
+        $tradingCalendar->getInnerIterator()->setStartDate($priceForDate->getTimestamp())->setDirection(1);
         $tradingCalendar->rewind();
-        $keys = array_keys($style->categories);
-        $key = array_pop($keys);
-        while ($key <= $style->x_axis['max']) {
-            $style->categories[$key] = $tradingCalendar->current()->format('m/d');
+        $tradingCalendar->next();
+        end($style->categories);
+        $i = key($style->categories);
+        $i++;
+        while ($i <= $style->x_axis['max']) {
+            $style->categories[$i] = $tradingCalendar->current()->format('m/d');
             $tradingCalendar->next();
-            $key++;
+            $i++;
         }
 
         if ($FQFN) {

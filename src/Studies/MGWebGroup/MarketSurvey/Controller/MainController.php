@@ -21,6 +21,7 @@ use App\Entity\Study\Study;
 use App\Entity\Instrument;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\Constraints\Date as DateConstraint;
+use Symfony\Component\HttpKernel\KernelInterface;
 
 
 class MainController extends AbstractController
@@ -133,7 +134,7 @@ class MainController extends AbstractController
     }
 
     public function chartWindow(Request $request, ValidatorInterface $validator, Filesystem $filesystem,
-      ChartBuilderInterface $chartBuilder)
+      ChartBuilderInterface $chartBuilder, KernelInterface $kernel)
     {
         $errors = [];
         $dateString = $request->attributes->get('date');
@@ -149,11 +150,26 @@ class MainController extends AbstractController
         if (empty($instrument)) {
             $errors[] = sprintf('Could not find instrument for symbol `%s`', $symbol);
         }
+        $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
+        $p = $this->getDoctrine()->getRepository(History::class)->findOneBy(['timestamp' => $date, 'instrument' =>
+          $instrument, 'timeinterval' => $interval]);
+        if(empty($p)) {
+            // formulate $p array with N/A's
+            // ...
+        }
+
         $chartPath = trim($this->getParameter('chart-path'), '/');
-        $chartPathAndName = sprintf('%s/%s_%s.png', $chartPath, $instrument->getSymbol(), $date->format('Ymd'));
-        if (!$filesystem->exists(realpath('../'.$chartPathAndName))) {
-            $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
+        $chartFileName = sprintf('%s_%s.png', $instrument->getSymbol(), $date->format('Ymd'));
+        $chartPathAndName = $chartPath.'/'.$chartFileName;
+        $projectRootDir = $kernel->getProjectDir();
+        if (!$filesystem->exists($projectRootDir.'/'.$chartPathAndName)) {
             $chartBuilder->buildMedium($instrument, $date, $interval, $chartPathAndName);
         }
+
+        $chartPathHtml = trim($filesystem->makePathRelative($projectRootDir.'/'.$chartPathAndName, $projectRootDir.'/public'), '/');
+
+        return $this->render('@MarketSurvey/chart_window.html.twig',
+          ['symbol' => $symbol, 'p_data' => $p, 'chart_path' => $chartPathHtml]
+        );
     }
 }

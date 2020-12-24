@@ -1,7 +1,7 @@
 {% extends "base.html.twig" %}
 {% block stylesheets %}
     {{ parent() }}
-    {{ encore_entry_link_tags('page1')  }}
+    {{ encore_entry_link_tags('market_survey')  }}
 {% endblock %}
 {% block body %}
     {% set ins_d_ct = 0 %}
@@ -15,13 +15,13 @@
             <div class="row">
                 <div class="col-2"><h4>{{ date|date('M d, Y') }}</h4></div>
                 <div class="col">
-                    {% for error in errors %}
-                        <p class="text-dander bg-warning border border-danger rounded p-1 text-center">{{ error }}</p>
-                    {% endfor %}
+{#                    {% for error in errors %}#}
+{#                        <p class="text-dander bg-warning border border-danger rounded p-1 text-center">{{ error }}</p>#}
+{#                    {% endfor %}#}
                 </div>
             </div>
         </section>
-    {% if errors is empty %}
+{#    {% if errors is empty %}#}
         <section class="survey mt-2">
             <div class="row">
                 <div class="col-4 offset-4"><h5 class="text-center">Market Survey</h5></div>
@@ -377,7 +377,7 @@
                                     <td>{{ loop.index }}</td>
                                     <td>{{ calculated_formulas[symbol].P is defined ? include('formatters/math.twig', { value: attribute(calculated_formulas[symbol], 'P'), prefix: '$' }) : 'N/A' }}</td>
                                     <td>{{ attribute(calculated_formulas[symbol], 'delta P prcnt') is defined ? include('formatters/math.twig', {value: attribute(calculated_formulas[symbol], 'delta P prcnt'), positive: 'text-success'}) : 'N/A' }}</td>
-                                    <td>{{symbol}}</td>
+                                    <td class="symbol" symbol="{{ symbol }}" date="{{ date|date('Y-m-d') }}">{{symbol}}</td>
                                     <td>{{instrument.name}}</td>
                                 </tr>
                             {% endfor %}
@@ -390,19 +390,15 @@
                 <div class="col-8">
                     <h6 class="text-center">Actionable Symbol Data</h6>
                     <div class="card">
-                        <div class="card-body">
-                            <h4 class="card-title">ABX</h4>
-                            <h6 class="card-subtitle mb-2 ">Price Info</h6>
-                            <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                        </div>
+                        <div class="chart-window-wrapper"></div>
                     </div>
                 </div>
             </div>
         </section>
-    {% endif %}
+{#    {% endif %}#}
     </div>
 {% endblock %}
 {% block javascripts %}
     {{ parent() }}
-    {{ encore_entry_script_tags('page1') }}
+    {{ encore_entry_script_tags('market_survey') }}
 {% endblock %}
