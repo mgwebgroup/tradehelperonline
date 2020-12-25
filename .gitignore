@@ -3,6 +3,7 @@
 /.bash_history
 .~lock.*
 /data/source
+/public/charts
 
 ###> symfony/framework-bundle ###
 .env
