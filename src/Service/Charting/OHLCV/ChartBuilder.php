@@ -69,7 +69,6 @@ class ChartBuilder implements ChartBuilderInterface
         $style = $this->styleLibrary->getStyle('medium');
         $style->symbol = $instrument->getSymbol();
         $style->categories = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $history);
-
         $tradingCalendar->getInnerIterator()->setStartDate($priceForDate->getTimestamp())->setDirection(1);
         $tradingCalendar->rewind();
         $tradingCalendar->next();
@@ -81,6 +80,8 @@ class ChartBuilder implements ChartBuilderInterface
             $tradingCalendar->next();
             $i++;
         }
+
+//        $style->y_axis['major_interval'] = round(($max - $low) / 20, 0);
 
         if ($FQFN) {
             $style->chart_path .= '/'.$FQFN;

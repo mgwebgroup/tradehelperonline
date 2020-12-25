@@ -12,12 +12,33 @@
     {% set order_of_quartets = ['Mo BO','Pos on Mo','Neg on Mo','Mo BD','Wk BO','Pos on Wk','Neg on Wk','Wk BD','D BO','Pos on D','Neg on D','D BD'] %}
     <div class="page-wrapper container-fluid">
         <section class="announcements border-bottom">
-            <div class="row">
-                <div class="col-2"><h4>{{ date|date('M d, Y') }}</h4></div>
+            <div class="row align-items-center p-1">
+                <div class="col-2">
+                    <h4 class="mb-0 studydate" studydate="{{ date|date('Y-m-d') }}">{{ date|date('M d, Y') }}</h4>
+                </div>
                 <div class="col">
 {#                    {% for error in errors %}#}
 {#                        <p class="text-dander bg-warning border border-danger rounded p-1 text-center">{{ error }}</p>#}
 {#                    {% endfor %}#}
+                </div>
+                <div class="col-3">
+                    <nav aria-label="Study Navigation">
+                        <ul class="pagination justify-content-end mb-0">
+                            <li class="page-item {{ prev_wk ? null : 'disabled' }}">
+                                <a class="page-link" href="{{ prev_wk ? path('market_survey_date', {date: prev_wk|date('Y-m-d')}) : null }}">Prev Wk</a>
+                            </li>
+                            <li class="page-item {{ prev_date ? null : 'disabled' }}">
+                                <a class="page-link" href="{{ prev_date ? path('market_survey_date', {date: prev_date|date('Y-m-d')}) : null }}">Prev T</a>
+                            </li>
+                            <li class="page-item"><a class="page-link">{{date|date('Y-m-d')}}</a></li>
+                            <li class="page-item {{ next_date ? null : 'disabled' }}">
+                                <a class="page-link" href="{{ next_date ? path('market_survey_date', {date: next_date|date('Y-m-d')}) : null }}">Next T</a>
+                            </li>
+                            <li class="page-item {{ next_wk ? null : 'disabled' }}">
+                                <a class="page-link" href="{{ next_wk ? path('market_survey_date', {date: next_wk|date('Y-m-d')}) : null }}">Next Wk</a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </section>
@@ -269,7 +290,7 @@
                 <div class="col">
                     <h6 class="text-center">Sector Performance</h6>
                     {% set negative = 'text-danger' %}
-                    <table class="table table-sm">
+                    <table class="table table-sm table-hover">
                         <col>
                         <col>
                         <col>
@@ -284,57 +305,61 @@
                         <col>
                         <thead>
                         <tr>
-                            <th rowspan="2">#</th>
-                            <th rowspan="2">Sector</th>
-                            <th rowspan="2">Closing P, %</th>
-                            <th rowspan="2">dP, %</th>
-                            <th rowspan="2">dP(5), %</th>
-                            <th rowspan="2">Week dP, %</th>
-                            <th rowspan="2">Month dP, %</th>
-                            <th rowspan="2">Quarter dP, %</th>
-                            <th rowspan="2">Year dP, %</th>
-                            <th colspan="5" scope="colgroup">Hist. Position Score</th>
-                            <th rowspan="2">Sum</th>
-                            <th rowspan="2">Gradient</th>
+                            <th rowspan="2" class="sortable align-middle text-center">#<i class="ml-1 bi-sort-numeric-down"></i></th>
+                            <th rowspan="2" class="sortable align-middle text-center">Sector<i class="ml-1 bi-sort-numeric-down"></i></th>
+                            <th rowspan="2" class="sortable align-middle text-center">Closing P, %<i class="ml-1 bi-sort-numeric-down"></i></th>
+                            <th rowspan="2" class="sortable align-middle text-center">dP, %<i class="ml-1 bi-sort-numeric-down"></i></th>
+                            <th rowspan="2" class="sortable align-middle text-center">dP(5), %<i class="ml-1 bi-sort-numeric-down"></i></th>
+                            <th rowspan="2" class="sortable align-middle text-center">Week dP, %<i class="ml-1 bi-sort-numeric-down"></i></th>
+                            <th rowspan="2" class="sortable align-middle text-center">Month dP, %<i class="ml-1 bi-sort-numeric-down"></i></th>
+                            <th rowspan="2" class="sortable align-middle text-center">Quarter dP, %<i class="ml-1 bi-sort-numeric-down"></i></th>
+                            <th rowspan="2" class="sortable align-middle text-center">Year dP, %<i class="ml-1 bi-sort-numeric-down"></i></th>
+                            <th colspan="5" scope="colgroup" class="text-center">Hist. Position Score</th>
+                            <th rowspan="2" class="align-middle text-center">Sum</th>
+                            <th rowspan="2" class="align-middle text-center">Gradient</th>
                         </tr>
                         <tr>
-                            <th scope="col">T-4</th><th scope="col">T-3</th><th scope="col">T-2</th><th scope="col">T-1</th><th scope="col">T</th>
+                            <th scope="col" class="text-center">T-4</th>
+                            <th scope="col" class="text-center">T-3</th>
+                            <th scope="col" class="text-center">T-2</th>
+                            <th scope="col" class="text-center">T-1</th>
+                            <th scope="col" class="text-center">T</th>
                         </tr>
                         </thead>
                         <tbody>
                         {% if sector_table.table is defined %}
                             {% for sector, record in sector_table.table %}
                                 <tr>
-                                    <td>{{loop.index}}</td>
-                                    <td>{{ sector }}</td>
-                                    <td>{{ '$' ~ record.P|number_format(2) }}</td>
-                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'delta P prcnt') }) }}</td>
-                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'delta P(5) prcnt') }) }}</td>
-                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'Wk delta P') }) }}</td>
-                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'Mo delta P') }) }}</td>
-                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'Qrtr delta P') }) }}</td>
-                                    <td>{{ include('formatters/math.twig', { value: attribute(record, 'Yr delta P') }) }}</td>
+                                    <td class="text-center">{{loop.index}}</td>
+                                    <td class="text-center">{{ sector }}</td>
+                                    <td class="text-center">{{ '$' ~ record.P|number_format(2) }}</td>
+                                    <td class="text-center">{{ include('formatters/math.twig', { value: attribute(record, 'delta P prcnt') }) }}</td>
+                                    <td class="text-center">{{ include('formatters/math.twig', { value: attribute(record, 'delta P(5) prcnt') }) }}</td>
+                                    <td class="text-center">{{ include('formatters/math.twig', { value: attribute(record, 'Wk delta P') }) }}</td>
+                                    <td class="text-center">{{ include('formatters/math.twig', { value: attribute(record, 'Mo delta P') }) }}</td>
+                                    <td class="text-center">{{ include('formatters/math.twig', { value: attribute(record, 'Qrtr delta P') }) }}</td>
+                                    <td class="text-center">{{ include('formatters/math.twig', { value: attribute(record, 'Yr delta P') }) }}</td>
                                     {% set hist_pos_score = attribute(record, 'Hist Pos Score') %}
-                                    <td scope="col">{{ attribute(hist_pos_score, 'T-4') }}</td>
-                                    <td scope="col">{{ attribute(hist_pos_score, 'T-3') }}</td>
-                                    <td scope="col">{{ attribute(hist_pos_score, 'T-2') }}</td>
-                                    <td scope="col">{{ attribute(hist_pos_score, 'T-1') }}</td>
-                                    <td scope="col">{{ attribute(hist_pos_score, 'T') }}</td>
-                                    <td>{{ attribute(record, 'Pos Score Sum')|number_format(0) }}</td>
-                                    <td>{{ attribute(record, 'Pos Score Grad')|number_format(0) }}</td>
+                                    <td scope="col" class="text-center">{{ attribute(hist_pos_score, 'T-4') }}</td>
+                                    <td scope="col" class="text-center">{{ attribute(hist_pos_score, 'T-3') }}</td>
+                                    <td scope="col" class="text-center">{{ attribute(hist_pos_score, 'T-2') }}</td>
+                                    <td scope="col" class="text-center">{{ attribute(hist_pos_score, 'T-1') }}</td>
+                                    <td scope="col" class="text-center">{{ attribute(hist_pos_score, 'T') }}</td>
+                                    <td class="text-center">{{ attribute(record, 'Pos Score Sum')|number_format(0) }}</td>
+                                    <td class="text-center">{{ attribute(record, 'Pos Score Grad')|number_format(0) }}</td>
                                 </tr>
                             {% endfor %}
                         {% endif %}
                         {% if sector_table.summary is defined %}
                             {% set sector_table_summary = sector_table.summary %}
                             <tr class="table-info">
-                                <td>Sum:</td><td></td><td></td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P prcnt') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P(5) prcnt') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Wk delta P') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Mo delta P') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Qrtr delta P') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Yr delta P') }) }}</td>
+                                <td class="text-center">Sum:</td><td></td><td></td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P prcnt') }) }}</td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'delta P(5) prcnt') }) }}</td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Wk delta P') }) }}</td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Mo delta P') }) }}</td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Qrtr delta P') }) }}</td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(sector_table_summary.sum, 'Yr delta P') }) }}</td>
                                 <td scope="col"></td>
                                 <td scope="col"></td>
                                 <td scope="col"></td>
@@ -345,12 +370,12 @@
                             </tr>
                             {% set up_down_tick = attribute(sector_table_summary, 'up_down_tick') %}
                             <tr>
-                                <td>Up/Down Tick:</td><td></td><td></td><td></td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'delta P(5) prcnt') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Wk delta P') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Mo delta P') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Qrtr delta P') }) }}</td>
-                                <td>{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Yr delta P') }) }}</td>
+                                <td class="text-center">Up/Down Tick:</td><td></td><td></td><td></td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'delta P(5) prcnt') }) }}</td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Wk delta P') }) }}</td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Mo delta P') }) }}</td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Qrtr delta P') }) }}</td>
+                                <td class="text-center">{{ include('formatters/math.twig', { value: attribute(up_down_tick, 'Yr delta P') }) }}</td>
                             </tr>
                         {% endif %}
                         </tbody>
@@ -362,35 +387,39 @@
             <div class="row">
                 <div class="col-4">
                     <h6 class="text-center">Actionable Symbols List</h6>
-                    <table class="table table-sm">
-                        <thead>
-                        <tr>
-                            <th>#</th><th>P</th><th>dP, %</th><th>Symbol</th><th>Name</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% if as_watchlist %}
-                            {% set calculated_formulas = as_watchlist.calculatedFormulas %}
-                            {% for instrument in as_watchlist.instruments %}
-                                {% set symbol = instrument.symbol %}
-                                <tr>
-                                    <td>{{ loop.index }}</td>
-                                    <td>{{ calculated_formulas[symbol].P is defined ? include('formatters/math.twig', { value: attribute(calculated_formulas[symbol], 'P'), prefix: '$' }) : 'N/A' }}</td>
-                                    <td>{{ attribute(calculated_formulas[symbol], 'delta P prcnt') is defined ? include('formatters/math.twig', {value: attribute(calculated_formulas[symbol], 'delta P prcnt'), positive: 'text-success'}) : 'N/A' }}</td>
-                                    <td class="symbol" symbol="{{ symbol }}" date="{{ date|date('Y-m-d') }}">{{symbol}}</td>
-                                    <td>{{instrument.name}}</td>
-                                </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr><td></td><td>N/A</td><td>N/A</td></tr>
-                        {% endif %}
-                        </tbody>
-                    </table>
+                    <div class="table-viewport">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                            <tr>
+                                <th>#</th><th>P</th><th>dP, %</th><th>Symbol</th><th>Name</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% if as_watchlist %}
+                                {% set calculated_formulas = as_watchlist.calculatedFormulas %}
+                                {% for instrument in as_watchlist.instruments %}
+                                    {% set symbol = instrument.symbol %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ calculated_formulas[symbol].P is defined ? include('formatters/math.twig', { value: attribute(calculated_formulas[symbol], 'P'), prefix: '$' }) : 'N/A' }}</td>
+                                        <td>{{ attribute(calculated_formulas[symbol], 'delta P prcnt') is defined ? include('formatters/math.twig', {value: attribute(calculated_formulas[symbol], 'delta P prcnt'), positive: 'text-success'}) : 'N/A' }}</td>
+                                        <td class="symbol" symbol="{{ symbol }}" date="{{ date|date('Y-m-d') }}">{{symbol}}</td>
+                                        <td class="symbol" symbol="{{ symbol }}" date="{{ date|date('Y-m-d') }}">{{instrument.name}}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td></td><td>N/A</td><td>N/A</td></tr>
+                            {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <div class="col-8">
                     <h6 class="text-center">Actionable Symbol Data</h6>
                     <div class="card">
-                        <div class="chart-window-wrapper"></div>
+                        <div class="card-body">
+                            <div class="chart-window-wrapper"></div>
+                        </div>
                     </div>
                 </div>
             </div>

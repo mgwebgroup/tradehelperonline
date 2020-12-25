@@ -12,6 +12,8 @@ namespace App\Studies\MGWebGroup\MarketSurvey\Controller;
 
 use App\Entity\OHLCV\History;
 use App\Service\Charting\ChartBuilderInterface;
+use App\Service\Exchange\Equities\TradingCalendar;
+use App\Service\Exchange\WeeklyIterator;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
 use Doctrine\Common\Collections\Criteria;
 use Symfony\Component\Filesystem\Filesystem;
@@ -26,7 +28,13 @@ use Symfony\Component\HttpKernel\KernelInterface;
 
 class MainController extends AbstractController
 {
-    public function index(Request $request, ValidatorInterface $validator, Calculator $calculator)
+    public function index(
+      Request $request,
+      ValidatorInterface $validator,
+      Calculator $calculator,
+      TradingCalendar $tradingCalendar,
+      WeeklyIterator $weeklyIterator
+    )
     {
         $dateString = $request->attributes->get('date');
 
@@ -111,6 +119,38 @@ class MainController extends AbstractController
                 $ASWatchlist->update($calculator, $date);
             }
 
+            $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
+            $tradingCalendar->rewind();
+            $tradingCalendar->next();
+            $prevDate = $tradingCalendar->current();
+            $study = $studyRepository->findOneBy(['date' => $prevDate]);
+            if (empty($study)) {
+                $prevDate = false;
+            }
+            $tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(1);
+            $tradingCalendar->rewind();
+            $tradingCalendar->next();
+            $nextDate = $tradingCalendar->current();
+            $study = $studyRepository->findOneBy(['date' => $nextDate]);
+            if (empty($study)) {
+                $nextDate = false;
+            }
+            $weeklyIterator->getInnerIterator()->getInnerIterator()->setStartDate($date)->setDirection(-1);
+            $weeklyIterator->rewind();
+            $weeklyIterator->next();
+            $prevWk = $weeklyIterator->current();
+            $study = $studyRepository->findOneBy(['date' => $prevWk]);
+            if (empty($study)) {
+                $prevWk = false;
+            }
+            $weeklyIterator->getInnerIterator()->getInnerIterator()->setStartDate($date)->setDirection(1);
+            $weeklyIterator->rewind();
+            $weeklyIterator->next();
+            $nextWk = $weeklyIterator->current();
+            $study = $studyRepository->findOneBy(['date' => $nextWk]);
+            if (empty($study)) {
+                $nextWk = false;
+            }
 
             return $this->render('@MarketSurvey/main.html.twig', [
               'date' => $date,
@@ -125,6 +165,10 @@ class MainController extends AbstractController
               'score_table_mtd' => $scoreTableMTD,
               'sector_table' => $sectorTable,
               'as_watchlist' => $ASWatchlist,
+              'prev_date' => $prevDate,
+              'next_date' => $nextDate,
+              'prev_wk' => $prevWk,
+              'next_wk' => $nextWk
               ]
             );
 
@@ -133,8 +177,13 @@ class MainController extends AbstractController
         }
     }
 
-    public function chartWindow(Request $request, ValidatorInterface $validator, Filesystem $filesystem,
-      ChartBuilderInterface $chartBuilder, KernelInterface $kernel)
+    public function chartWindow(
+      Request $request,
+      ValidatorInterface $validator,
+      Filesystem $filesystem,
+      ChartBuilderInterface $chartBuilder,
+      KernelInterface $kernel
+    )
     {
         $errors = [];
         $dateString = $request->attributes->get('date');
@@ -168,8 +217,11 @@ class MainController extends AbstractController
 
         $chartPathHtml = trim($filesystem->makePathRelative($projectRootDir.'/'.$chartPathAndName, $projectRootDir.'/public'), '/');
 
-        return $this->render('@MarketSurvey/chart_window.html.twig',
-          ['symbol' => $symbol, 'p_data' => $p, 'chart_path' => $chartPathHtml]
+        return $this->render('@MarketSurvey/chart_window.html.twig', [
+          'symbol' => $symbol,
+          'p_data' => $p,
+          'chart_path' => $chartPathHtml
+        ]
         );
     }
 }

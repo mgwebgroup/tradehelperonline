@@ -9,3 +9,29 @@
     }
   }
 }
+
+.sectors {
+  i {
+    cursor: pointer;
+  }
+}
+
+.symbol {
+  cursor: pointer;
+}
+
+.as {
+  .chart-window-wrapper {
+    ul {
+      list-style-type: none;
+      width: 35em;
+    }
+    h4 {
+      width: 3em;
+    }
+  }
+  .table-viewport {
+    max-height: 680px;
+    overflow-y: scroll;
+  }
+}
