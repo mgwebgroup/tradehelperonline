@@ -16,11 +16,7 @@
                 <div class="col-2">
                     <h4 class="mb-0 studydate" studydate="{{ date|date('Y-m-d') }}">{{ date|date('M d, Y') }}</h4>
                 </div>
-                <div class="col">
-{#                    {% for error in errors %}#}
-{#                        <p class="text-dander bg-warning border border-danger rounded p-1 text-center">{{ error }}</p>#}
-{#                    {% endfor %}#}
-                </div>
+                <div class="col"></div>
                 <div class="col-3">
                     <nav aria-label="Study Navigation">
                         <ul class="pagination justify-content-end mb-0">
@@ -42,7 +38,6 @@
                 </div>
             </div>
         </section>
-{#    {% if errors is empty %}#}
         <section class="survey mt-2">
             <div class="row">
                 <div class="col-4 offset-4"><h5 class="text-center">Market Survey</h5></div>
@@ -424,7 +419,6 @@
                 </div>
             </div>
         </section>
-{#    {% endif %}#}
     </div>
 {% endblock %}
 {% block javascripts %}
