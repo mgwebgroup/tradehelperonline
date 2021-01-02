@@ -4,6 +4,7 @@ namespace App\Command;
 
 use App\Exception\PriceHistoryException;
 use App\Service\UtilityServices;
+use Exception;
 use League\Csv\Reader;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
@@ -11,31 +12,32 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-Use App\Entity\OHLCV\History;
+use App\Entity\OHLCV\History;
 use App\Entity\Instrument;
 use League\Csv\Statement;
+use Doctrine\ORM\EntityManager;
 
 class ConvertOhlcvCommand extends Command
 {
     protected static $defaultName = 'th:convert-ohlcv';
 
     /**
-     * @var Doctrine\ORM\EntityManager
+     * @var EntityManager
      */
     protected $em;
 
     /**
-     * @var App\Service\Utilities
+     * @var UtilityServices
      */
     protected $utilities;
 
     /**
-     * @var League/Csv/Reader
+     * @var Reader
      */
     protected $csvReader;
 
     /**
-     * @var App\Entity\Instrument
+     * @var Instrument
      */
     protected $instrument;
 
@@ -58,8 +60,8 @@ class ConvertOhlcvCommand extends Command
 
 
     public function __construct(
-      RegistryInterface $doctrine,
-      UtilityServices $utilities
+        RegistryInterface $doctrine,
+        UtilityServices $utilities
     ) {
         $this->em = $doctrine->getManager();
         $this->utilities = $utilities;
@@ -70,12 +72,7 @@ class ConvertOhlcvCommand extends Command
     protected function configure()
     {
         $this->setHelp(
-          <<<EOT
-This command will convert OHLCV price history from daily timeframe to a superlative one, like weekly, monthly, 
-quarterly and yearly. It can work with either one symbol, or a list. One symbol is specified with --symbol option, 
-whereas a list must be specified as argument with a path to file relative to project root. The list file must contain
- only one column: Symbol. All symbols must already be imported via th:instruments:import command.
-EOT
+            "This command will convert OHLCV price history from daily timeframe to a superlative one, like weekly, monthly, quarterly and yearly. It can work with either one symbol, or a list. One symbol is specified with --symbol option, whereas a list must be specified as argument with a path to file relative to project root. The list file must contain only one column: Symbol. All symbols must already be imported via th:instruments:import command."
         );
         $this
             ->setDescription('Converts daily ohlcv data stored in database to weekly, monthly, quarterly and yearly')
@@ -85,7 +82,12 @@ EOT
             ->addOption('quarterly', null, InputOption::VALUE_NONE, 'Convert from daily to quarterly')
             ->addOption('yearly', 'y', InputOption::VALUE_NONE, 'Convert from daily to yearly')
             ->addOption('symbol', 's', InputOption::VALUE_REQUIRED, 'Work on a symbol, instead of the index file')
-            ->addOption('offset', null, InputOption::VALUE_REQUIRED, 'Starting offset, which includes header count. Header has offset=0')
+            ->addOption(
+                'offset',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Starting offset, which includes header count. Header has offset=0'
+            )
             ->addOption('chunk', null, InputOption::VALUE_REQUIRED, 'Number of records to process in one chunk')
         ;
     }
@@ -95,16 +97,18 @@ EOT
         $this->utilities->pronounceStart($this, $output);
         try {
             if ($input->getArgument('file')) {
-                $this->csvReader = Reader::createFromPath($input->getArgument('file'), 'r');
+                $this->csvReader = Reader::createFromPath($input->getArgument('file'));
                 $this->csvReader->setHeaderOffset(0);
             } elseif ($symbol = $input->getOption('symbol')) {
                 $this->instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $symbol]);
                 if (!$this->instrument) {
-                    throw new \Exception(sprintf('Could not find instrument for symbol `%s`. Did you import it?',
-                                                 $symbol));
+                    throw new Exception(sprintf(
+                        'Could not find instrument for symbol `%s`. Did you import it?',
+                        $symbol
+                    ));
                 }
             } else {
-                throw new \Exception('You must specify either the index file with symbols, or --symbol to work on.');
+                throw new Exception('You must specify either the index file with symbols, or --symbol to work on.');
             }
             if ($input->getOption('weekly')) {
                 $this->targetFrames[] = 'weekly';
@@ -128,13 +132,14 @@ EOT
             } else {
                 $this->chunk = -1;
             }
-        } catch(\Exception $e) {
+        } catch (Exception $e) {
             $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
             exit(1);
         }
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    /** @noinspection PhpInconsistentReturnPointsInspection */
+    protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
         if ($this->csvReader) {
             $statement = new Statement();
@@ -153,8 +158,10 @@ EOT
                     $logMsg = $this->convert();
                     $this->utilities->logAndSay($output, $logMsg, $logMsg);
                 } else {
-                    $output->writeln(sprintf('<error>ERROR: </error>Instrument `%s` was not found under imported symbols',
-                                             $value['Symbol']));
+                    $output->writeln(sprintf(
+                        '<error>ERROR: </error>Instrument `%s` was not found under imported symbols',
+                        $value['Symbol']
+                    ));
                 }
             }
         } else {
@@ -164,20 +171,30 @@ EOT
         $this->utilities->pronounceEnd($this, $output);
     }
 
-    protected function convert()
+    protected function convert(): string
     {
         // find the latest date present for the superlative time frame
         $priceRepository = $this->em->getRepository(History::class);
         $logMsg = sprintf('%s: converted to ', $this->instrument->getSymbol());
         foreach ($this->targetFrames as $targetFrame) {
-            /** @var \DateInterval $targetInterval */
             $targetInterval = History::getOHLCVInterval(strtolower($targetFrame));
-            $lastPrice = $priceRepository->findOneBy(['instrument' => $this->instrument, 'timeinterval' => $targetInterval], ['timestamp' => 'desc']);
+            $lastPrice = $priceRepository->findOneBy(
+                ['instrument' => $this->instrument, 'timeinterval' => $targetInterval],
+                ['timestamp' => 'desc']
+            );
             if (!$lastPrice) {
-                $lastPrice = $priceRepository->findOneBy(['instrument' => $this->instrument, 'timeinterval' => History::getOHLCVInterval(History::INTERVAL_DAILY)], ['timestamp' => 'asc']);
+                $lastPrice = $priceRepository->findOneBy(
+                    [
+                    'instrument' => $this->instrument,
+                    'timeinterval' => History::getOHLCVInterval(History::INTERVAL_DAILY)
+                    ],
+                    ['timestamp' => 'asc']
+                );
             }
             if (!$lastPrice) {
-                throw new PriceHistoryException(sprintf('No daily price data found for instrument `%s`', $this->instrument));
+                throw new PriceHistoryException(
+                    sprintf('No daily price data found for instrument `%s`', $this->instrument)
+                );
             }
             $lastDate = $lastPrice->getTimestamp();
             // Get daily (base) price history from db and process according to set targetFrame
@@ -190,35 +207,43 @@ EOT
                 if (isset($previousDailyPrice)) {
                     switch ($targetFrame) {
                         case History::INTERVAL_WEEKLY:
-                            if ($dailyItem->getTimestamp()->format('N') < $previousDailyPrice->getTimestamp()
-                                ->format('N')) {
+                            if (
+                                $dailyItem->getTimestamp()->format('N') < $previousDailyPrice->getTimestamp()
+                                ->format('N')
+                            ) {
                                 $priceHistoryInNewTimeFrame[] = $newHistoryItem;
                                 unset($previousDailyPrice);
-                            } elseif ($dailyItem->getTimestamp()->format('N') > $previousDailyPrice->getTimestamp()
-                                ->format('N')) {
+                            } elseif (
+                                $dailyItem->getTimestamp()->format('N') > $previousDailyPrice->getTimestamp()
+                                ->format('N')
+                            ) {
                                 $newHistoryItem->expandCandle($dailyItem);
                             } else {
                                 unset($previousDailyPrice);
                             }
                             break;
                         case History::INTERVAL_MONTHLY:
-                            if ($dailyItem->getTimestamp()->format('j') < $previousDailyPrice->getTimestamp()
-                                ->format('j')) {
+                            if (
+                                $dailyItem->getTimestamp()->format('j') < $previousDailyPrice->getTimestamp()
+                                ->format('j')
+                            ) {
                                 $priceHistoryInNewTimeFrame[] = $newHistoryItem;
                                 unset($previousDailyPrice);
-                            } elseif ($dailyItem->getTimestamp()->format('j') > $previousDailyPrice->getTimestamp()
-                                ->format('j')) {
+                            } elseif (
+                                $dailyItem->getTimestamp()->format('j') > $previousDailyPrice->getTimestamp()
+                                ->format('j')
+                            ) {
                                 $newHistoryItem->expandCandle($dailyItem);
                             } else {
                                 unset($previousDailyPrice);
                             }
                             break;
                         case History::INTERVAL_QUARTERLY:
-                            // the following calcs yield 0 for Jan, Apr, July and Oct
+                            // the following yield 0 for Jan, Apr, July and Oct
                             // and yield 2 for months preceding beginning of the quarter.
-                            $prev = ($previousDailyPrice->getTimestamp()->format('n')-1)%3;
-                            $current = ($dailyItem->getTimestamp()->format('n')-1)%3;
-                            if ( $prev == 2 && $current == 0) {
+                            $prev = ($previousDailyPrice->getTimestamp()->format('n') - 1) % 3;
+                            $current = ($dailyItem->getTimestamp()->format('n') - 1) % 3;
+                            if ($prev == 2 && $current == 0) {
                                 $priceHistoryInNewTimeFrame[] = $newHistoryItem;
                                 unset($previousDailyPrice);
                             } else {
@@ -226,12 +251,16 @@ EOT
                             }
                             break;
                         case History::INTERVAL_YEARLY:
-                            if ($dailyItem->getTimestamp()->format('z') < $previousDailyPrice->getTimestamp()
-                                ->format('z')) {
+                            if (
+                                $dailyItem->getTimestamp()->format('z') < $previousDailyPrice->getTimestamp()
+                                ->format('z')
+                            ) {
                                 $priceHistoryInNewTimeFrame[] = $newHistoryItem;
                                 unset($previousDailyPrice);
-                            } elseif ($dailyItem->getTimestamp()->format('z') > $previousDailyPrice->getTimestamp()
-                                ->format('z')) {
+                            } elseif (
+                                $dailyItem->getTimestamp()->format('z') > $previousDailyPrice->getTimestamp()
+                                ->format('z')
+                            ) {
                                 $newHistoryItem->expandCandle($dailyItem);
                             } else {
                                 unset($previousDailyPrice);

@@ -1,0 +1,14 @@
+{% extends "base.html.twig" %}
+{% block body %}
+    <div class="container">
+        <div class="jumbotron mt-5 pt-4">
+            <h3 class="text-danger">Error!</h3>
+            <hr class="my-4">
+            <ul class="list-group">
+                {% for error in errors %}
+                    <li class="list-group-item list-group-item-danger">{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}

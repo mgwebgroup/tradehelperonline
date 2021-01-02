@@ -22,19 +22,7 @@ Entire application code and data consists of the following components:
 
 *Dockerfile* is designed to work with script *deploy_app*. It has all necessary functionality for various stages of the deployment. Both files are committed to the repository. Parts of the *deploy_app* script are invoked for each deployment environment within the *Dockerfile*. In this way, you should only be able to configure deployment variables and build the application using one *Dockerfile*.
 
-When building app image, all secret info is passed through the *--secret* flag to the docker builder. This flag contains reference to the rclone configuration, which has access credentials to AWS S3 storage. Example of using this flag:
-```shell script
-DOCKER_BUILDKIT=1 \
-docker build \ 
---progress=plain \
---force-rm=true \
---build-arg=APP_ENV=test \
---build-arg=DATA_REMOTE=aws-mgwebgroup \
---build-arg=BUCKET_NAME=tradehelperonline \
--t tradehelperonline:test \
---secret id=datastore,src=$HOME/.config/rclone/rclone.conf \
-.
-```
+When building app image, all secret info is passed through the *--secret* flag to the docker builder. This flag contains reference to the rclone configuration, which has access credentials to AWS S3 storage.
 
 File *rclone.conf* must contain bucket access configuration for AWS S3 bucket like so:
 ```text
