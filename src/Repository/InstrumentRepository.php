@@ -7,7 +7,11 @@ use App\Service\Exchange\ExchangeInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
-
+/**
+ * Class InstrumentRepository
+ * @package App\Repository
+ * @method Instrument findOneBySymbol(string $symbol) Finds instrument by its symbol name
+ */
 class InstrumentRepository extends ServiceEntityRepository
 {
     public function __construct(RegistryInterface $registry)

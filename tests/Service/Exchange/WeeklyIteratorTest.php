@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Trade Helper Online package.
  *
@@ -8,16 +9,19 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Tests\Service\Exchange\DailyIterator;
+namespace App\Tests\Service\Exchange;
 
-use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use DateTime;
+use Exception;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Service\Exchange\WeeklyIterator;
 use App\Service\Exchange\Equities\TradingCalendar;
+use App\Service\Exchange\DailyIterator;
 
 class WeeklyIteratorTest extends KernelTestCase
 {
     /**
-     * @var App\Service\Exchange\WeeklyIterator
+     * @var WeeklyIterator
      */
     private $SUT;
 
@@ -41,14 +45,16 @@ class WeeklyIteratorTest extends KernelTestCase
      * StartDate is Monday, Jan-1st, 2018 is a holiday
      * Direction of DailyIterator is back
      * Expected: immediate Tuesday, Jan-2nd
-     * @throws \Exception
+     * @throws Exception
      */
     public function testRewind10()
     {
-        $startDate = new \DateTime('2018-01-01');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $startDate = new DateTime('2018-01-01');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(-1);
         $this->SUT->rewind();
         $date = $this->SUT->current();
+
         $this->assertSame('2018-01-02', $date->format('Y-m-d'));
     }
 
@@ -56,14 +62,16 @@ class WeeklyIteratorTest extends KernelTestCase
      * StartDate is Saturday, Dec-30th, 2017
      * Direction of DailyIterator is back
      * Expected: previous Tuesday, Dec 26th, because Monday is Christmas
-     * @throws \Exception
+     * @throws Exception
      */
     public function testRewind20()
     {
-        $startDate = new \DateTime('2017-12-30');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $startDate = new DateTime('2017-12-30');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(-1);
         $this->SUT->rewind();
         $date = $this->SUT->current();
+
         $this->assertSame('2017-12-26', $date->format('Y-m-d'));
     }
 
@@ -71,12 +79,13 @@ class WeeklyIteratorTest extends KernelTestCase
      * StartDate is Saturday, Dec-30th, 2017
      * Direction of DailyIterator is forward
      * Expected: previous Tuesday, Dec 26th, because Monday is Christmas
-     * @throws \Exception
+     * @throws Exception
      */
     public function testRewind30()
     {
-        $startDate = new \DateTime('2017-12-30');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $startDate = new DateTime('2017-12-30');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(-1);
         $this->SUT->rewind();
         $date = $this->SUT->current();
         $this->assertSame('2017-12-26', $date->format('Y-m-d'));
@@ -86,27 +95,16 @@ class WeeklyIteratorTest extends KernelTestCase
      * StartDate is Monday, Jan-1st, 2018 is a holiday
      * Direction of DailyIterator is forward
      * Expected: immediate Tuesday, Jan-2nd
-     * @throws \Exception
+     * @throws Exception
      */
     public function testRewind40()
     {
-        $startDate = new \DateTime('2018-01-01');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $startDate = new DateTime('2018-01-01');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(-1);
         $this->SUT->rewind();
         $date = $this->SUT->current();
         $this->assertSame('2018-01-02', $date->format('Y-m-d'));
-    }
-
-    /**
-     *  Start Date is a DateTime object
-     *  Expected: $date property in DailyIterator is a cloned object
-     */
-    public function testStartDate10()
-    {
-        $startDate = new \DateTime('2000-01-01'); // Saturday
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate);
-        $date = $this->SUT->current();
-        $this->assertNotSame($startDate, $date);
     }
 
     /**
@@ -119,11 +117,14 @@ class WeeklyIteratorTest extends KernelTestCase
           '2017-12-26', '2017-12-18', '2017-12-11'
         ];
 
-        $startDate = new \DateTime('2017-12-30');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $startDate = new DateTime('2017-12-30');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(-1);
         $counter = 0;
         foreach ($this->SUT as $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
             $this->assertSame($expected[$counter], $value->format('Y-m-d'));
             $counter++;
         }
@@ -139,11 +140,14 @@ class WeeklyIteratorTest extends KernelTestCase
           '2017-12-26', '2018-01-02', '2018-01-08'
         ];
 
-        $startDate = new \DateTime('2017-12-30');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $startDate = new DateTime('2017-12-30');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(1);
         $counter = 0;
         foreach ($this->SUT as $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
             $this->assertSame($expected[$counter], $value->format('Y-m-d'));
             $counter++;
         }
@@ -159,11 +163,14 @@ class WeeklyIteratorTest extends KernelTestCase
           '2018-01-02', '2017-12-26', '2017-12-18'
         ];
 
-        $startDate = new \DateTime('2018-01-01');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $startDate = new DateTime('2018-01-01');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(-1);
         $counter = 0;
         foreach ($this->SUT as $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
             $this->assertSame($expected[$counter], $value->format('Y-m-d'));
             $counter++;
         }
@@ -179,11 +186,14 @@ class WeeklyIteratorTest extends KernelTestCase
           '2018-01-02', '2018-01-08', '2018-01-16' // (Monday 01/15/2020 is MLK)
         ];
 
-        $startDate = new \DateTime('2018-01-01');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $startDate = new DateTime('2018-01-01');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(1);
         $counter = 0;
         foreach ($this->SUT as $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
             $this->assertSame($expected[$counter], $value->format('Y-m-d'));
             $counter++;
         }
@@ -199,11 +209,14 @@ class WeeklyIteratorTest extends KernelTestCase
           '2018-01-22', '2018-01-29', '2018-02-05'
         ];
 
-        $startDate = new \DateTime('2018-01-24');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $startDate = new DateTime('2018-01-24');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(1);
         $counter = 0;
         foreach ($this->SUT as $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
             $this->assertSame($expected[$counter], $value->format('Y-m-d'));
             $counter++;
         }
@@ -219,11 +232,14 @@ class WeeklyIteratorTest extends KernelTestCase
           '2018-01-22', '2018-01-16', '2018-01-08'
         ];
 
-        $startDate = new \DateTime('2018-01-24');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $startDate = new DateTime('2018-01-24');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(-1);
         $counter = 0;
         foreach ($this->SUT as $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
             $this->assertSame($expected[$counter], $value->format('Y-m-d'));
             $counter++;
         }
@@ -239,11 +255,14 @@ class WeeklyIteratorTest extends KernelTestCase
           '2018-01-22', '2018-01-29', '2018-02-05'
         ];
 
-        $startDate = new \DateTime('2018-01-22');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $startDate = new DateTime('2018-01-22');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(1);
         $counter = 0;
         foreach ($this->SUT as $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
             $this->assertSame($expected[$counter], $value->format('Y-m-d'));
             $counter++;
         }
@@ -256,13 +275,16 @@ class WeeklyIteratorTest extends KernelTestCase
      */
     public function testBoundaries10()
     {
-        $startDate = new \DateTime('2000-01-03');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(-1);
+        $startDate = new DateTime('2000-01-03');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(-1);
         $counter = 0;
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage('Date is below (older than) lower boundary of 2000-01-01T00:00:00+00:00');
         foreach ($this->SUT as $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
             $counter++;
         }
     }
@@ -274,13 +296,16 @@ class WeeklyIteratorTest extends KernelTestCase
      */
     public function testBoundaries20()
     {
-        $startDate = new \DateTime('2100-12-31');
-        $this->SUT->getInnerIterator()->getInnerIterator()->setStartDate($startDate)->setDirection(1);
+        $startDate = new DateTime('2100-12-31');
+        $dailyIterator = self::$container->get(DailyIterator::class);
+        $dailyIterator->setStartDate($startDate)->setDirection(1);
         $counter = 0;
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage('Date is above (newer than) upper boundary of 2100-12-31T00:00:00+00:00');
         foreach ($this->SUT as $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
             $counter++;
         }
     }

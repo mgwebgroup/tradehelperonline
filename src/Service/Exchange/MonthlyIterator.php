@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Trade Helper Online package.
  *
@@ -67,7 +68,7 @@ class MonthlyIterator implements OuterIterator
             }
         }
         while (false === $this->getInnerIterator()->accept()) {
-            $date->add(new \DateInterval(DailyIterator::INTERVAL));
+            $date->add(new DateInterval(DailyIterator::INTERVAL));
         }
     }
 
@@ -82,7 +83,7 @@ class MonthlyIterator implements OuterIterator
     /**
      * @inheritDoc
      */
-    public function valid()
+    public function valid(): bool
     {
         return $this->getInnerIterator()->getInnerIterator()->valid();
     }
@@ -99,7 +100,7 @@ class MonthlyIterator implements OuterIterator
             $date->modify(sprintf('first day of %s %s', $date->format('F'), $date->format('Y')));
         }
         while (false === $this->getInnerIterator()->accept()) {
-            $date->add(new \DateInterval(DailyIterator::INTERVAL));
+            $date->add(new DateInterval(DailyIterator::INTERVAL));
         }
     }
 

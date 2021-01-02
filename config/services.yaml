@@ -50,15 +50,6 @@ services:
         arguments:
             $start: '%dates_begin%'
             $end: '%dates_end%'
-    App\Service\Exchange\Equities\TradingCalendar:
-        arguments:
-            $iterator: '@App\Service\Exchange\DailyIterator'
-    App\Service\Exchange\WeeklyIterator:
-        arguments:
-            $iterator: '@App\Service\Exchange\Equities\TradingCalendar'
-    App\Service\Exchange\MonthlyIterator:
-        arguments:
-            $iterator: '@App\Service\Exchange\Equities\TradingCalendar'
     App\Command\SyncPrice:
         arguments:
             $priceProvider: '@app.price_provider'

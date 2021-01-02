@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Trade Helper Online package.
  *
@@ -7,9 +8,16 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace App\Service\Exchange\Equities;
 
+use App\Exception\ExchangeException;
+use App\Service\Exchange\DailyIterator;
+use DateTime;
+use FilterIterator;
+use ReflectionException;
 use Yasumi\Holiday;
+use Yasumi\Provider\USA;
 use Yasumi\Yasumi;
 
 /**
@@ -17,36 +25,36 @@ use Yasumi\Yasumi;
  * Removes trading holidays specific to NYSE and NASDAQ from date iterator
  * @package App\Service\Exchange\Equities
  */
-class TradingCalendar extends \FilterIterator
+class TradingCalendar extends FilterIterator
 {
-    const TIMEZONE = 'America/New_York';
+    public const TIMEZONE = 'America/New_York';
 
-    /**
-     * @var Yasumi\Provider\USA
-     */
     protected $holidaysCalculator;
 
     public function __construct(
-        \Iterator $iterator
-    )
-    {
+        DailyIterator $iterator
+    ) {
         parent::__construct($iterator);
     }
 
-    public function accept()
+    public function accept(): bool
     {
         $date = $this->getInnerIterator()->current();
-        $this->initCalculator((int) $date->format('Y'));
-
-        return $this->holidaysCalculator->isWorkingDay($date);
+        try {
+            $this->initCalculator((int) $date->format('Y'));
+            return $this->holidaysCalculator->isWorkingDay($date);
+        } catch (ReflectionException $e) {
+            throw new ExchangeException($e->getMessage());
+        }
     }
 
     /**
      * @param integer $year
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
-    private function initCalculator($year)
+    private function initCalculator(int $year)
     {
+        /** @var USA holidaysCalculator */
         $this->holidaysCalculator = Yasumi::create('USA', $year);
 
         $this->holidaysCalculator->addHoliday($this->holidaysCalculator->goodFriday($year, self::TIMEZONE, 'en_US'));
@@ -54,8 +62,8 @@ class TradingCalendar extends \FilterIterator
         $this->holidaysCalculator->removeHoliday('veteransDay');
         $this->holidaysCalculator->removeHoliday('substituteHoliday:veteransDay');
 
-        $this->holidaysCalculator->addHoliday(new Holiday('HurricaneSandy1', [], new \DateTime('2012-10-29')));
-        $this->holidaysCalculator->addHoliday(new Holiday('HurricaneSandy2', [], new \DateTime('2012-10-30')));
-        $this->holidaysCalculator->addHoliday(new Holiday('BushMourning', [], new \DateTime('2018-12-05')));
+        $this->holidaysCalculator->addHoliday(new Holiday('HurricaneSandy1', [], new DateTime('2012-10-29')));
+        $this->holidaysCalculator->addHoliday(new Holiday('HurricaneSandy2', [], new DateTime('2012-10-30')));
+        $this->holidaysCalculator->addHoliday(new Holiday('BushMourning', [], new DateTime('2018-12-05')));
     }
 }

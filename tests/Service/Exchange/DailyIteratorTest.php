@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Trade Helper Online package.
  *
@@ -8,15 +9,16 @@
  * file that was distributed with this source code.
  */
 
-namespace App\Tests\Service\Exchange\DailyIterator;
+namespace App\Tests\Service\Exchange;
 
-use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use DateTime;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Service\Exchange\DailyIterator;
 
 class DailyIteratorTest extends KernelTestCase
 {
     /**
-     * @var App\Service\Exchange\DailyIterator
+     * @var DailyIterator
      */
     private $SUT;
 
@@ -43,7 +45,9 @@ class DailyIteratorTest extends KernelTestCase
         ];
         $counter = 0;
         foreach ($this->SUT as $key => $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
 
             $this->assertSame($expected[$key], $value->format('Y-m-d'));
 
@@ -59,11 +63,26 @@ class DailyIteratorTest extends KernelTestCase
         ];
         $counter = 0;
         foreach ($this->SUT as $key => $value) {
-            if ($counter > 2) break;
+            if ($counter > 2) {
+                break;
+            }
 
             $this->assertSame($expected[$key], $value->format('Y-m-d'));
 
             $counter++;
         }
+    }
+
+    /**
+     *  Start Date is a DateTime object
+     *  Expected: $date property in DailyIterator is a cloned object
+     */
+    public function testStartDate10()
+    {
+        $startDate = new DateTime('2000-01-01'); // Saturday
+        $this->SUT->setStartDate($startDate);
+        $this->SUT->rewind();
+        $date = $this->SUT->current();
+        $this->assertNotSame($startDate, $date);
     }
 }
