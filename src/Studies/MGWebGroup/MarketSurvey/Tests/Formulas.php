@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Trade Helper Online package.
  *
@@ -10,97 +11,120 @@
 
 namespace App\Studies\MGWebGroup\MarketSurvey\Tests;
 
+use App\Entity\Instrument;
 use App\Entity\OHLCV\History;
 use App\Service\Exchange\Equities\TradingCalendar;
 use App\Service\Exchange\MonthlyIterator;
 use App\Service\Exchange\WeeklyIterator;
-
+use DateInterval;
+use DateTime;
+use Doctrine\ORM\QueryBuilder;
+use Exception;
 
 trait Formulas
 {
-    private function insideDayAndUp($instrument, $date)
+    private function insideDayAndUp($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getDailyPrices($instrument, $date);
 
-        if ( ($p2->getHigh() >= $p1->getHigh()) and ($p2->getLow() <= $p1->getLow()) and ($p0->getClose() >= 
-            $p1->getHigh()) ) {
+        if (
+            ($p2->getHigh() >= $p1->getHigh()) and ($p2->getLow() <= $p1->getLow()) and ($p0->getClose() >=
+            $p1->getHigh())
+        ) {
             return true;
         }
 
         return false;
     }
 
-    private function dBearishEng($instrument, $date)
+    private function dBearishEng($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getDailyPrices($instrument, $date);
-        
-        if ( ($p0->getClose() < $p1->getClose() and $p0->getClose() < $p1->getOpen()) and ($p0->getOpen() > $p1->getClose() and $p0->getOpen() > $p1->getOpen()) ) {
+
+        if (
+            ($p0->getClose() < $p1->getClose() && $p0->getClose() < $p1->getOpen()) &&
+            ($p0->getOpen() > $p1->getClose() && $p0->getOpen() > $p1->getOpen())
+        ) {
             return true;
         }
-        
+
         return false;
     }
 
-    private function dShtngStarAndDown($instrument, $date)
+    private function dShtngStarAndDown($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getDailyPrices($instrument, $date);
-        
-        if ( ((($p1->getHigh() - $p1->getLow()) > 3 * ($p1->getOpen() - $p1->getClose()) and 
-            (($p1->getHigh() - $p1->getClose()) / (0.001 + $p1->getHigh() - $p1->getLow()) > 0.6) and 
-            (($p1->getHigh()-$p1->getOpen()) / (0.001 + $p1->getHigh() - $p1->getLow()) > 0.6))) and $p0->getOpen() < $p1->getHigh() and $p0->getClose() < $p1->getLow() ) {
+
+        if (
+            ((($p1->getHigh() - $p1->getLow()) > 3 * ($p1->getOpen() - $p1->getClose()) and
+            (($p1->getHigh() - $p1->getClose()) / (0.001 + $p1->getHigh() - $p1->getLow()) > 0.6) and
+            (($p1->getHigh() - $p1->getOpen()) / (0.001 + $p1->getHigh() - $p1->getLow()) > 0.6))) and
+            $p0->getOpen() < $p1->getHigh() and $p0->getClose() < $p1->getLow()
+        ) {
             return true;
         }
-        
+
         return false;
     }
 
-    private function insideWkAndUp($instrument, $date)
+    private function insideWkAndUp($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getWeeklyPrices($instrument, $date);
 
-        if (($p2->getHigh() >= $p1->getHigh()) and ($p2->getLow() <= $p1->getLow()) and ($p0->getClose() >= $p1->getHigh())) {
+        if (
+            ($p2->getHigh() >= $p1->getHigh()) and ($p2->getLow() <= $p1->getLow()) and
+            ($p0->getClose() >= $p1->getHigh())
+        ) {
             return true;
         }
 
         return false;
     }
 
-    private function wkBullishEng($instrument, $date)
+    private function wkBullishEng($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getWeeklyPrices($instrument, $date);
 
-        if (($p0->getOpen() < $p1->getOpen() and $p0->getOpen() < $p1->getClose()) and ($p0->getClose() > $p1->getOpen() and $p0->getClose() > $p1->getClose())) {
+        if (
+            ($p0->getOpen() < $p1->getOpen() and $p0->getOpen() < $p1->getClose()) and
+            ($p0->getClose() > $p1->getOpen() and $p0->getClose() > $p1->getClose())
+        ) {
             return true;
         }
 
         return false;
     }
 
-    private function moShtngStar($instrument, $date)
+    private function moShtngStar($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
 
-        if (($p0->getHigh() - $p0->getLow()) > 3 * ($p0->getOpen() - $p0->getClose()) and 
-          (($p0->getHigh() - $p0->getClose()) / (0.001 + $p0->getHigh() - $p0->getLow()) > 0.6) and 
-          (($p0->getHigh() - $p0->getOpen()) / (0.001 + $p0->getHigh() - $p0->getLow()) > 0.6)) {
+        if (
+            ($p0->getHigh() - $p0->getLow()) > 3 * ($p0->getOpen() - $p0->getClose()) and
+            (($p0->getHigh() - $p0->getClose()) / (0.001 + $p0->getHigh() - $p0->getLow()) > 0.6) and
+            (($p0->getHigh() - $p0->getOpen()) / (0.001 + $p0->getHigh() - $p0->getLow()) > 0.6)
+        ) {
             return true;
         }
 
         return false;
     }
 
-    private function moBullishEng($instrument, $date)
+    private function moBullishEng($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
-        
-        if (($p0->getOpen() < $p1->getOpen() and $p0->getOpen() < $p1->getClose()) and ($p0->getClose() > $p1->getOpen() and $p0->getClose() > $p1->getClose())) {
+
+        if (
+            ($p0->getOpen() < $p1->getOpen() and $p0->getOpen() < $p1->getClose()) and
+            ($p0->getClose() > $p1->getOpen() and $p0->getClose() > $p1->getClose())
+        ) {
             return true;
         }
-        
+
         return false;
     }
 
-    private function dayBO($instrument, $date)
+    private function dayBO($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getDailyPrices($instrument, $date);
 
@@ -111,7 +135,7 @@ trait Formulas
         return false;
     }
 
-    private function dayBD($instrument, $date)
+    private function dayBD($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getDailyPrices($instrument, $date);
 
@@ -122,7 +146,7 @@ trait Formulas
         return false;
     }
 
-    private function posOnD($instrument, $date)
+    private function posOnD($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getDailyPrices($instrument, $date);
 
@@ -133,7 +157,7 @@ trait Formulas
         return false;
     }
 
-    private function negOnD($instrument, $date)
+    private function negOnD($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getDailyPrices($instrument, $date);
 
@@ -144,106 +168,106 @@ trait Formulas
         return false;
     }
 
-    private function weekBO($instrument, $date)
+    private function weekBO($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getWeeklyPrices($instrument, $date);
 
-        if ($p0->getClose()-$p1->getHigh() > 0) {
+        if ($p0->getClose() - $p1->getHigh() > 0) {
             return true;
         }
 
         return false;
     }
 
-    private function weekBD($instrument, $date)
+    private function weekBD($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getWeeklyPrices($instrument, $date);
 
-        if ($p0->getClose()-$p1->getLow() < 0) {
+        if ($p0->getClose() - $p1->getLow() < 0) {
             return true;
         }
 
         return false;
     }
 
-    private function negOnWk($instrument, $date)
+    private function negOnWk($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getWeeklyPrices($instrument, $date);
 
-        if ($p0->getClose()-$p0->getOpen() < 0) {
+        if ($p0->getClose() - $p0->getOpen() < 0) {
             return true;
         }
 
         return false;
     }
 
-    private function posOnWk($instrument, $date)
+    private function posOnWk($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getWeeklyPrices($instrument, $date);
 
-        if ($p0->getClose()-$p0->getOpen() > 0) {
+        if ($p0->getClose() - $p0->getOpen() > 0) {
             return true;
         }
 
         return false;
     }
 
-    private function monthBO($instrument, $date)
-    {
-        list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
-        
-        if ($p0->getClose()-$p1->getHigh() > 0) {
-            return true;
-        }
-        
-        return false;
-    }
-    
-    private function monthBD($instrument, $date)
+    private function monthBO($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
 
-        if ($p0->getClose()-$p1->getLow() < 0) {
+        if ($p0->getClose() - $p1->getHigh() > 0) {
             return true;
         }
 
         return false;
     }
 
-    private function posOnMo($instrument, $date)
+    private function monthBD($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
 
-        if ($p0->getClose()-$p0->getOpen() > 0) {
+        if ($p0->getClose() - $p1->getLow() < 0) {
             return true;
         }
 
         return false;
     }
 
-    private function negOnMo($instrument, $date)
+    private function posOnMo($instrument, $date): bool
     {
         list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
 
-        if ($p0->getClose()-$p0->getOpen() < 0) {
+        if ($p0->getClose() - $p0->getOpen() > 0) {
             return true;
         }
 
         return false;
     }
-    
-    private function getDailyPrices($instrument, $date)
+
+    private function negOnMo($instrument, $date): bool
+    {
+        list($p0, $p1, $p2) = $this->getMonthlyPrices($instrument, $date);
+
+        if ($p0->getClose() - $p0->getOpen() < 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function getDailyPrices($instrument, $date): array
     {
         $oneDayAhead = clone $date;
-        $oneDayAhead->add(new \DateInterval('P1D'));
+        $oneDayAhead->add(new DateInterval('P1D'));
         $tradeDayIterator = self::$container->get(TradingCalendar::class);
         $tradeDayIterator->getInnerIterator()->setStartDate($oneDayAhead)->setDirection(-1);
         $tradeDayIterator->getInnerIterator()->rewind();
         $tradeDayIterator->next();
         return $this->getPrices($instrument, $tradeDayIterator);
     }
-    
-    private function getWeeklyPrices($instrument, $date)
+
+    private function getWeeklyPrices($instrument, $date): array
     {
         $weeklyIterator = self::$container->get(WeeklyIterator::class);
         $weeklyIterator->getInnerIterator()->getInnerIterator()->setStartDate($date)->setDirection(-1);
@@ -252,7 +276,7 @@ trait Formulas
         return $this->getPrices($instrument, $weeklyIterator);
     }
 
-    private function getMonthlyPrices($instrument, $date)
+    private function getMonthlyPrices($instrument, $date): array
     {
         $monthlyIterator = self::$container->get(MonthlyIterator::class);
         $monthlyIterator->getInnerIterator()->getInnerIterator()->setStartDate($date)->setDirection(-1);
@@ -260,8 +284,8 @@ trait Formulas
 
         return $this->getPrices($instrument, $monthlyIterator);
     }
-    
-    private function getPrices($instrument, $iterator)
+
+    private function getPrices($instrument, $iterator): array
     {
         $iteratorClass = get_class($iterator);
         switch ($iteratorClass) {
@@ -290,9 +314,16 @@ trait Formulas
         return [$p0, $p1, $p2];
     }
 
-    private function getP($instrument, $date, $interval)
+    /**
+     * @param Instrument $instrument
+     * @param DateTime $date
+     * @param String $interval
+     * @return History $p
+     * @throws Exception
+     */
+    private function getP(Instrument $instrument, DateTime $date, string $interval): History
     {
-        /** @var Doctrine\ORM\QueryBuilder $queryBuilder */
+        /** @var QueryBuilder $queryBuilder */
         $queryBuilder = $this->em->getRepository(History::class)->createQueryBuilder('p');
         $queryBuilder->select('p')
           ->where('p.timeinterval = :interval')
@@ -303,13 +334,17 @@ trait Formulas
           ->setParameter('instrument', $instrument)
         ;
         $query = $queryBuilder->getQuery();
-        $query->useResultCache(true, $this->resultCacheLifetime);
+        $resultCacheLifetime = self::$container->getParameter('result_cache_lifetime');
+        $query->useResultCache(true, $resultCacheLifetime);
         $results = $query->execute();
 
         if (empty($results)) {
-            throw new \Exception(sprintf('Could not get price data for %s, date %s, interval %s',
-                                         $instrument->getSymbol(),
-                                         $date->format('y-m-d H:i:s'), $interval));
+            throw new Exception(sprintf(
+                'Could not get price data for %s, date %s, interval %s',
+                $instrument->getSymbol(),
+                $date->format('y-m-d H:i:s'),
+                $interval
+            ));
         }
 
         return $results[0];

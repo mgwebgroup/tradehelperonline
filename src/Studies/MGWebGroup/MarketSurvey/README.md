@@ -103,6 +103,11 @@ Option _--append_ makes sure existing instruments and price data will not be pur
 bin/phpunit src/Studies/MGWebGroup/MarketSurvey/Tests/StudyBuilderTest.php
 ```
 
+If you run into errors for finding price entries while running tests, make sure you have converted the daily prices into weekly and yearly for the symbol LIN. Also, erase the application cache pools:
+```bash
+rm -rf var/cache/test/pools
+```
+
 
 Definitions
 ===========

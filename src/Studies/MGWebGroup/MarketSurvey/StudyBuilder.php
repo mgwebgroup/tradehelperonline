@@ -1,25 +1,37 @@
 <?php
+
+/** @noinspection PhpPossiblePolymorphicInvocationInspection */
+
 namespace App\Studies\MGWebGroup\MarketSurvey;
 
 use App\Entity\Expression;
 use App\Entity\Instrument;
 use App\Entity\OHLCV\History;
+use App\Entity\Study\ArrayAttribute;
+use App\Entity\Study\FloatAttribute;
 use App\Entity\Study\Study;
+use App\Entity\Watchlist;
+use App\Exception\ChartException;
 use App\Exception\ExpressionException;
 use App\Exception\PriceHistoryException;
 use App\Repository\StudyArrayAttributeRepository;
 use App\Repository\StudyFloatAttributeRepository;
 use App\Repository\WatchlistRepository;
 use App\Service\Charting\OHLCV\ChartFactory;
+use App\Service\Charting\StyleInterface;
 use App\Service\Exchange\Equities\TradingCalendar;
 use App\Service\Exchange\MonthlyIterator;
 use App\Service\Exchange\WeeklyIterator;
 use App\Service\ExpressionHandler\OHLCV\Calculator;
+use App\Service\Scanner\OHLCV\Scanner;
+use DateInterval;
 use DateTime;
-use MathPHP\Exception\BadDataException;
-use MathPHP\Exception\OutOfBoundsException;
+use Doctrine\ORM\EntityManager;
+use Exception;
+use LimitIterator;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use App\Service\Scanner\ScannerInterface;
+use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Doctrine\Common\Collections\Criteria;
 use App\Studies\MGWebGroup\MarketSurvey\Exception\StudyException;
@@ -40,70 +52,70 @@ use Doctrine\ORM\PersistentCollection;
  */
 class StudyBuilder
 {
-    const INSIDE_BAR_DAY = 'Ins D';
-    const INSIDE_BAR_WK = 'Ins Wk';
-    const INSIDE_BAR_MO = 'Ins Mo';
-    const INS_D_AND_UP = 'Ins D & Up';
-    const D_HAMMER = 'D Hammer';
-    const D_HAMMER_AND_UP = 'D Hammer & Up';
-    const D_BULLISH_ENG = 'D Bullish Eng';
-    const INS_D_AND_DWN = 'Ins D & Dwn';
-    const D_SHTNG_STAR = 'D Shtng Star';
-    const D_SHTNG_STAR_AND_DWN = 'D Shtng Star & Down';
-    const D_BEARISH_ENG = 'D Bearish Eng';
-    const D_BO = 'D BO';
-    const D_BD = 'D BD';
-    const POS_ON_D = 'Pos on D';
-    const NEG_ON_D = 'Neg on D';
-    const WK_BO = 'Wk BO';
-    const WK_BD = 'Wk BD';
-    const POS_ON_WK = 'Pos on Wk';
-    const NEG_ON_WK = 'Neg on Wk';
-    const MO_BO = 'Mo BO';
-    const MO_BD = 'Mo BD';
-    const POS_ON_MO = 'Pos on Mo';
-    const NEG_ON_MO = 'Neg on Mo';
+    public const INSIDE_BAR_DAY = 'Ins D';
+    public const INSIDE_BAR_WK = 'Ins Wk';
+    public const INSIDE_BAR_MO = 'Ins Mo';
+    public const INS_D_AND_UP = 'Ins D & Up';
+    public const D_HAMMER = 'D Hammer';
+    public const D_HAMMER_AND_UP = 'D Hammer & Up';
+    public const D_BULLISH_ENG = 'D Bullish Eng';
+    public const INS_D_AND_DWN = 'Ins D & Dwn';
+    public const D_SHTNG_STAR = 'D Shtng Star';
+    public const D_SHTNG_STAR_AND_DWN = 'D Shtng Star & Down';
+    public const D_BEARISH_ENG = 'D Bearish Eng';
+    public const D_BO = 'D BO';
+    public const D_BD = 'D BD';
+    public const POS_ON_D = 'Pos on D';
+    public const NEG_ON_D = 'Neg on D';
+    public const WK_BO = 'Wk BO';
+    public const WK_BD = 'Wk BD';
+    public const POS_ON_WK = 'Pos on Wk';
+    public const NEG_ON_WK = 'Neg on Wk';
+    public const MO_BO = 'Mo BO';
+    public const MO_BD = 'Mo BD';
+    public const POS_ON_MO = 'Pos on Mo';
+    public const NEG_ON_MO = 'Neg on Mo';
 
-    const P_DAILY = 'P';
-    const DELTA_P_PRCNT = 'delta P prcnt';
+    public const P_DAILY = 'P';
+    public const DELTA_P_PRCNT = 'delta P prcnt';
 
     /**
-     * @var \Doctrine\ORM\EntityManager
+     * @var EntityManager
      */
     private $em;
 
     /**
-     * @var \App\Service\Scanner\OHLCV\Scanner;
+     * @var Scanner;
      */
     private $scanner;
 
     /**
-     * @var \Symfony\Component\DependencyInjection\Container
+     * @var Container
      */
     private $container;
 
     /**
-     * @var \App\Service\ExpressionHandler\OHLCV\Calculator
+     * @var Calculator
      */
     private $calculator;
 
     /**
-     * @var \App\Entity\Study\Study
+     * @var Study
      */
     private $study;
 
     /**
-     * @var \App\Service\Exchange\Equities\TradingCalendar
+     * @var TradingCalendar
      */
     private $tradeDayIterator;
 
     /**
-     * @var \App\Service\Exchange\WeeklyIterator
+     * @var WeeklyIterator
      */
     private $weeklyIterator;
 
     /**
-     * @var \App\Service\Exchange\MonthlyIterator
+     * @var MonthlyIterator
      */
     private $monthlyIterator;
 
@@ -116,8 +128,7 @@ class StudyBuilder
         TradingCalendar $tradingCalendar,
         WeeklyIterator $weeklyIterator,
         MonthlyIterator $monthlyIterator
-    )
-    {
+    ) {
         $this->em = $registry->getManager();
         $this->scanner = $scanner;
         $this->container = $container;
@@ -131,9 +142,9 @@ class StudyBuilder
      * Will override existing study if exists
      * @param $date
      * @param $name
-     * @return Study|App\Entity\Study\Study
+     * @return StudyBuilder
      */
-    public function initStudy($date, $name)
+    public function initStudy($date, $name): StudyBuilder
     {
         $this->study = new Study();
         $this->study->setDate($date);
@@ -142,7 +153,7 @@ class StudyBuilder
         return $this;
     }
 
-    public function getStudy()
+    public function getStudy(): Study
     {
         return $this->study;
     }
@@ -163,13 +174,12 @@ class StudyBuilder
      * later used in Inside Bar Breakouts/Breakdowns analysis as well as to build Actionable Symbols lists in
      * other functions of the StudyBuilder. These watch lists are added to $this->study into its $watchlists property.
      *
-     * @param \App\Entity\Watchlist $watchlist must have expressions associated with it for daily breakouts,
-     * breakdowns, and volume:
+     * @param Watchlist $watchlist must have expressions associated with it for daily breakouts, breakdowns, and volume:
      *   D BO:D BD:V
      * These expressions are used in figuring out of Actionable Symbols list
      * @return StudyBuilder
      */
-    public function calculateMarketBreadth($watchlist)
+    public function calculateMarketBreadth(Watchlist $watchlist): StudyBuilder
     {
         $metric = $this->container->getParameter('market-score');
         $expressions = [];
@@ -187,7 +197,12 @@ class StudyBuilder
         $insideBars = [self::INSIDE_BAR_DAY, self::INSIDE_BAR_WK, self::INSIDE_BAR_MO];
         foreach ($insideBars as $insideBar) {
             if (!empty($survey[$insideBar])) {
-                $newWatchlist[$insideBar] = WatchlistRepository::createWatchlist($insideBar, null, $watchlist->getExpressions(), $survey[$insideBar]);
+                $newWatchlist[$insideBar] = WatchlistRepository::createWatchlist(
+                    $insideBar,
+                    null,
+                    $watchlist->getExpressions(),
+                    $survey[$insideBar]
+                );
                 $this->study->addWatchlist($newWatchlist[$insideBar]);
             }
         }
@@ -195,7 +210,12 @@ class StudyBuilder
         $bullish = [self::INS_D_AND_UP, self::D_HAMMER, self::D_HAMMER_AND_UP, self::D_BULLISH_ENG];
         foreach ($bullish as $signal) {
             if (!empty($survey[$signal])) {
-                $newWatchlist[$signal] = WatchlistRepository::createWatchlist($signal, null, $watchlist->getExpressions(), $survey[$signal]);
+                $newWatchlist[$signal] = WatchlistRepository::createWatchlist(
+                    $signal,
+                    null,
+                    $watchlist->getExpressions(),
+                    $survey[$signal]
+                );
                 $this->study->addWatchlist($newWatchlist[$signal]);
             }
         }
@@ -203,7 +223,12 @@ class StudyBuilder
         $bearish = [self::INS_D_AND_DWN, self::D_SHTNG_STAR, self::D_SHTNG_STAR_AND_DWN, self::D_BEARISH_ENG];
         foreach ($bearish as $signal) {
             if (!empty($survey[$signal])) {
-                $newWatchlist[$signal] = WatchlistRepository::createWatchlist($signal, null, $watchlist->getExpressions(), $survey[$signal]);
+                $newWatchlist[$signal] = WatchlistRepository::createWatchlist(
+                    $signal,
+                    null,
+                    $watchlist->getExpressions(),
+                    $survey[$signal]
+                );
                 $this->study->addWatchlist($newWatchlist[$signal]);
             }
         }
@@ -214,11 +239,11 @@ class StudyBuilder
     /**
      * Takes 'market-score' attribute in the $pastStudy, figures delta from the current score in current study and
      * saves this delta as 'score-delta' float attribute
-     * @param App\Entity\Study\Study $pastStudy past study which has its Market Score stored in float attribute
+     * @param Study $pastStudy past study which has its Market Score stored in float attribute
      * 'market-score'
      * @return StudyBuilder
      */
-    public function calculateScoreDelta($pastStudy = null)
+    public function calculateScoreDelta($pastStudy = null): StudyBuilder
     {
         $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
         if (!$pastStudy) {
@@ -242,7 +267,9 @@ class StudyBuilder
     private function calculateScore($survey, $metric)
     {
         $score = $survey;
-        array_walk($score, function(&$v, $k, $metric) { $v = count($v) * $metric[$k]; }, $metric);
+        array_walk($score, function (&$v, $k, $metric) {
+            $v = count($v) * $metric[$k];
+        }, $metric);
         return array_sum($score);
     }
 
@@ -250,20 +277,20 @@ class StudyBuilder
      * Takes a Watchlist entity and runs scans for each expression in $expressions returning summary of
      * instruments matching each.
      * @param DateTime $date Date for which to run the scan
-     * @param App\Entity\Watchlist $watchlist
+     * @param Watchlist $watchlist
      * @param array $expressions App\Entity\Expression[]
      * @return array $survey = [ string exprName => App\Entity\Instrument[], ...]
      */
-    private function doScan($date, $watchlist, $expressions)
+    private function doScan(DateTime $date, Watchlist $watchlist, array $expressions): array
     {
         $survey = [];
         foreach ($expressions as $expression) {
             $survey[$expression->getName()] = $this->scanner->scan(
-              $watchlist->getInstruments(),
-              $expression->getFormula(),
-              $expression->getCriteria(),
-              $expression->getTimeinterval(),
-              $date
+                $watchlist->getInstruments(),
+                $expression->getFormula(),
+                $expression->getCriteria(),
+                $expression->getTimeinterval(),
+                $date
             );
         }
 
@@ -275,14 +302,14 @@ class StudyBuilder
      * quartets) for the $effectiveDate. Saves results as array attributes 'bobd-daily', 'bobd-weekly',
      * 'bobd-monthly' in $this->study.
      *
-     * @param App\Entity\Study\Study $study past study which has Inside Bar watch lists.
+     * @param Study $study past study which has Inside Bar watch lists.
      * @param DateTime $effectiveDate date for which to run expressions on Inside Bar watch lists
      * @return StudyBuilder
      * @throws StudyException
      */
-    public function figureInsideBarBOBD($study, $effectiveDate)
+    public function figureInsideBarBOBD(Study $study, DateTime $effectiveDate): StudyBuilder
     {
-        if ($study->getWatchlists() instanceof PersistentCollection ) {
+        if ($study->getWatchlists() instanceof PersistentCollection) {
             $study->getWatchlists()->initialize();
         }
 
@@ -320,14 +347,14 @@ class StudyBuilder
     /**
      * Given the study, scans its Actionable Symbols (AS) watch list for Breakouts/Breakdowns (formula
      * quartets) for the $effectiveDate. Saves results as array attribute 'as-bobd' in $this->study.
-     * @param App\Entity\Study\Study $study past study which has Actionable Symbols watch list.
+     * @param Study $study past study which has Actionable Symbols watch list.
      * @param DateTime $effectiveDate date for which to run expressions on AS watch list
      * @return StudyBuilder
      * @throws StudyException
      */
-    public function figureASBOBD($study, $effectiveDate)
+    public function figureASBOBD(Study $study, DateTime $effectiveDate): StudyBuilder
     {
-        if ($study->getWatchlists() instanceof PersistentCollection ) {
+        if ($study->getWatchlists() instanceof PersistentCollection) {
             $study->getWatchlists()->initialize();
         }
 
@@ -351,7 +378,7 @@ class StudyBuilder
     /**
      * Performs watch list scan using list of expression names as strings.
      * @param DateTime $date
-     * @param App\Entity\Watchlist $watchlist
+     * @param Watchlist $watchlist
      * @param array $exprList String[]
      * @return array $bobdTable = [
      *      'survey' => [
@@ -362,7 +389,7 @@ class StudyBuilder
      *   ]
      * @throws StudyException
      */
-    private function makeSurvey($date, $watchlist, $exprList)
+    private function makeSurvey(DateTime $date, Watchlist $watchlist, array $exprList): array
     {
         $bobdTable = [];
 
@@ -380,12 +407,12 @@ class StudyBuilder
 
     /**
      * Takes specific watch lists already attached to the study and selects top 10 instruments from some lists by price
-     * and from other lists by price and volume to formulate the Actionable Symbols ('AS') watch list. This AS watch list is
-     * attached to the study.
+     *   and from other lists by price and volume to formulate the Actionable Symbols ('AS') watch list. This AS watch
+     *   list is attached to the study.
      * @return StudyBuilder
      * @throws StudyException
      */
-    public function buildActionableSymbolsWatchlist()
+    public function buildActionableSymbolsWatchlist(): StudyBuilder
     {
         $watchlistsOfInterest = [
           self::INSIDE_BAR_DAY,
@@ -397,7 +424,8 @@ class StudyBuilder
         $actionableInstrumentsArray = [];
 
         try {
-            $expressions = $this->em->getRepository(Expression::class)->findExpressions([self::P_DAILY, self::DELTA_P_PRCNT]);
+            $expressions = $this->em->getRepository(Expression::class)
+              ->findExpressions([self::P_DAILY, self::DELTA_P_PRCNT]);
         } catch (ExpressionException $e) {
             throw new StudyException($e->getMessage());
         }
@@ -408,16 +436,22 @@ class StudyBuilder
                 case self::D_BULLISH_ENG:
                 case self::D_BEARISH_ENG:
                     $watchlist->update($this->calculator, $this->study->getDate())->sortValuesBy(...['V', SORT_DESC]);
-                break;
+                    break;
                 case self::INS_D_AND_UP:
                 case self::D_HAMMER:
                 case self::D_HAMMER_AND_UP:
-                    $watchlist->update($this->calculator, $this->study->getDate())->sortValuesBy(...['Pos on D', SORT_DESC, 'V', SORT_DESC]);
-                break;
+                    $watchlist->update(
+                        $this->calculator,
+                        $this->study->getDate()
+                    )->sortValuesBy(...['Pos on D', SORT_DESC, 'V', SORT_DESC]);
+                    break;
                 case self::INS_D_AND_DWN:
-                    case self::D_SHTNG_STAR:
+                case self::D_SHTNG_STAR:
                 case self::D_SHTNG_STAR_AND_DWN:
-                    $watchlist->update($this->calculator, $this->study->getDate())->sortValuesBy(...['Neg on D', SORT_ASC, 'V', SORT_DESC]);
+                    $watchlist->update(
+                        $this->calculator,
+                        $this->study->getDate()
+                    )->sortValuesBy(...['Neg on D', SORT_ASC, 'V', SORT_DESC]);
                     break;
                 default:
             }
@@ -427,7 +461,12 @@ class StudyBuilder
                   $symbol]);
             }
         }
-        $actionableSymbolsWatchlist = WatchlistRepository::createWatchlist('AS', null, $expressions, $actionableInstrumentsArray);
+        $actionableSymbolsWatchlist = WatchlistRepository::createWatchlist(
+            'AS',
+            null,
+            $expressions,
+            $actionableInstrumentsArray
+        );
         $this->study->addWatchlist($actionableSymbolsWatchlist);
 
         return $this;
@@ -435,27 +474,24 @@ class StudyBuilder
 
     /**
      * Score table contains current score with historical market scores, score deltas, prices for SPY and how many
-     * standard deviations from average the score and the score deltas are for each day. These numbers are used to
-     * mark significant levels for SPY, called the Levels Map.
-     * In order to calculate the table correctly, current study must already have attributes 'market-score' and 'score-delta'
-     * calculated. Also, studies for the $daysBack must already be saved in database with the same attributes available.
+     *   standard deviations from average the score and the score deltas are for each day. These numbers are used to
+     *   mark significant levels for SPY, called the Levels Map. In order to calculate the table correctly, current
+     *   study must already have attributes 'market-score' and 'score-delta' calculated. Also, studies for the $daysBack
+     *   must already be saved in database with the same attributes available.
      * Function attaches new array attribute 'score-table-rolling' to the $study.
      * @param integer $daysBack
      * @return StudyBuilder
      * @throws StudyException
      * @throws PriceHistoryException
-     * @throws BadDataException
-     * @throws OutOfBoundsException
      */
-    public function buildMarketScoreTableForRollingPeriod($daysBack)
+    public function buildMarketScoreTableForRollingPeriod(int $daysBack): StudyBuilder
     {
-        /** @var App\Entity\Instrument | null $SPY */
+        /** @var Instrument | null $SPY */
         $SPY = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => 'SPY']);
         if (!$SPY) {
             throw new StudyException('Could not find instrument for `SPY`');
         }
 
-        /** @var \DateInterval $interval */
         $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
 
         $scoreTableRolling = ['table' => [], 'summary' => []];
@@ -484,7 +520,7 @@ class StudyBuilder
             $daysBack--;
         }
 
-        if ( count($scoreTableRolling['table']) > 0) {
+        if (count($scoreTableRolling['table']) > 0) {
             $scoreTableRolling = $this->addScoreTableSummary($scoreTableRolling);
 
             StudyArrayAttributeRepository::createArrayAttr($this->study, 'score-table-rolling', $scoreTableRolling);
@@ -510,21 +546,29 @@ class StudyBuilder
         $scoreTable['summary']['score-std_div'] = Descriptive::sd($scoreColumn);
         $scoreTable['summary']['delta-std_div'] = Descriptive::sd($deltaColumn);
 
-        $scoreTable['summary']['score-days_pos'] = array_reduce($scoreColumn, function($carry, $item) {
-            if ($item > 0) { $carry++;} return $carry; }, 0);
-        $scoreTable['summary']['score-days_neg'] = array_reduce($scoreColumn, function($carry, $item) {
-            if ($item < 0) { $carry++;} return $carry; }, 0);
+        $scoreTable['summary']['score-days_pos'] = array_reduce($scoreColumn, function ($carry, $item) {
+            if ($item > 0) {
+                $carry++;
+            } return $carry;
+        }, 0);
+        $scoreTable['summary']['score-days_neg'] = array_reduce($scoreColumn, function ($carry, $item) {
+            if ($item < 0) {
+                $carry++;
+            } return $carry;
+        }, 0);
 
         $scoreAvg = $scoreTable['summary']['score-avg'];
         $scoreStdDev = $scoreTable['summary']['score-std_div'];
         $deltaAvg = $scoreTable['summary']['delta-avg'];
         $deltaStdDev = $scoreTable['summary']['delta-std_div'];
         $updatedTable =  array_map(
-          function($record) use ($scoreAvg, $scoreStdDev, $deltaAvg, $deltaStdDev) {
-              $record['score-std_div_qty'] = ($record['score'] - $scoreAvg) / $scoreStdDev;
-              $record['delta-std_div_qty'] = ($record['delta'] - $deltaAvg) / $deltaStdDev;
-              return $record;
-          }, $scoreTable['table']);
+            function ($record) use ($scoreAvg, $scoreStdDev, $deltaAvg, $deltaStdDev) {
+                $record['score-std_div_qty'] = ($record['score'] - $scoreAvg) / $scoreStdDev;
+                $record['delta-std_div_qty'] = ($record['delta'] - $deltaAvg) / $deltaStdDev;
+                return $record;
+            },
+            $scoreTable['table']
+        );
 
         $scoreTable['table'] = $updatedTable;
 
@@ -534,16 +578,16 @@ class StudyBuilder
     /**
      * @param Study $study
      * @param Instrument $instrument
-     * @param \DateInterval $interval
+     * @param DateInterval $interval
      * @return array
      * @throws StudyException
      */
-    private function getScoreTableParams($study, $instrument, $interval)
+    private function getScoreTableParams(Study $study, Instrument $instrument, DateInterval $interval): array
     {
         $date = $study->getDate();
 
         $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
-        /** @var App\Entity\Study\FloatAttribute | false  $scoreFloatAttr */
+        /** @var FloatAttribute | false  $scoreFloatAttr */
         $scoreFloatAttr = $study->getFloatAttributes()->matching($getScore)->first();
         if ($scoreFloatAttr) {
             $score = $scoreFloatAttr->getValue();
@@ -559,10 +603,15 @@ class StudyBuilder
             throw new StudyException('Study in the StudyBuilder is missing current score delta');
         }
 
-        $h = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $date, 'timeinterval' => $interval]);
+        /** @var History $h */
+        $h = $this->em->getRepository(History::class)
+          ->findOneBy(['instrument' => $instrument, 'timestamp' => $date, 'timeinterval' => $interval]);
         if (!$h) {
-            throw new StudyException(sprintf('Price history for instrument `%s` and date `%s` could not be found',
-                                             $instrument->getSymbol(), $date->format('Y-m-d H:i:s')));
+            throw new StudyException(sprintf(
+                'Price history for instrument `%s` and date `%s` could not be found',
+                $instrument->getSymbol(),
+                $date->format('Y-m-d H:i:s')
+            ));
         }
 
         return ['score' => $score, 'delta' => $scoreDelta, 'P' => $h->getClose()];
@@ -571,19 +620,18 @@ class StudyBuilder
     /**
      * Same as method buildMarketScoreTableForRollingPeriod, but starts from beginning of month. Saves results in
      * new array attribute 'score-table-mtd'.
-     * @return $this
+     * @return StudyBuilder
      * @throws PriceHistoryException
      * @throws StudyException
      */
-    public function buildMarketScoreTableForMTD()
+    public function buildMarketScoreTableForMTD(): StudyBuilder
     {
-        /** @var App\Entity\Instrument | null $SPY */
+        /** @var Instrument | null $SPY */
         $SPY = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => 'SPY']);
         if (!$SPY) {
             throw new StudyException('Could not find instrument for `SPY`');
         }
 
-        /** @var \DateInterval $interval */
         $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
 
         $scoreTableMTD = ['table' => [], 'summary' => []];
@@ -610,7 +658,7 @@ class StudyBuilder
             $scoreTableMTD['table'][] = $studyParams;
         }
 
-        if ( count($scoreTableMTD['table']) > 0) {
+        if (count($scoreTableMTD['table']) > 0) {
             $scoreTableMTD = $this->addScoreTableSummary($scoreTableMTD);
 
             StudyArrayAttributeRepository::createArrayAttr($this->study, 'score-table-mtd', $scoreTableMTD);
@@ -621,16 +669,17 @@ class StudyBuilder
 
     /**
      * Takes sector watch list and uses prices for sectors to figure various parameters.
-     * The sector watch list must have P:delta P prcnt:delta P(5) prcnt expressions associated with it. File sectors.csv already comes with
-     * the sectors and formulas in it. Please refer to the study README.md file on how how to import it.
+     * The sector watch list must have P:delta P prcnt:delta P(5) prcnt expressions associated with it. File
+     *   sectors.csv already comes with the sectors and formulas in it. Please refer to the study README.md file on
+     *   how how to import it.
      * Saves new array attribute for the study titled 'sector-table'.
      * Will throw StudyException if 4 past Studies are not stored in database.
-     * @param $watchlist Sector Watchlist
-     * @param \DateTime $date
+     * @param Watchlist $watchlist Sector Watchlist
+     * @param DateTime $date
      * @return StudyBuilder
      * @throws StudyException
      */
-    public function buildSectorTable($watchlist, $date)
+    public function buildSectorTable(Watchlist $watchlist, DateTime $date): StudyBuilder
     {
         $watchlist->update($this->calculator, $date);
 
@@ -646,8 +695,8 @@ class StudyBuilder
             $beginningOfMonth = clone $this->monthlyIterator->current();
 
             $aDate = clone $beginningOfMonth;
-            while (($aDate->format('n')-1)%3 > 0) {
-                $aDate->sub(new \DateInterval('P1M'));
+            while (($aDate->format('n') - 1) % 3 > 0) {
+                $aDate->sub(new DateInterval('P1M'));
             }
             $this->monthlyIterator->getInnerIterator()->getInnerIterator()->setStartDate($aDate);
             $this->monthlyIterator->rewind();
@@ -667,17 +716,22 @@ class StudyBuilder
               'yr_start' => $beginningOfYear,
               'pos_score' => 6
             ];
-            array_walk($calculated_formulas, function(&$data, $symbol, &$params) {
+            array_walk($calculated_formulas, function (&$data, $symbol, &$params) {
                 $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $symbol]);
                 $moreData = ['Wk delta P' => 0, 'Mo delta P' => 0, 'Qrtr delta P' => 0, 'Yr delta P' => 0];
                 if ($instrument) {
-                    $weekStartP  = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $params['wk_start']]);
+                    $weekStartP  = $this->em->getRepository(History::class)
+                      ->findOneBy(['instrument' => $instrument, 'timestamp' => $params['wk_start']]);
                     $moreData['Wk delta P'] = ($data['P'] - $weekStartP->getOpen()) / $weekStartP->getOpen() * 100;
-                    $monthStartP = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $params['mo_start']]);
+                    $monthStartP = $this->em->getRepository(History::class)
+                      ->findOneBy(['instrument' => $instrument, 'timestamp' => $params['mo_start']]);
                     $moreData['Mo delta P'] = ($data['P'] - $monthStartP->getOpen()) / $monthStartP->getOpen() * 100;
-                    $quarterStartP = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $params['qtr_start']]);
-                    $moreData['Qrtr delta P'] = ($data['P'] - $quarterStartP->getOpen()) / $quarterStartP->getOpen() * 100;
-                    $yearStartP = $this->em->getRepository(History::class)->findOneBy(['instrument' => $instrument, 'timestamp' => $params['yr_start']]);
+                    $quarterStartP = $this->em->getRepository(History::class)
+                      ->findOneBy(['instrument' => $instrument, 'timestamp' => $params['qtr_start']]);
+                    $moreData['Qrtr delta P'] = ($data['P'] - $quarterStartP->getOpen()) /
+                      $quarterStartP->getOpen() * 100;
+                    $yearStartP = $this->em->getRepository(History::class)
+                      ->findOneBy(['instrument' => $instrument, 'timestamp' => $params['yr_start']]);
                     $moreData['Yr delta P'] = ($data['P'] - $yearStartP->getOpen()) / $yearStartP->getOpen() * 100;
 
                     if (0 == $params['pos_score']) {
@@ -699,7 +753,7 @@ class StudyBuilder
 
                 $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => $pastDate]);
                 if ($pastStudy) {
-                    /** @var App\Entity\Study\ArrayAttribute | false  $sectorTableArrayAttr */
+                    /** @var ArrayAttribute | false  $sectorTableArrayAttr */
                     $sectorTableArrayAttr = $pastStudy->getArrayAttributes()->matching($getSectorTable)->first();
                     if ($sectorTableArrayAttr) {
                         $pastSectorTable = $sectorTableArrayAttr->getValue();
@@ -708,11 +762,12 @@ class StudyBuilder
                             $pastSectorTablePrevT = $pastSectorTable;
                         }
                         foreach ($pastSectorTable['table'] as $symbol => $data) {
-                            $calculated_formulas[$symbol]['Hist Pos Score']['T-'.$daysBack] = $data['Hist Pos Score']['T'];
+                            $calculated_formulas[$symbol]['Hist Pos Score']['T-' . $daysBack] =
+                              $data['Hist Pos Score']['T'];
                         }
                     } else {
-                        array_walk($calculated_formulas, function(&$data, $symbol, $daysBack) {
-                            $data['Hist Pos Score']['T-'.$daysBack] = 0;
+                        array_walk($calculated_formulas, function (&$data, $symbol, $daysBack) {
+                            $data['Hist Pos Score']['T-' . $daysBack] = 0;
                         }, $daysBack);
                     }
                 } else {
@@ -720,7 +775,7 @@ class StudyBuilder
                 }
             }
 
-            array_walk($calculated_formulas, function(&$data, $symbol) {
+            array_walk($calculated_formulas, function (&$data, $symbol) {
                 $data['Pos Score Sum'] = array_sum($data['Hist Pos Score']);
                 $data['Pos Score Grad'] = $data['Hist Pos Score']['T'] - $data['Hist Pos Score']['T-4'];
             });
@@ -738,10 +793,14 @@ class StudyBuilder
             if (isset($pastSectorTablePrevT)) {
                 $summary['up_down_tick']['delta P(5) prcnt'] = $summary['sum']['delta P(5) prcnt'] -
                   $pastSectorTablePrevT['summary']['sum']['delta P(5) prcnt'];
-                $summary['up_down_tick']['Wk delta P'] = $summary['sum']['Wk delta P'] - $pastSectorTablePrevT['summary']['sum']['Wk delta P'];
-                $summary['up_down_tick']['Mo delta P'] = $summary['sum']['Mo delta P'] - $pastSectorTablePrevT['summary']['sum']['Mo delta P'];
-                $summary['up_down_tick']['Qrtr delta P'] = $summary['sum']['Qrtr delta P'] - $pastSectorTablePrevT['summary']['sum']['Qrtr delta P'];
-                $summary['up_down_tick']['Yr delta P'] = $summary['sum']['Yr delta P'] - $pastSectorTablePrevT['summary']['sum']['Yr delta P'];
+                $summary['up_down_tick']['Wk delta P'] = $summary['sum']['Wk delta P'] -
+                  $pastSectorTablePrevT['summary']['sum']['Wk delta P'];
+                $summary['up_down_tick']['Mo delta P'] = $summary['sum']['Mo delta P'] -
+                  $pastSectorTablePrevT['summary']['sum']['Mo delta P'];
+                $summary['up_down_tick']['Qrtr delta P'] = $summary['sum']['Qrtr delta P'] -
+                  $pastSectorTablePrevT['summary']['sum']['Qrtr delta P'];
+                $summary['up_down_tick']['Yr delta P'] = $summary['sum']['Yr delta P'] -
+                  $pastSectorTablePrevT['summary']['sum']['Yr delta P'];
             } else {
                 $summary['up_down_tick']['delta P(5) prcnt'] = $summary['sum']['delta P(5) prcnt'] - 0;
                 $summary['up_down_tick']['Wk delta P'] = $summary['sum']['Wk delta P'] - 0;
@@ -751,8 +810,7 @@ class StudyBuilder
             }
 
             $sectorTable['summary'] = $summary;
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             throw new StudyException($e->getMessage());
         }
 
@@ -765,13 +823,13 @@ class StudyBuilder
      * Builds charts for symbols in watchlist using same style. Saves all charts to disk. Chart files have names
      * similar to: LIN_20200515.png
      * @param Watchlist $watchlist
-     * @param App\Service\Charting\StyleInterface $style
+     * @param StyleInterface $style
      * @return StudyBuilder
      * @throws PriceHistoryException
      * @throws StudyException
-     * @throws \App\Exception\ChartException
+     * @throws ChartException
      */
-    public function buildCharts($watchlist, $style)
+    public function buildCharts(Watchlist $watchlist, StyleInterface $style): StudyBuilder
     {
         $instruments = $watchlist->getInstruments();
         $studyDate = $this->getStudy()->getDate();
@@ -779,7 +837,7 @@ class StudyBuilder
         foreach ($instruments as $instrument) {
             $this->tradeDayIterator->getInnerIterator()->setStartDate($studyDate)->setDirection(-1);
             $offset = 100;
-            $limitIterator = new \LimitIterator($this->tradeDayIterator, $offset, 1);
+            $limitIterator = new LimitIterator($this->tradeDayIterator, $offset, 1);
             $limitIterator->rewind();
             $fromDate = $limitIterator->current();
             $interval = History::getOHLCVInterval(History::INTERVAL_DAILY);
@@ -787,12 +845,18 @@ class StudyBuilder
               ->retrieveHistory($instrument, $interval, $fromDate, $studyDate);
             if (!$history) {
                 throw new StudyException(
-                  sprintf('Could not retrieve price history from %s through %s for daily interval for instrument %s',
-                          $fromDate->format('Y-m-d'), $studyDate->format('Y-m-d'), $instrument->getSymbol())
+                    sprintf(
+                        'Could not retrieve price history from %s through %s for daily interval for instrument %s',
+                        $fromDate->format('Y-m-d'),
+                        $studyDate->format('Y-m-d'),
+                        $instrument->getSymbol()
+                    )
                 );
             }
 
-            $style->categories = array_map(function($p) { return $p->getTimestamp()->format('m/d'); }, $history);
+            $style->categories = array_map(function ($p) {
+                return $p->getTimestamp()->format('m/d');
+            }, $history);
             $keys = array_keys($history);
             $lastPriceHistoryKey = array_pop($keys);
             $this->tradeDayIterator->getInnerIterator()->setStartDate($history[$lastPriceHistoryKey]->getTimeStamp())

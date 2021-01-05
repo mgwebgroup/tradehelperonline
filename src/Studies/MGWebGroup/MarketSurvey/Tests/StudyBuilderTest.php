@@ -8,21 +8,25 @@ use App\Entity\Watchlist;
 use App\Entity\Study\Study;
 use App\Service\Charting\OHLCV\StyleLibrary;
 use App\Studies\MGWebGroup\MarketSurvey\StudyBuilder;
+use DateTime;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\OptimisticLockException;
+use Doctrine\ORM\ORMException;
+use League\Csv\Exception;
 use League\Csv\Reader;
-use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Doctrine\Common\Collections\Criteria;
 
 class StudyBuilderTest extends KernelTestCase
 {
     use Formulas;
 
-    const INTERVAL_DAILY =  '+P00Y00M01DT00H00M00S';
-    const INTERVAL_WEEKLY = '+P00Y00M07DT00H00M00S';
-    const INTERVAL_MONTHLY = '+P00Y01M00DT00H00M00S';
-
-    const WATCHLIST_NAME = 'watchlist_test';
-    const STUDY_NAME = 'test_market_study';
-    const SECTORS_WATCHLIST = 'sectors_test';
+    public const INTERVAL_DAILY =  '+P00Y00M01DT00H00M00S';
+    public const INTERVAL_WEEKLY = '+P00Y00M07DT00H00M00S';
+    public const INTERVAL_MONTHLY = '+P00Y01M00DT00H00M00S';
+    public const WATCHLIST_NAME = 'watchlist_test';
+    public const STUDY_NAME = 'test_market_study';
+    public const SECTORS_WATCHLIST = 'sectors_test';
 
     /**
      * @var
@@ -30,7 +34,7 @@ class StudyBuilderTest extends KernelTestCase
     private $SUT;
 
     /**
-     * @var \Doctrine\ORM\EntityManager
+     * @var EntityManager
      */
     private $em;
 
@@ -39,10 +43,10 @@ class StudyBuilderTest extends KernelTestCase
      */
     private $watchlist;
 
-    /**
-     * @var integer
-     */
-    private $resultCacheLifetime;
+//    /**
+//     * @var integer
+//     */
+//    private $resultCacheLifetime;
 
     /**
      * Details on how to access services in tests:
@@ -53,24 +57,32 @@ class StudyBuilderTest extends KernelTestCase
         self::bootKernel();
         $this->SUT = self::$container->get(StudyBuilder::class);
         $this->em = self::$container->get('doctrine')->getManager();
-        $this->resultCacheLifetime = self::$container->getParameter('result_cache_lifetime');
+//        $this->resultCacheLifetime = self::$container->getParameter('result_cache_lifetime');
 
         $this->watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => self::WATCHLIST_NAME]);
 
-        $date = new \DateTime('2020-05-15');
+        $date = new DateTime('2020-05-15');
         $this->SUT->initStudy($date, self::STUDY_NAME);
     }
 
-    public function testMarketBreadth_15May2020_MarketBreadth()
+    /**
+     * Test creation of 'market-breadth' attribute
+     * Study for 15-May-2020
+     * Attribute is saved in database
+     * @throws ORMException
+     * @throws OptimisticLockException
+     * @throws Exception
+     */
+    public function testMarketBreadth()
     {
-        $date = new \DateTime('2020-05-15');
+        $date = new DateTime('2020-05-15');
 
         $csv = Reader::createFromPath('src/Studies/MGWebGroup/MarketSurvey/DataFixtures/watchlist_test.csv');
         $csv->setHeaderOffset(0);
 
         $insideDAndUp = [];
-        $DBearishEng = [];
-        $DShtngStarAndDown = [];
+//        $DBearishEng = [];
+//        $DShtngStarAndDown = [];
         $insWkAndUp = [];
         $WkBullishEng = [];
         $MoShtngStar = [];
@@ -84,13 +96,13 @@ class StudyBuilderTest extends KernelTestCase
                 $insideDAndUp[] = $instrument;
             }
 
-            if ($this->dBearishEng($instrument, $date)) {
-                $DBearishEng[] = $instrument;
-            }
+//            if ($this->dBearishEng($instrument, $date)) {
+//                $DBearishEng[] = $instrument;
+//            }
 
-            if ($this->dShtngStarAndDown($instrument, $date)) {
-                $DShtngStarAndDown[] = $instrument;
-            }
+//            if ($this->dShtngStarAndDown($instrument, $date)) {
+//                $DShtngStarAndDown[] = $instrument;
+//            }
 
             if ($this->insideWkAndUp($instrument, $date)) {
                 $insWkAndUp[] = $instrument;
@@ -100,7 +112,7 @@ class StudyBuilderTest extends KernelTestCase
                 $WkBullishEng[] = $instrument;
             }
 
-            if($this->moShtngStar($instrument, $date)) {
+            if ($this->moShtngStar($instrument, $date)) {
                 $MoShtngStar[] = $instrument;
             }
 
@@ -108,11 +120,11 @@ class StudyBuilderTest extends KernelTestCase
                 $MoBullishEng[] = $instrument;
             }
         }
-        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        fwrite(STDOUT, 'complete.' . PHP_EOL);
 
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
         $this->SUT->calculateMarketBreadth($this->watchlist);
-        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        fwrite(STDOUT, 'complete.' . PHP_EOL);
 
         $getMarketBreadth = new Criteria(Criteria::expr()->eq('attribute', 'market-breadth'));
         $survey = $this->SUT->getStudy()->getArrayAttributes()->matching($getMarketBreadth)->first()->getValue();
@@ -144,18 +156,24 @@ class StudyBuilderTest extends KernelTestCase
         $this->em->flush();
     }
 
-    public function testFigureInsideBarBOBD_14May2020_BOBDTable()
+
+    /**
+     * Test creation of BreakOuts/BreakDowns attribute tables using PrevT study
+     * Study for PrevT is 14-May-2020
+     * Study for T is 15-May-2020
+     */
+    public function testFigureInsideBarBOBD()
     {
-        $date1 = new \DateTime('2020-05-14');
+        $date1 = new DateTime('2020-05-14');
         $this->SUT->getStudy()->setDate($date1);
 
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
         $this->SUT->calculateMarketBreadth($this->watchlist);
-        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        fwrite(STDOUT, 'complete.' . PHP_EOL);
 
         $pastStudy = $this->SUT->getStudy();
 
-        $date2 = new \DateTime('2020-05-15');
+        $date2 = new DateTime('2020-05-15');
         $name = 'test_market_study';
         $this->SUT->initStudy($date2, $name);
 
@@ -243,21 +261,21 @@ class StudyBuilderTest extends KernelTestCase
     {
         $getScore = new Criteria(Criteria::expr()->eq('attribute', 'market-score'));
 
-        $date1 = new \DateTime('2020-05-14');
+        $date1 = new DateTime('2020-05-14');
         $this->SUT->getStudy()->setDate($date1);
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
         $this->SUT->calculateMarketBreadth($this->watchlist);
-        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        fwrite(STDOUT, 'complete.' . PHP_EOL);
         $pastStudy = $this->SUT->getStudy();
         $pastScore = $pastStudy->getFloatAttributes()->matching($getScore)->first()->getValue();
 
-        $date2 = new \DateTime('2020-05-15');
+        $date2 = new DateTime('2020-05-15');
         $name = 'test_market_study';
         $this->SUT->initStudy($date2, $name);
 
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
         $this->SUT->calculateMarketBreadth($this->watchlist);
-        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        fwrite(STDOUT, 'complete.' . PHP_EOL);
 
         $this->SUT->calculateScoreDelta($pastStudy);
 
@@ -274,11 +292,11 @@ class StudyBuilderTest extends KernelTestCase
 
     public function testActionableSymbolsWatchlist()
     {
-        $date = new \DateTime('2020-05-15');
+        $date = new DateTime('2020-05-15');
 
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
         $this->SUT->calculateMarketBreadth($this->watchlist);
-        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        fwrite(STDOUT, 'complete.' . PHP_EOL);
 
         $this->SUT->buildActionableSymbolsWatchlist();
 
@@ -286,8 +304,14 @@ class StudyBuilderTest extends KernelTestCase
         $ASWatchlist = $this->SUT->getStudy()->getWatchlists()->matching($getASWatchilst)->first();
         $ASInstruments = $ASWatchlist->getInstruments()->toArray();
 
-        $watchlistsOfInterestVolumeOnly = [StudyBuilder::INSIDE_BAR_DAY, StudyBuilder::D_BULLISH_ENG, StudyBuilder::D_BEARISH_ENG];
-        $getWatchlistsOfInterestVolumeOnly = new Criteria(Criteria::expr()->in('name', $watchlistsOfInterestVolumeOnly));
+        $watchlistsOfInterestVolumeOnly = [
+            StudyBuilder::INSIDE_BAR_DAY,
+            StudyBuilder::D_BULLISH_ENG,
+            StudyBuilder::D_BEARISH_ENG
+        ];
+        $getWatchlistsOfInterestVolumeOnly = new Criteria(
+            Criteria::expr()->in('name', $watchlistsOfInterestVolumeOnly)
+        );
         $watchlists = $this->SUT->getStudy()->getWatchlists()->matching($getWatchlistsOfInterestVolumeOnly);
         foreach ($watchlists as $watchlist) {
             $dataSet = [];
@@ -303,8 +327,14 @@ class StudyBuilderTest extends KernelTestCase
             }
         }
 
-        $watchlistsOfInterestPAndVolume = [StudyBuilder::INS_D_AND_UP, StudyBuilder::D_HAMMER, StudyBuilder::D_HAMMER_AND_UP];
-        $getWatchlistsOfInterestPAndVolume = new Criteria(Criteria::expr()->in('name', $watchlistsOfInterestPAndVolume));
+        $watchlistsOfInterestPAndVolume = [
+            StudyBuilder::INS_D_AND_UP,
+            StudyBuilder::D_HAMMER,
+            StudyBuilder::D_HAMMER_AND_UP
+        ];
+        $getWatchlistsOfInterestPAndVolume = new Criteria(
+            Criteria::expr()->in('name', $watchlistsOfInterestPAndVolume)
+        );
         $watchlists = $this->SUT->getStudy()->getWatchlists()->matching($getWatchlistsOfInterestPAndVolume);
         foreach ($watchlists as $watchlist) {
             $dataSet = [];
@@ -321,8 +351,14 @@ class StudyBuilderTest extends KernelTestCase
             }
         }
 
-        $watchlistsOfInterestPAndVolume = [StudyBuilder::INS_D_AND_DWN, StudyBuilder::D_SHTNG_STAR, StudyBuilder::D_SHTNG_STAR_AND_DWN];
-        $getWatchlistsOfInterestPAndVolume = new Criteria(Criteria::expr()->in('name', $watchlistsOfInterestPAndVolume));
+        $watchlistsOfInterestPAndVolume = [
+          StudyBuilder::INS_D_AND_DWN,
+          StudyBuilder::D_SHTNG_STAR,
+          StudyBuilder::D_SHTNG_STAR_AND_DWN
+        ];
+        $getWatchlistsOfInterestPAndVolume = new Criteria(
+            Criteria::expr()->in('name', $watchlistsOfInterestPAndVolume)
+        );
         $watchlists = $this->SUT->getStudy()->getWatchlists()->matching($getWatchlistsOfInterestPAndVolume);
         foreach ($watchlists as $watchlist) {
             $dataSet = [];
@@ -340,14 +376,19 @@ class StudyBuilderTest extends KernelTestCase
         }
     }
 
-    public function testASBOBD_14May2020_ASBOBDTable()
+    /**
+     * Test Actionable Symbols breakout/breakdown tables using study for PrevT
+     * Study for PrevT: 14-May-2020
+     * Study for T: 15-May-2020
+     */
+    public function testASBOBD()
     {
-        $date1 = new \DateTime('2020-05-14');
+        $date1 = new DateTime('2020-05-14');
         $this->SUT->getStudy()->setDate($date1);
 
         fwrite(STDOUT, 'Calculating Market Breadth. This will take a while...');
         $this->SUT->calculateMarketBreadth($this->watchlist);
-        fwrite(STDOUT, 'complete.'.PHP_EOL);
+        fwrite(STDOUT, 'complete.' . PHP_EOL);
 
         $this->SUT->buildActionableSymbolsWatchlist();
         $pastStudy = $this->SUT->getStudy();
@@ -356,7 +397,7 @@ class StudyBuilderTest extends KernelTestCase
         $ASWatchlist = $pastStudy->getWatchlists()->matching($getASWatchilst)->first();
         $ASInstruments = $ASWatchlist->getInstruments()->toArray();
 
-        $date2 = new \DateTime('2020-05-15');
+        $date2 = new DateTime('2020-05-15');
 
         $dayBO = [];
         $dayBD = [];
@@ -477,10 +518,13 @@ class StudyBuilderTest extends KernelTestCase
         }
     }
 
-    public function testBuildMarketScoreTableForRollingPeriod_start15May2020_MarketScoreRollingAttr()
+    /**
+     * Test creation of Market Score Table for a Rolling 21 Day Period
+     */
+    public function testBuildMarketScoreTableForRollingPeriod()
     {
         $periodDays = 20;
-        $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => new \DateTime('2020-05-14')]);
+        $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => new DateTime('2020-05-14')]);
         $this->SUT->calculateMarketBreadth($this->watchlist);
         $this->SUT->calculateScoreDelta($pastStudy);
 //        $this->SUT->buildActionableSymbolsWatchlist();
@@ -492,7 +536,7 @@ class StudyBuilderTest extends KernelTestCase
 
     public function testBuildMarketScoreTableForMTD()
     {
-        $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => new \DateTime('2020-05-14')]);
+        $pastStudy = $this->em->getRepository(Study::class)->findOneBy(['date' => new DateTime('2020-05-14')]);
         $this->SUT->calculateMarketBreadth($this->watchlist);
         $this->SUT->calculateScoreDelta($pastStudy);
         $this->SUT->buildMarketScoreTableForMTD();
@@ -505,10 +549,7 @@ class StudyBuilderTest extends KernelTestCase
     {
         $watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => self::SECTORS_WATCHLIST]);
         $date = $this->SUT->getStudy()->getDate();
-//        $date = new \DateTime('2020-05-11');
         $this->SUT->buildSectorTable($watchlist, $date);
-
-//        fwrite(STDOUT, $date->format('Y-m-d'));
     }
 
     public function testBuildCharts()
@@ -523,7 +564,7 @@ class StudyBuilderTest extends KernelTestCase
         $date = $this->SUT->getStudy()->getDate();
         foreach ($watchlist->getInstruments() as $instrument) {
             $fileName = sprintf('%s_%s.png', $instrument->getSymbol(), $date->format('Ymd'));
-            $this->assertFileExists('public/'.$fileName);
+            $this->assertFileExists('public/' . $fileName);
         }
     }
 }

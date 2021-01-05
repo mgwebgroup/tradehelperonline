@@ -138,7 +138,6 @@ class ConvertOhlcvCommand extends Command
         }
     }
 
-    /** @noinspection PhpInconsistentReturnPointsInspection */
     protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
         if ($this->csvReader) {
@@ -169,6 +168,8 @@ class ConvertOhlcvCommand extends Command
             $this->utilities->logAndSay($output, $logMsg, $logMsg);
         }
         $this->utilities->pronounceEnd($this, $output);
+
+        return 0;
     }
 
     protected function convert(): string
