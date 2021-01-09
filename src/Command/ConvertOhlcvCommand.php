@@ -150,7 +150,6 @@ class ConvertOhlcvCommand extends Command
                 $statement = $statement->limit($this->chunk);
             }
             $records = $statement->process($this->csvReader);
-//            $records = $this->csvReader->getRecords();
             foreach ($records as $value) {
                 $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $value['Symbol']]);
                 if ($instrument) {
@@ -169,6 +168,8 @@ class ConvertOhlcvCommand extends Command
             $this->utilities->logAndSay($output, $logMsg, $logMsg);
         }
         $this->utilities->pronounceEnd($this, $output);
+
+        return 0;
     }
 
     protected function convert(): string
