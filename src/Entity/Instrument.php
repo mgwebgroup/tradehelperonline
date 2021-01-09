@@ -35,7 +35,7 @@ class Instrument
     private $symbol;
 
     /**
-     * @ORM\Column(type="string", length=80, nullable=true)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $name;
 

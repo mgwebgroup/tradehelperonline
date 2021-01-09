@@ -30,8 +30,6 @@ class ImportInstruments extends Command
 {
     /**
      * Default list to import
-     * List of current company listings can be downloaded from NASDAQ website:
-     * https://www.nasdaq.com/screening/company-list.aspx
      */
     const MAIN_FILE = 'data/source/x_universe.csv';
 
@@ -230,22 +228,24 @@ EOT
                 }
 
                 if ($exchange) {
-                    if ($this->overwrite) {
-                        $instrument = $repository->findOneBySymbol($record['Symbol']);
-                    }
-
-                    if (!isset($instrument)) {
+                    $action = 'skipped';
+                    $instrument = $repository->findOneBySymbol($record['Symbol']);
+                    if (empty($instrument)) {
                         $instrument = new Instrument();
                         $action = 'imported';
-                    } else {
+                    }
+                    if ($instrument->getSymbol() == $record['Symbol']) {
+                        $logMsg .= 'already imported ';
+                    }
+                    if ($this->overwrite || 'imported' == $action) {
+                        $instrument->setSymbol(strtoupper($record['Symbol']));
+                        $instrument->setExchange($exchange->getExchangeName());
+                        $instrument->setName($record['Name']);
+                        $this->em->persist($instrument);
+                    }
+                    if ($this->overwrite) {
                         $action = 'overwritten';
                     }
-
-                    $instrument->setSymbol(strtoupper($record['Symbol']));
-                    $instrument->setExchange($exchange->getExchangeName());
-                    $instrument->setName($record['Name']);
-
-                    $this->em->persist($instrument);
 
                     $logMsg .= $action;
                     $screenMsg = $logMsg;
