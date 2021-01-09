@@ -103,4 +103,20 @@ docker-compose -f docker/docker-compose.prod.yml run --rm -v $(pwd)/backups:/var
 docker-compose -f docker/docker-compose.prod.yml up -d
 ```
 
+### Definitions.
 
+#### Instrument Universe.
+At the time of development, the package worked primarily with SPDR funds (XLE, XLB, XLU, etc.) and instruments associated with them. The package can work with any stock instrument, however analytical tools developed as studies to this package, relied heavily on the SPDR funds. To differentiate between sets of instruments utilized for different purposes, idea of an Instrument Universe was introduced. Instrument Universe contains all of instruments collected for some analytical purpose. This universe is further split into watchlists. In this package the term **y_universe** refers to instruments collected under 11 SPDR funds:
+* XLC, Communication Services
+* XLY, Consumer Discretionary
+* XLP, Consumer Staples
+* XLE, Energy,1,Energy
+* XLF, Financials
+* XLV, Health Care
+* XLI, Industrials
+* XLB, Materials
+* XLRE, Real Estate
+* XLK, Technology
+* XLU, Utilities
+
+The term **x_universe** is a super set of instruments that includes instruments beyond the SPDR's.
