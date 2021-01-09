@@ -30,8 +30,8 @@ while (( "$#" > 0 )) ; do
       ;;
     data)
       echo 'will copy application data from aws'
-      rclone --config=/run/secrets/datastore copy $DATA_REMOTE:$BUCKET_NAME/data/source/ohlcv /var/www/html/data/source/ohlcv
-#      tar -C /var/www/html/data/source/ohlcv -xvf /var/www/html/data/source/ohlcv/price_history_files.tar
+      rclone --config=/run/secrets/datastore copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
+      tar -C /var/www/html -xvf /var/www/html/data/source/ohlcv/price_history_files.tar
 #      bin/console instruments:import -v --clear-db=true
 #      bin/console price:import -v --provider=YAHOO
 #      echo 'run audits on data'

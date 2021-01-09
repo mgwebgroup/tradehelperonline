@@ -2,7 +2,10 @@
 /.idea/*
 /.bash_history
 .~lock.*
-/data/source
+!/data/source/.gitignore
+/data/source/ohlcv/*.csv
+/data/source/ohlcv/*.tar
+/data/source/*.csv
 /public/charts
 
 ###> symfony/framework-bundle ###
