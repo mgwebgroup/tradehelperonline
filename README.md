@@ -98,6 +98,7 @@ docker build \
 ```
 
 1.2 Using files in git repository's master branch:
+You will need to generate access token on Github first.
 ```shell script
 DOCKER_BUILDKIT=1 \
 docker build \
@@ -112,7 +113,7 @@ docker build \
 --build-arg=DB_HOST=172.24.1.3 \
 -t tradehelperonline:prod \
 --secret id=datastore,src=$HOME/.config/rclone/rclone.conf \
-git@github.com:mgwebgroup/tradehelperonline.git#master
+https://github.com/mgwebgroup/tradehelperonline.git
 ```
 
 The above commands will copy application code, will run composer install, copy all assets from AWS S3 storage and install them using __npm run build__ command and will copy application data from AWS S3 storage.

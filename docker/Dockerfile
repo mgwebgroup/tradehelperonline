@@ -66,11 +66,14 @@ RUN yum install -y rsync rclone composer unzip openssh-clients
 # Install nodejs and npm
 # Current nodejs distributions: https://github.com/nodesource/distributions
 #RUN curl -sL https://rpm.nodesource.com/setup_15.x | bash -
-# Only Node 14 is supported by node-sass v4.14.1. currently see: https://github.com/sass/node-sass#node-version-support-policy
+# Only Node 14 is supported by node-sass v4.14.1. currently
+# See: https://github.com/sass/node-sass#node-version-support-policy
 RUN curl -sL https://rpm.nodesource.com/setup_14.x | bash -
 RUN yum install -y nodejs
 
-#USER $INSTANCE_USER:$APACHE_GROUP
+# Disable questioning by ssh when running rsync inside the image later
+RUN mkdir /root/.ssh && echo '' > /root/.ssh/config && \
+sed -i -n -e 'a Host *' -e 'a StrictHostKeyChecking no' /root/.ssh/config
 
 WORKDIR /var/www/html
 COPY . .
