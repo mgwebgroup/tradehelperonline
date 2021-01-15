@@ -55,11 +55,10 @@ Separation into several docker-compose files is necessary for convenience of sto
 DOCKER_BUILDKIT=1 \
 docker build \
 -f docker/Dockerfile \
+--target=test \
 --progress=plain \
---build-arg=APP_ENV=test \
 --build-arg=DATA_REMOTE=aws-mgwebgroup \
 --build-arg=BUCKET_NAME=tradehelperonline \
---build-arg=DB_NAME=TRADEHELPERONLINE_TEST \
 --build-arg=DB_USER=user \
 --build-arg=DB_PASSWORD=mypassword \
 --build-arg=DB_HOST=172.24.1.3 \
@@ -79,12 +78,14 @@ docker-compose -f docker/docker-compose.test.yml exec apache /var/www/html/deplo
 #### Deployment to prod environment
 Production database must be set up separately.
 
-1. Create prod app image using current files in the project root:
+1. Create prod app image.
+1.1 Using current files in the project root:
 ```shell script
 DOCKER_BUILDKIT=1 \
 docker build \
+-f docker/Dockerfile \
+--target=prod \
 --progress=plain \
---build-arg=APP_ENV=prod \
 --build-arg=DATA_REMOTE=aws-mgwebgroup \
 --build-arg=BUCKET_NAME=tradehelperonline \
 --build-arg=DB_NAME=TRADEHELPERONLINE_PROD \
@@ -96,12 +97,53 @@ docker build \
 .
 ```
 
-2. Import production database and create container cluster:
+1.2 Using files in git repository's master branch:
+```shell script
+DOCKER_BUILDKIT=1 \
+docker build \
+-f docker/Dockerfile \
+--target=prod \
+--progress=plain \
+--build-arg=DATA_REMOTE=aws-mgwebgroup \
+--build-arg=BUCKET_NAME=tradehelperonline \
+--build-arg=DB_NAME=TRADEHELPERONLINE_PROD \
+--build-arg=DB_USER=user \
+--build-arg=DB_PASSWORD=mypassword \
+--build-arg=DB_HOST=172.24.1.3 \
+-t tradehelperonline:prod \
+--secret id=datastore,src=$HOME/.config/rclone/rclone.conf \
+git@github.com:mgwebgroup/tradehelperonline.git#master
+```
+
+The above commands will copy application code, will run composer install, copy all assets from AWS S3 storage and install them using __npm run build__ command and will copy application data from AWS S3 storage.
+Production database must already exist, with data import used in building test images.
+
+2. Run the prod image, and sync all files to the prod:
+```bash
+docker run --name apache --privileged --rm -it \
+--mount type=bind,src=/home/alex/.ssh/tradehelper-prod.pem,dst=/root/tradehelper-prod.pem \
+-w /var/www/html/ tradehelperonline:prod \
+sh -c 'eval "$(ssh-agent -s)"; ssh-add /root/tradehelper-prod.pem; rsync -v /var/www/html/ ec2-user@54.70.88.233:/var/www/html/'
+```
+
+OR:
+
+```bash
+docker run --name apache --privileged --rm -it \
+--mount type=bind,src=/home/alex/.ssh/tradehelper-prod.pem,dst=/root/tradehelper-prod.pem \
+-w /var/www/html/ tradehelperonline:prod bash
+
+docker exec -it -w /var/www/html apache sh -c 'eval "$(ssh-agent -s)"; ssh-add /root/tradehelper-prod.pem; rsync -v /var/www/html/public/index.php ec2-user@54.70.88.233:/var/www/html/public'
+```
+
+The following step is optional:
+3. Import production database and create container cluster:
 This script will map copy of your production database saved as *backups/TO_BE_PROD_DB.sql* to the *apache* service. Run it and use symfony's __doctrine:database:import__ command to import copy of the production database. After that you can bring up all containers normally.
 ```shell script
 docker-compose -f docker/docker-compose.prod.yml run --rm -v $(pwd)/backups:/var/www/html/akay -w /var/www/html apache dockerize -wait tcp4://mariadb:3306 bin/console doctrine:database:import backups/TO_BE_PROD_DB.sql 
 docker-compose -f docker/docker-compose.prod.yml up -d
 ```
+
 
 ### Definitions.
 

@@ -12,13 +12,13 @@ while (( "$#" > 0 )) ; do
       echo "DATABASE_URL=\"$DATABASE_CONNECTOR\"" >> .env
       composer install
       npm install --unsafe-perm
-      sudo chown -R :www-data var/cache
-      sudo chmod -R g+w var/cache
-      sudo chmod -R g+w var/log
+      chown -R :${APACHE_RUN_GROUP} var/cache
+      chmod -R g+w var/cache
+      chmod -R g+w var/log
       bin/console cache:clear
       ;;
     assets)
-      echo 'will install assets managed by webpack'
+      echo 'will copy application assets from aws'
       rclone --config=/run/secrets/datastore copy $DATA_REMOTE:$BUCKET_NAME/assets /var/www/html/assets
       bin/console cache:clear
       npm run build
@@ -31,11 +31,22 @@ while (( "$#" > 0 )) ; do
     data)
       echo 'will copy application data from aws'
       rclone --config=/run/secrets/datastore copy $DATA_REMOTE:$BUCKET_NAME/data/source /var/www/html/data/source
+      ;;
+    import-data)
+      echo 'will unpack price history files, import instruments and price data'
       tar -C /var/www/html -xvf /var/www/html/data/source/ohlcv/price_history_files.tar
-#      bin/console instruments:import -v --clear-db=true
-#      bin/console price:import -v --provider=YAHOO
-#      echo 'run audits on data'
-#      bin/console price:audit -v --provider=YAHOO
+      bin/console th:instruments:import -v --clear-db=true
+      bin/console th:price:import -v --provider=YAHOO --offset=1 --chunk-80 data/source/y_universe.csv
+      bin/console th:price:import -v --provider=YAHOO --offset=81 --chunk-80 data/source/y_universe.csv
+      bin/console th:price:import -v --provider=YAHOO --offset=161 --chunk-80 data/source/y_universe.csv
+      bin/console th:price:import -v --provider=YAHOO --offset=241 --chunk-80 data/source/y_universe.csv
+      bin/console th:price:import -v --provider=YAHOO --offset=321 --chunk-80 data/source/y_universe.csv
+      bin/console th:price:import -v --provider=YAHOO --offset=401 --chunk-80 data/source/y_universe.csv
+      bin/console th:price:import -v --provider=YAHOO --offset=481 data/source/y_universe.csv
+      ;;
+    audit-data)
+      echo 'run audits on data'
+      bin/console th:price:audit -v --provider=YAHOO
       ;;
     database)
       echo 'create empty database'
