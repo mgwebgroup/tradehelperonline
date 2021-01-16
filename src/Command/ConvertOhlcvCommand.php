@@ -193,7 +193,7 @@ class ConvertOhlcvCommand extends Command
             }
             if (!$lastPrice) {
                 throw new PriceHistoryException(
-                    sprintf('No daily price data found for instrument `%s`', $this->instrument)
+                    sprintf('No daily price data found for instrument `%s`', $this->instrument->getSymbol())
                 );
             }
             $lastDate = $lastPrice->getTimestamp();

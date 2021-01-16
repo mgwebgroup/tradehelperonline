@@ -124,17 +124,7 @@ Production database must already exist, with data import used in building test i
 docker run --name apache --privileged --rm -it \
 --mount type=bind,src=/home/alex/.ssh/tradehelper-prod.pem,dst=/root/tradehelper-prod.pem \
 -w /var/www/html/ tradehelperonline:prod \
-sh -c 'eval "$(ssh-agent -s)"; ssh-add /root/tradehelper-prod.pem; rsync -v /var/www/html/ ec2-user@54.70.88.233:/var/www/html/'
-```
-
-OR:
-
-```bash
-docker run --name apache --privileged --rm -it \
---mount type=bind,src=/home/alex/.ssh/tradehelper-prod.pem,dst=/root/tradehelper-prod.pem \
--w /var/www/html/ tradehelperonline:prod bash
-
-docker exec -it -w /var/www/html apache sh -c 'eval "$(ssh-agent -s)"; ssh-add /root/tradehelper-prod.pem; rsync -v /var/www/html/public/index.php ec2-user@54.70.88.233:/var/www/html/public'
+sh -c 'eval "$(ssh-agent -s)"; ssh-add /root/tradehelper-prod.pem; rsync -plogrv  --delete-before --chown=ec2-user:apache /var/www/html/ ec2-user@54.70.88.233:/var/www/html/'
 ```
 
 The following step is optional:
