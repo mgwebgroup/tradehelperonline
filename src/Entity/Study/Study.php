@@ -35,27 +35,28 @@ class Study
     private $description;
 
     /**
-     * @ORM\ManyToMany(targetEntity="App\Entity\Watchlist")
+     * @ORM\ManyToMany(targetEntity="App\Entity\Watchlist", cascade={"persist"})
      */
     private $watchlists;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Study\TextAttribute", mappedBy="study", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="App\Entity\Study\TextAttribute", mappedBy="study", orphanRemoval=true, cascade={"persist"})
      */
     private $textAttributes;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Study\ArrayAttribute", mappedBy="study", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="App\Entity\Study\ArrayAttribute", mappedBy="study", orphanRemoval=true, cascade={"persist"})
      */
     private $arrayAttributes;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Study\JsonAttribute", mappedBy="study", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="App\Entity\Study\JsonAttribute", mappedBy="study", orphanRemoval=true, cascade={"persist"})
      */
     private $jsonAttributes;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Study\FloatAttribute", mappedBy="study", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="App\Entity\Study\FloatAttribute", mappedBy="study", orphanRemoval=true,
+     *     cascade={"persist"})
      */
     private $floatAttributes;
 
@@ -153,7 +154,7 @@ class Study
     {
         if (!$this->textAttributes->contains($textAttribute)) {
             $this->textAttributes[] = $textAttribute;
-            $textAttribute->setStudyId($this);
+            $textAttribute->setStudy($this);
         }
 
         return $this;
@@ -164,8 +165,8 @@ class Study
         if ($this->textAttributes->contains($textAttribute)) {
             $this->textAttributes->removeElement($textAttribute);
             // set the owning side to null (unless already changed)
-            if ($textAttribute->getStudyId() === $this) {
-                $textAttribute->setStudyId(null);
+            if ($textAttribute->getStudy() === $this) {
+                $textAttribute->setStudy(null);
             }
         }
 
@@ -184,7 +185,7 @@ class Study
     {
         if (!$this->arrayAttributes->contains($arrayAttribute)) {
             $this->arrayAttributes[] = $arrayAttribute;
-            $arrayAttribute->setStudyId($this);
+            $arrayAttribute->setStudy($this);
         }
 
         return $this;
@@ -195,8 +196,8 @@ class Study
         if ($this->arrayAttributes->contains($arrayAttribute)) {
             $this->arrayAttributes->removeElement($arrayAttribute);
             // set the owning side to null (unless already changed)
-            if ($arrayAttribute->getStudyId() === $this) {
-                $arrayAttribute->setStudyId(null);
+            if ($arrayAttribute->getStudy() === $this) {
+                $arrayAttribute->setStudy(null);
             }
         }
 
@@ -215,7 +216,7 @@ class Study
     {
         if (!$this->jsonAttributes->contains($jsonAttribute)) {
             $this->jsonAttributes[] = $jsonAttribute;
-            $jsonAttribute->setStudyId($this);
+            $jsonAttribute->setStudy($this);
         }
 
         return $this;
@@ -226,8 +227,8 @@ class Study
         if ($this->jsonAttributes->contains($jsonAttribute)) {
             $this->jsonAttributes->removeElement($jsonAttribute);
             // set the owning side to null (unless already changed)
-            if ($jsonAttribute->getStudyId() === $this) {
-                $jsonAttribute->setStudyId(null);
+            if ($jsonAttribute->getStudy() === $this) {
+                $jsonAttribute->setStudy(null);
             }
         }
 
@@ -246,7 +247,7 @@ class Study
     {
         if (!$this->floatAttributes->contains($floatAttribute)) {
             $this->floatAttributes[] = $floatAttribute;
-            $floatAttribute->setStudyId($this);
+            $floatAttribute->setStudy($this);
         }
 
         return $this;
@@ -257,8 +258,8 @@ class Study
         if ($this->floatAttributes->contains($floatAttribute)) {
             $this->floatAttributes->removeElement($floatAttribute);
             // set the owning side to null (unless already changed)
-            if ($floatAttribute->getStudyId() === $this) {
-                $floatAttribute->setStudyId(null);
+            if ($floatAttribute->getStudy() === $this) {
+                $floatAttribute->setStudy(null);
             }
         }
 

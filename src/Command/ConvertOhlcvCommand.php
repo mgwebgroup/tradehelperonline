@@ -138,7 +138,6 @@ class ConvertOhlcvCommand extends Command
         }
     }
 
-    /** @noinspection PhpInconsistentReturnPointsInspection */
     protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
         if ($this->csvReader) {
@@ -194,7 +193,7 @@ class ConvertOhlcvCommand extends Command
             }
             if (!$lastPrice) {
                 throw new PriceHistoryException(
-                    sprintf('No daily price data found for instrument `%s`', $this->instrument)
+                    sprintf('No daily price data found for instrument `%s`', $this->instrument->getSymbol())
                 );
             }
             $lastDate = $lastPrice->getTimestamp();

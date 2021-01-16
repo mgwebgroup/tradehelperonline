@@ -6,6 +6,7 @@
 /data/source/ohlcv/*.csv
 /data/source/ohlcv/*.tar
 /data/source/*.csv
+/assets/scripts/db_mngmnt.sh
 /public/charts
 
 ###> symfony/framework-bundle ###
