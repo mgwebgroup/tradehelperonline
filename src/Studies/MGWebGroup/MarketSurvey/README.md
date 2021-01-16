@@ -57,7 +57,7 @@ The commands will take the main index file _data/source/y_universe.csv_ (default
 As mentioned above, price data on all instruments must be present for each imported symbol. Besides the daily prices the study uses weekly and monthly time frames. They should be present in the price history and saved in database (table _ohlcvhistory_). If not, run this command to create them from daily prices:
 ```bash
 bin/console -v th:convert-ohlcv --weekly --monthly data/source/y_universe.csv
-bin/console -v th:convert-ohlcv --weekly --monthly data/source/spdrs.csv
+bin/console -v th:convert-ohlcv --weekly --monthly --quarterly --yearly data/source/spdrs.csv
 ```
 
 Import the study formulas:
