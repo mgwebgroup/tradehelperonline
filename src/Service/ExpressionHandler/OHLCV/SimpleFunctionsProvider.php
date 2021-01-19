@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Trade Helper Online package.
  *
@@ -10,25 +11,30 @@
 
 namespace App\Service\ExpressionHandler\OHLCV;
 
+use App\Entity\Instrument;
 use App\Exception\PriceHistoryException;
 use App\Service\Exchange\MonthlyIterator;
 use App\Service\Exchange\WeeklyIterator;
+use DateInterval;
+use DateTime;
+use Exception;
+use LimitIterator;
 use Symfony\Component\ExpressionLanguage\ExpressionFunction;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
-//use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\NoResultException;
 use App\Service\Exchange\Catalog;
+use App\Service\Exchange\Equities\TradingCalendar;
 
 class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
 {
     /**
-     * @var \Doctrine\ORM\EntityManager
+     * @var EntityManager
      */
     private $em;
 
     /**
-     * @var \App\Service\Exchange\Catalog
+     * @var Catalog
      */
     private $catalog;
 
@@ -41,57 +47,80 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
         EntityManager $em,
         Catalog $catalog,
         $resultCacheLifetime
-    )
-    {
+    ) {
         $this->em = $em;
         $this->catalog = $catalog;
         $this->resultCacheLifetime = $resultCacheLifetime;
     }
 
-    public function getFunctions()
+    public function getFunctions(): array
     {
         return [
             new ExpressionFunction(
                 'Close',
-                function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('close', $offset, $arguments); }
-                ),
+                function ($offset) {
+                    return null;
+                },
+                function ($arguments, $offset) {
+                    return $this->getValue('close', $offset, $arguments);
+                }
+            ),
             new ExpressionFunction(
                 'Open',
-                function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('open', $offset, $arguments); }
-                ),
+                function ($offset) {
+                    return null;
+                },
+                function ($arguments, $offset) {
+                    return $this->getValue('open', $offset, $arguments);
+                }
+            ),
             new ExpressionFunction(
                 'High',
-                function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('high', $offset, $arguments); }
+                function ($offset) {
+                    return null;
+                },
+                function ($arguments, $offset) {
+                    return $this->getValue('high', $offset, $arguments);
+                }
             ),
             new ExpressionFunction(
                 'Low',
-                function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('low', $offset, $arguments); }
+                function ($offset) {
+                    return null;
+                },
+                function ($arguments, $offset) {
+                    return $this->getValue('low', $offset, $arguments);
+                }
             ),
             new ExpressionFunction(
                 'Volume',
-                function ($offset) { return null; },
-                function($arguments, $offset) { return $this->getValue('volume', $offset, $arguments); }
+                function ($offset) {
+                    return null;
+                },
+                function ($arguments, $offset) {
+                    return $this->getValue('volume', $offset, $arguments);
+                }
             ),
             new ExpressionFunction(
-            'Avg',
-            function ($column, $period) { return null; },
-            function($arguments, $column, $period) { return $this->getAverage($column, $period, $arguments); }
+                'Avg',
+                function ($column, $period) {
+                    return null;
+                },
+                function ($arguments, $column, $period) {
+                    return $this->getAverage($column, $period, $arguments);
+                }
             ),
             ];
     }
 
     /**
-     * @param sting $column name in ohlcvhistory table
+     * @param string $column name in ohlcvhistory table
      * @param integer $offset
      * @param array $arguments
      * @return mixed
      * @throws PriceHistoryException
      */
-    protected function getValue($column, $offset, $arguments)
+    protected function getValue(string $column, int $offset, array $arguments)
     {
         $column = strtolower($column);
         try {
@@ -104,12 +133,14 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
 
             $offsetDate = $this->figureOffsetDate($tradingCalendar, $interval, $offset);
 
-            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
+            $dql = sprintf(
+                'select h.%s from \App\Entity\OHLCV\History h
                 join h.instrument i
                 where i.id =  :id and
                 date_format(h.timestamp, \'%%Y-%%m-%%d\') = :date and
                 h.timeinterval = :interval',
-                           $column);
+                $column
+            );
 
             $query = $this->em->createQuery($dql);
             $query->setParameter('id', $instrument->getId());
@@ -144,19 +175,25 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
 
             return $result[0][$column];
         } catch (NoResultException $e) {
-            throw new PriceHistoryException(sprintf('Could not find value for `Close(%d)` symbol `%s`', $offset,
-                                                    $instrument->getSymbol()), 0);
+            throw new PriceHistoryException(sprintf(
+                'Could not find value for `%s(%d)` symbol `%s` timeinterval `%s`',
+                $column,
+                $offset,
+                $instrument->getSymbol(),
+                $interval
+            ), 0);
         }
     }
 
     /**
-     * @param sting $column name in ohlcvhistory table
-     * @param integer $offset
+     * @param string $column name in ohlcvhistory table
+     * @param integer $period
      * @param array $arguments
      * @return mixed
      * @throws PriceHistoryException
      */
-    protected function getAverage($column, $period, $arguments) {
+    protected function getAverage(string $column, int $period, array $arguments)
+    {
         $column = strtolower($column);
         try {
             $instrument = $this->getInstrument($arguments);
@@ -170,13 +207,15 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
 
             // not using avg(h.%s) aggregate function, because it will mask error if number of records present is less
             // than $period
-            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
+            $dql = sprintf(
+                'select h.%s from \App\Entity\OHLCV\History h
                 join h.instrument i
                 where i.id = :id and
                 date_format(h.timestamp, \'%%Y-%%m-%%d\') > :date and
                 h.timeinterval = :interval
                 order by h.timestamp desc',
-                           $column);
+                $column
+            );
             $query = $this->em->createQuery($dql);
             $query->setParameter('id', $instrument->getId());
             $query->setParameter('date', $offsetDate->format('Y-m-d'));
@@ -199,27 +238,45 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             $result = $query->getResult();
 
             if (count($result) < $period) {
-                throw new PriceHistoryException(sprintf('Not enough values for `Average(%s, %d)` symbol `%s`',
-                                                        $column, $period, $instrument->getSymbol()), 3);
+                throw new PriceHistoryException(sprintf(
+                    'Not enough values for `Average(%s, %d)` symbol `%s`',
+                    $column,
+                    $period,
+                    $instrument->getSymbol()
+                ), 3);
             } elseif (count($result) > $period) {
-                throw new PriceHistoryException(sprintf('Error in getting accurate result for `Average(%s, %d)` symbol `%s`',$column, $period, $instrument->getSymbol()), 2);
+                throw new PriceHistoryException(
+                    sprintf(
+                        'Error in getting accurate result for `Average(%s, %d)` symbol `%s`',
+                        $column,
+                        $period,
+                        $instrument->getSymbol()
+                    ),
+                    2
+                );
             }
 
-            return array_sum(array_map(function($v) use ($column)  {return $v[$column];}, $result)) / count($result);
+            return array_sum(array_map(function ($v) use ($column) {
+                return $v[$column];
+            }, $result)) / count($result);
         } catch (NoResultException $e) {
-            throw new PriceHistoryException(sprintf('Could not find value for `Average(%s, %d)` symbol ``', $column,
-                                                    $period, $instrument->getSymbol()), 1);
+            throw new PriceHistoryException(sprintf(
+                'Could not find value for `Average(%s, %d)` symbol `%s`',
+                $column,
+                $period,
+                $instrument->getSymbol()
+            ), 1);
         }
     }
 
     /**
      * @param array $arguments
-     * @return \App\Entity\Instrument
-     * @throws \App\Exception\PriceHistoryException
+     * @return Instrument
+     * @throws PriceHistoryException
      */
-    private function getInstrument($arguments)
+    private function getInstrument(array $arguments): Instrument
     {
-        if (isset($arguments['instrument']) && $arguments['instrument'] instanceof \App\Entity\Instrument) {
+        if (isset($arguments['instrument']) && $arguments['instrument'] instanceof Instrument) {
             $instrument = $arguments['instrument'];
         } else {
             throw new PriceHistoryException('Need to pass instrument object as part of the data part');
@@ -231,14 +288,14 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
     /**
      * @param array $arguments
      * @return string
-     * @throws \Exception
+     * @throws Exception
      */
-    private function getInterval($arguments)
+    private function getInterval(array $arguments): string
     {
-        if (isset($arguments['interval']) && $arguments['interval'] instanceof \DateInterval) {
+        if (isset($arguments['interval']) && $arguments['interval'] instanceof DateInterval) {
             $interval = $arguments['interval']->format('%RP%YY%MM%DDT%HH%IM%SS');
         } else {
-            $defaultInterval = new \DateInterval('P1D');
+            $defaultInterval = new DateInterval('P1D');
             $interval = $defaultInterval->format('%RP%YY%MM%DDT%HH%IM%SS');
         }
 
@@ -247,17 +304,18 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
 
     /**
      * @param array $arguments
-     * @return \DateTime
-     * @throws \Exception
+     * @return DateTime
+     * @throws Exception
      */
-    private function getToday($arguments) {
+    private function getToday(array $arguments): DateTime
+    {
         if ('test' == $_SERVER['APP_ENV'] && isset($_SERVER['TODAY'])) {
-            $today = new \DateTime($_SERVER['TODAY']);
+            $today = new DateTime($_SERVER['TODAY']);
         } else {
-            $today = new \DateTime();
+            $today = new DateTime();
         }
 
-        if (isset($arguments['date']) && $arguments['date'] instanceof \DateTime) {
+        if (isset($arguments['date']) && $arguments['date'] instanceof DateTime) {
             $today = $arguments['date'];
         }
 
@@ -267,22 +325,22 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
     /**
      * Figures the date from which to retrieve price records. This date is based on the offset given as argument to
      * ths scanner function, i.e. Close(10)
-     * @param App\Service\Exchange\Equities\TradingCalendar $tradingCalendar
-     * @param integer $interval
+     * @param TradingCalendar $tradingCalendar
+     * @param string $interval
      * @param integer $offset
-     * @return \DateTime
-     * @throws \App\Exception\PriceHistoryException
+     * @return DateTime
+     * @throws PriceHistoryException
      */
-    private function figureOffsetDate($tradingCalendar, $interval, $offset)
+    private function figureOffsetDate(TradingCalendar $tradingCalendar, string $interval, int $offset): DateTime
     {
         if ('+P00Y00M01DT00H00M00S' == $interval) {
-            $limitIterator = new \LimitIterator($tradingCalendar, $offset, 1);
+            $limitIterator = new LimitIterator($tradingCalendar, $offset, 1);
         } elseif ('+P00Y00M07DT00H00M00S' == $interval) {
             $weeklyIterator = new WeeklyIterator($tradingCalendar);
-            $limitIterator = new \LimitIterator($weeklyIterator, $offset, 1);
+            $limitIterator = new LimitIterator($weeklyIterator, $offset, 1);
         } elseif ('+P00Y01M00DT00H00M00S' == $interval) {
             $monthlyIterator = new MonthlyIterator($tradingCalendar);
-            $limitIterator = new \LimitIterator($monthlyIterator, $offset, 1);
+            $limitIterator = new LimitIterator($monthlyIterator, $offset, 1);
         } else {
             throw new PriceHistoryException(sprintf('Undefined interval %s', $interval));
         }
