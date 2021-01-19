@@ -351,5 +351,7 @@ class PriceAudit extends Command
         }
 
         $this->utilities->pronounceEnd($this, $output);
+
+        return 0;
     }
 }
