@@ -771,7 +771,9 @@ class StudyBuilder
                         }, $daysBack);
                     }
                 } else {
-                    throw new StudyException(sprintf('Could not find study for date = %s', $pastDate->format('c')));
+                    array_walk($calculated_formulas, function (&$data, $symbol, $daysBack) {
+                        $data['Hist Pos Score']['T-' . $daysBack] = 0;
+                    }, $daysBack);
                 }
             }
 

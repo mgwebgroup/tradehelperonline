@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Trade Helper Online package.
  *
@@ -14,6 +15,9 @@ use App\Entity\Study\Study;
 use App\Exception\PriceHistoryException;
 use App\Service\Exchange\Equities\TradingCalendar;
 use App\Studies\MGWebGroup\MarketSurvey\StudyBuilder;
+use DateTime;
+use DateTimeInterface;
+use Exception;
 use MathPHP\Exception\BadDataException;
 use MathPHP\Exception\OutOfBoundsException;
 use Symfony\Component\Console\Command\Command;
@@ -24,13 +28,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use App\Entity\Watchlist;
 use App\Studies\MGWebGroup\MarketSurvey\Exception\StudyException;
+use Doctrine\ORM\EntityManager;
 
 class StudyManager extends Command
 {
-    const ROLLING_PERIOD = 20;
+    public const ROLLING_PERIOD = 20;
 
     /**
-     * @var Doctrine\ORM\EntityManager
+     * @var EntityManager
      */
     protected $em;
 
@@ -54,24 +59,24 @@ class StudyManager extends Command
     protected $version;
 
     /**
-     * @var App\Entity\Watchlist
+     * @var Watchlist
      */
     protected $watchlist;
 
     /**
-     * @var App\Service\Exchange\Equities
+     * @var TradingCalendar
      */
     protected $tradingCalendar;
 
     /**
      * Date to delete a study for
-     * @var \DateTimeInterface
+     * @var DateTimeInterface
      */
     protected $deleteDate;
 
     /**
      * Date to create a study for
-     * @var \DateTimeInterface
+     * @var DateTimeInterface
      */
     protected $studyDate;
 
@@ -82,9 +87,9 @@ class StudyManager extends Command
 
 
     public function __construct(
-      RegistryInterface $doctrine,
-      TradingCalendar $tradingCalendar,
-      StudyBuilder $studyBuilder
+        RegistryInterface $doctrine,
+        TradingCalendar $tradingCalendar,
+        StudyBuilder $studyBuilder
     ) {
         $this->em = $doctrine->getManager();
         $this->tradingCalendar = $tradingCalendar;
@@ -98,15 +103,11 @@ class StudyManager extends Command
         $this->setName('mgweb:studymanager');
 
         $this->setDescription(
-          'Manages Studies authored by mgwebgroup.'
+            'Manages Studies authored by mgwebgroup.'
         );
 
         $this->setHelp(
-          <<<'EOT'
-This command creates and deletes studies created by the MGWebGroup/MarketSurvey bundle.
-The -f flag will create Market Score tables. This requires at least 20 studies already saved. The saved studies 
-must have the Market Breadth array attribute and Market Score float attribute associated with each.
-EOT
+            "This command creates and deletes studies created by the MGWebGroup/MarketSurvey bundle. The -f flag will create Market Score tables. This requires at least 20 studies already saved. The saved studies must have the Market Breadth array attribute and Market Score float attribute associated with each."
         );
 
         $this->addUsage('[-v] [--name=market_study] [--ver=20201201] [--date=DATE] [-f] y_universe [spdr_sectors]');
@@ -114,24 +115,40 @@ EOT
 
         $this->addOption('name', null, InputOption::VALUE_REQUIRED, 'Name of the Study', 'market_study');
         $this->addOption('ver', null, InputOption::VALUE_REQUIRED, 'Version of the Study');
-        $this->addArgument('identificator', InputArgument::REQUIRED, 'Either a watchlist name (when creating study) or study date (when deleting study)');
-        $this->addArgument('spdr_sectors', InputArgument::OPTIONAL, 'Name of watchlist with spdr sectors', 'spdr_sectors');
+        $this->addArgument(
+            'identificator',
+            InputArgument::REQUIRED,
+            'Either a watchlist name (when creating study) or study date (when deleting study)'
+        );
+        $this->addArgument(
+            'spdr_sectors',
+            InputArgument::OPTIONAL,
+            'Name of watchlist with spdr sectors',
+            'spdr_sectors'
+        );
         $this->addOption('delete', 'd', InputOption::VALUE_NONE, 'Flag to delete a study');
         $this->addOption('date', null, InputOption::VALUE_REQUIRED, 'Date to create a study for');
-        $this->addOption('full', 'f', InputOption::VALUE_NONE, 'Will create market score tables. This requires 20 studies already saved.');
+        $this->addOption(
+            'full',
+            'f',
+            InputOption::VALUE_NONE,
+            'Will create market score tables. This requires 20 studies already saved.'
+        );
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->name = $input->getOption('name');
-        $this->version = $input->getOption('ver')? : null;
+        $this->version = $input->getOption('ver') ? : null;
         $identificator = $input->getArgument('identificator');
         try {
-            $date = new \DateTime($identificator);
-        } catch (\Exception $e) {
+            $date = new DateTime($identificator);
+        } catch (Exception $e) {
             if (strpos($e->getMessage(), 'Failed to parse time string')) {
                 if ($input->getOption('delete')) {
-                    $output->writeln('<error>ERROR: </error>Invalid date argument supplied with -d flag to delete a study');
+                    $output->writeln(
+                        '<error>ERROR: </error>Invalid date argument supplied with -d flag to delete a study'
+                    );
                     exit(1);
                 }
                 // look for watchlist
@@ -139,7 +156,12 @@ EOT
                 if ($watchlist) {
                     $this->watchlist = $watchlist;
                 } else {
-                    $output->writeln(sprintf('<error>ERROR: </error>Unable to find watch list with the specified name `%s`', $identificator));
+                    $output->writeln(
+                        sprintf(
+                            '<error>ERROR: </error>Unable to find watch list with the specified name `%s`',
+                            $identificator
+                        )
+                    );
                     exit(1);
                 }
             } else {
@@ -164,18 +186,18 @@ EOT
 
         try {
             if ($input->getOption('date')) {
-                $date = new \DateTime($input->getOption('date'));
+                $date = new DateTime($input->getOption('date'));
             } else {
-                $date = new \DateTime();
+                $date = new DateTime();
             }
             // nearest working day in past
-            $this->tradingCalendar->getInnerIterator()->setStartDate($date)->setDirection(-1);
-            $this->tradingCalendar->getInnerIterator()->rewind();
+            $dayIterator = $this->tradingCalendar->getInnerIterator();
+            $dayIterator->setStartDate($date)->setDirection(-1)->rewind();
             while (false === $this->tradingCalendar->accept()) {
                 $this->tradingCalendar->next();
             }
             $this->studyDate = $this->tradingCalendar->getInnerIterator()->current();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if (strpos($e->getMessage(), 'Failed to parse time string')) {
                 $output->writeln('<error>ERROR: </error> Invalid date specified for the --date option.');
                 exit(1);
@@ -183,28 +205,49 @@ EOT
         }
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
         if ($this->action) {
-            $study  = $this->em->getRepository(Study::class)->findOneBy(['date' => $this->studyDate, 'name' => $this->name]);
+            $study  = $this->em->getRepository(Study::class)->findOneBy(
+                ['date' => $this->studyDate, 'name' => $this->name]
+            );
 
             if ($study) {
-                $output->writeln(sprintf('Study for date %s with name %s already exists. Exiting...', $this->studyDate->format('Y-m-d'), $this->name));
+                $output->writeln(
+                    sprintf(
+                        'Study for date %s with name %s already exists. Exiting...',
+                        $this->studyDate->format('Y-m-d'),
+                        $this->name
+                    )
+                );
                 exit(2);
             }
 
-            $sectorWatchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => $input->getArgument('spdr_sectors')]);
+            $sectorWatchlist = $this->em->getRepository(Watchlist::class)->findOneBy(
+                ['name' => $input->getArgument('spdr_sectors')]
+            );
             if (!$sectorWatchlist) {
-                $output->writeln(sprintf('<error>ERROR: </error>Could not find spdr sectors watchlist named `%s`', $input->getArgument('spdr_sectors')));
+                $output->writeln(
+                    sprintf(
+                        '<error>ERROR: </error>Could not find spdr sectors watchlist named `%s`',
+                        $input->getArgument('spdr_sectors')
+                    )
+                );
                 exit(2);
             }
 
-            $output->writeln(sprintf('Will create new study named `%s` for date `%s`', $this->name, $this->studyDate->format('Y-m-d')));
+            $output->writeln(
+                sprintf(
+                    'Will create new study named `%s` for date `%s`',
+                    $this->name,
+                    $this->studyDate->format('Y-m-d')
+                )
+            );
 
             $this->studyBuilder->initStudy($this->studyDate, $this->name);
 
-            $this->tradingCalendar->getInnerIterator()->setStartDate($this->studyDate)->setDirection(-1);
-            $this->tradingCalendar->getInnerIterator()->rewind();
+            $dayIterator = $this->tradingCalendar->getInnerIterator();
+            $dayIterator->setStartDate($this->studyDate)->setDirection(-1)->rewind();
             $this->tradingCalendar->next();
             $prevT = $this->tradingCalendar->getInnerIterator()->current();
 
@@ -229,8 +272,17 @@ EOT
                 $endTimestamp = time();
                 $output->write(sprintf('done %d s', $endTimestamp - $startTimestamp), true);
             } else {
-                $output->writeln(sprintf('Could not calculate Inside Bar Breakouts/Breakdowns, because past study for date = %s was not found', $prevT->format('Y-m-d')));
-                $output->writeln(sprintf('Could not calculate Actionable Symbols Breakouts/Breakdowns, because past study for date = %s was not found', $prevT->format('Y-m-d')));
+                $output->writeln(
+                    sprintf(
+                        'Could not calculate Inside Bar Breakouts/Breakdowns, because past study for date = %s was not 
+                    found',
+                        $prevT->format('Y-m-d')
+                    )
+                );
+                $output->writeln(
+                    sprintf('Could not calculate Actionable Symbols Breakouts/Breakdowns, because past study for date =
+                     %s was not found', $prevT->format('Y-m-d'))
+                );
             }
             $output->write('Creating Actionable Symbols Watch List...');
             $startTimestamp = time();
@@ -249,7 +301,7 @@ EOT
                     $this->studyBuilder->buildMarketScoreTableForMTD();
                     $endTimestamp = time();
                     $output->write(sprintf('done %d s', $endTimestamp - $startTimestamp), true);
-                }  catch (StudyException $e) {
+                } catch (StudyException $e) {
                     $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
                     exit(2);
                 } catch (PriceHistoryException $e) {
@@ -268,11 +320,16 @@ EOT
             $this->em->flush();
             $output->writeln('Study saved');
         } else {
-            $study  = $this->em->getRepository(Study::class)->findOneBy(['date' => $this->deleteDate, 'name' => $this->name]);
+            $study  = $this->em->getRepository(Study::class)->findOneBy(
+                ['date' => $this->deleteDate, 'name' => $this->name]
+            );
 
             if ($study) {
-                $output->writeln(sprintf('Will delete existing study named `%s` for date `%s`. Associated watch lists will be deleted also.',
-                                         $this->name, $this->deleteDate->format('Y-m-d')));
+                $output->writeln(sprintf(
+                    'Will delete existing study named `%s` for date `%s`. Associated watch lists will be deleted also.',
+                    $this->name,
+                    $this->deleteDate->format('Y-m-d')
+                ));
                 $studyWatchlists = $study->getWatchlists();
                 if (!$studyWatchlists->isEmpty()) {
                     foreach ($studyWatchlists as $watchlist) {
@@ -284,9 +341,16 @@ EOT
                 $this->em->flush();
                 $output->writeln('Study deleted.');
             } else {
-                $output->writeln(sprintf('Could not find study for date %s with name %s to delete. Nothing to do.', $this->deleteDate->format('Y-m-d'), $this->name));
+                $output->writeln(
+                    sprintf(
+                        'Could not find study for date %s with name %s to delete. Nothing to do.',
+                        $this->deleteDate->format('Y-m-d'),
+                        $this->name
+                    )
+                );
                 exit(2);
             }
         }
+        return 0;
     }
 }
