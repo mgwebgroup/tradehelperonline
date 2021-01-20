@@ -41,10 +41,17 @@ Copy this bundle's assets as symlinks into _public/bundle/marketsurvey_ folder
 ```bash
 $ bin/console assets:install public --symlink --relative
 ```
-This bundle's file _webpack.config.js_ is already set to compile app's general assets (normally compiled with **npm run dev**). So you just need to compile this bundle's assets:
+This bundle's file _webpack.config.js_ is already set to compile app's general assets (normally compiled with **npm run dev**). So you just need to compile this bundle's assets.
+For DEV environment:
 ```bash
-$ npx encore dev --config src/Studies/MGWebGroup/MarketSurvey/webpack.config.js
+npx encore dev --config src/Studies/MGWebGroup/MarketSurvey/webpack.config.js
 ```
+For PROD environment:
+```bash
+$ npm run build --config src/Studies/MGWebGroup/MarketSurvey/webpack.config.js
+```
+
+### Rest of the steps have to do with the database setup and may not be necessary if prod database is current.
 
 ### Step 4: Import Study instruments, watch lists and formulas
 The study utilizes trading instruments that are already imported into the system. If they are not imported, use the following command:
@@ -77,9 +84,9 @@ bin/console -v th:watchlist:import data/studies/mgwebgroup/watchlists/spdr_secto
 Finally, to create studies, you must create first 20 studies with _market-breadth_ and _market-score_ attributes. The first studies are needed to figure out other parameters (study attributes) such as _score-table-rolling_, _score-table-mtd_, which summarize _market-score_ and _market-score-delta_ for the past 20 trading days.
 Example below shows hypothetical start date of 2020-04-17
 ```bash
-bin/console mgweb:studymanager --date=2020-04-17 y_universe spdr_sectors
+bin/console mgweb:studymanager -v --date=2020-04-17 y_universe spdr_sectors
 ... 19 more dates
-bin/console mgweb:studymanager --date=2020-05-15 --full y_universe spdr_sectors
+bin/console mgweb:studymanager -v --date=2020-05-15 --full y_universe spdr_sectors
 ```
 
 Testing
