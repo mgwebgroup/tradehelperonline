@@ -62,6 +62,7 @@ RUN yum install -y httpd
 RUN useradd -G $APACHE_GROUP $INSTANCE_USER
 RUN chown -R $INSTANCE_USER:$APACHE_GROUP /var/www
 RUN yum install -y rsync rclone composer unzip openssh-clients
+RUN yum install -y php-xml php-gd
 
 # Install nodejs and npm
 # Current nodejs distributions: https://github.com/nodesource/distributions
