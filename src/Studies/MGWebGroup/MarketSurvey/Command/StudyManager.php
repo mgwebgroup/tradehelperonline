@@ -11,12 +11,14 @@
 
 namespace App\Studies\MGWebGroup\MarketSurvey\Command;
 
+use App\Entity\Instrument;
 use App\Entity\Study\Study;
 use App\Exception\PriceHistoryException;
 use App\Service\Exchange\Equities\TradingCalendar;
 use App\Studies\MGWebGroup\MarketSurvey\StudyBuilder;
 use DateTime;
 use DateTimeInterface;
+use Doctrine\Common\Collections\ArrayCollection;
 use Exception;
 use MathPHP\Exception\BadDataException;
 use MathPHP\Exception\OutOfBoundsException;
@@ -85,6 +87,11 @@ class StudyManager extends Command
      */
     protected $studyBuilder;
 
+    /**
+     * @var ArrayCollection | null
+     */
+    protected $excluded;
+
 
     public function __construct(
         RegistryInterface $doctrine,
@@ -107,10 +114,12 @@ class StudyManager extends Command
         );
 
         $this->setHelp(
-            "This command creates and deletes studies created by the MGWebGroup/MarketSurvey bundle. The -f flag will create Market Score tables. This requires at least 20 studies already saved. The saved studies must have the Market Breadth array attribute and Market Score float attribute associated with each."
+            "This command creates and deletes studies created by the MGWebGroup/MarketSurvey bundle. The -f flag (--full) will create Market Score tables. This requires at least 20 studies already saved. The saved studies must have the Market Breadth array attribute and Market Score float attribute associated with each.\nTo exclude instruments from all of analyses, use the --exclude option."
         );
 
-        $this->addUsage('[-v] [--name=market_study] [--ver=20201201] [--date=DATE] [-f] y_universe [spdr_sectors]');
+        $this->addUsage(
+            '[-v] [--name=market_study] [--ver=20201201] [--date=DATE] [-f] [-x=TST1,TST2] y_universe [spdr_sectors]'
+        );
         $this->addUsage('[-v] -d [--name=STUDY_NAME] \'2020-12-15\'');
 
         $this->addOption('name', null, InputOption::VALUE_REQUIRED, 'Name of the Study', 'market_study');
@@ -118,12 +127,12 @@ class StudyManager extends Command
         $this->addArgument(
             'identificator',
             InputArgument::REQUIRED,
-            'Either a watchlist name (when creating study) or study date (when deleting study)'
+            'Either a watch list name (when creating study) or study date (when deleting study)'
         );
         $this->addArgument(
             'spdr_sectors',
             InputArgument::OPTIONAL,
-            'Name of watchlist with spdr sectors',
+            'Name of watch list with spdr sectors',
             'spdr_sectors'
         );
         $this->addOption('delete', 'd', InputOption::VALUE_NONE, 'Flag to delete a study');
@@ -134,6 +143,7 @@ class StudyManager extends Command
             InputOption::VALUE_NONE,
             'Will create market score tables. This requires 20 studies already saved.'
         );
+        $this->addOption('exclude', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, '-x=CXO -x=SPY');
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
@@ -177,6 +187,15 @@ class StudyManager extends Command
 
         if ($this->watchlist) {
             $this->action = true;
+
+            $excluded = $input->getOption('exclude');
+            if (!empty($excluded)) {
+                $this->excluded = new ArrayCollection();
+                foreach ($excluded as $symbol) {
+                    $instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol(trim($symbol, '='));
+                    $this->excluded->add($instrument);
+                }
+            }
         }
 
         if (null === $this->action) {
@@ -244,7 +263,10 @@ class StudyManager extends Command
                 )
             );
 
-            $this->studyBuilder->initStudy($this->studyDate, $this->name);
+            $this->studyBuilder->initStudy($this->studyDate, $this->name, $this->version);
+            if ($this->excluded) {
+                $this->studyBuilder->setExcluded($this->excluded);
+            }
 
             $dayIterator = $this->tradingCalendar->getInnerIterator();
             $dayIterator->setStartDate($this->studyDate)->setDirection(-1)->rewind();

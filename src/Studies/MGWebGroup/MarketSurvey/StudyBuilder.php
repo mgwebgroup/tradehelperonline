@@ -26,6 +26,8 @@ use App\Service\ExpressionHandler\OHLCV\Calculator;
 use App\Service\Scanner\OHLCV\Scanner;
 use DateInterval;
 use DateTime;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use LimitIterator;
@@ -119,6 +121,11 @@ class StudyBuilder
      */
     private $monthlyIterator;
 
+    /**
+     * @var Collection
+     */
+    private $excludedInstruments;
+
 
     public function __construct(
         RegistryInterface $registry,
@@ -140,15 +147,14 @@ class StudyBuilder
 
     /**
      * Will override existing study if exists
-     * @param $date
-     * @param $name
-     * @return StudyBuilder
      */
-    public function initStudy($date, $name): StudyBuilder
+    public function initStudy(Datetime $date, string $name, string $version = null): StudyBuilder
     {
         $this->study = new Study();
         $this->study->setDate($date);
         $this->study->setName($name);
+        $this->study->setVersion($version);
+        $this->excludedInstruments = new ArrayCollection();
 
         return $this;
     }
@@ -156,6 +162,19 @@ class StudyBuilder
     public function getStudy(): Study
     {
         return $this->study;
+    }
+
+    /**
+     * Sets a list of instrument that are to be excluded from calculations in the following methods:
+     *   calculateMarketBreadth
+     *   figureInsideBarBOBD
+     *   figureASBOBD
+     *   buildActionableSymbolsWatchlist
+     * @param Collection $excluded
+     */
+    public function setExcluded(Collection $excluded)
+    {
+        $this->excludedInstruments = $excluded;
     }
 
     /**
@@ -186,6 +205,10 @@ class StudyBuilder
         foreach ($metric as $exprName => $score) {
             $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $exprName]);
             $expressions[] = $expression;
+        }
+
+        foreach ($this->excludedInstruments as $instrument) {
+            $watchlist->getInstruments()->removeElement($instrument);
         }
 
         $survey = $this->doScan($this->study->getDate(), $watchlist, $expressions);
@@ -336,6 +359,10 @@ class StudyBuilder
                     $attribute = null;
             }
 
+            foreach ($this->excludedInstruments as $instrument) {
+                $insideBarWatchlist->getInstruments()->removeElement($instrument);
+            }
+
             $bobdTable = $this->makeSurvey($effectiveDate, $insideBarWatchlist, $exprList);
 
             StudyArrayAttributeRepository::createArrayAttr($this->study, $attribute, $bobdTable);
@@ -367,6 +394,10 @@ class StudyBuilder
             self::MO_BO, self::MO_BD, self::POS_ON_MO, self::NEG_ON_MO
         ];
         $attribute = 'as-bobd';
+
+        foreach ($this->excludedInstruments as $instrument) {
+            $ASWatchlist->getInstruments()->removeElement($instrument);
+        }
 
         $bobdTable = $this->makeSurvey($effectiveDate, $ASWatchlist, $exprList);
 
@@ -431,6 +462,9 @@ class StudyBuilder
         }
 
         foreach ($this->study->getWatchlists()->matching($watchlistsOfInterestCriterion) as $watchlist) {
+            foreach ($this->excludedInstruments as $instrument) {
+                $watchlist->getInstruments()->removeElement($instrument);
+            }
             switch ($watchlist->getName()) {
                 case self::INSIDE_BAR_DAY:
                 case self::D_BULLISH_ENG:
