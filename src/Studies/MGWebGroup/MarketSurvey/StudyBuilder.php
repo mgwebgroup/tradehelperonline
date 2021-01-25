@@ -597,8 +597,8 @@ class StudyBuilder
         $deltaStdDev = $scoreTable['summary']['delta-std_div'];
         $updatedTable =  array_map(
             function ($record) use ($scoreAvg, $scoreStdDev, $deltaAvg, $deltaStdDev) {
-                $record['score-std_div_qty'] = ($record['score'] - $scoreAvg) / $scoreStdDev;
-                $record['delta-std_div_qty'] = ($record['delta'] - $deltaAvg) / $deltaStdDev;
+                $record['score-std_div_qty'] = $scoreStdDev > 0 ? ($record['score'] - $scoreAvg) / $scoreStdDev : 0;
+                $record['delta-std_div_qty'] = $deltaStdDev > 0 ? ($record['delta'] - $deltaAvg) / $deltaStdDev : 0;
                 return $record;
             },
             $scoreTable['table']
@@ -670,7 +670,7 @@ class StudyBuilder
 
         $scoreTableMTD = ['table' => [], 'summary' => []];
 
-        $date = clone $this->study->getDate();
+        $date = $this->study->getDate();
 
         $studyParams = $this->getScoreTableParams($this->study, $SPY, $interval);
         $studyParams['date'] = $date;
@@ -678,9 +678,9 @@ class StudyBuilder
 
         $this->tradeDayIterator->getInnerIterator()->setStartDate($date)->setDirection(-1);
         $this->tradeDayIterator->getInnerIterator()->rewind();
-        while ($this->tradeDayIterator->current()->format('d') > 1) {
-            $this->tradeDayIterator->next();
-            $date = $this->tradeDayIterator->current();
+        $this->tradeDayIterator->next();
+        while ($this->tradeDayIterator->current()->format('d') < $date->format('d')) {
+            $date = clone $this->tradeDayIterator->current();
 
             $study = $this->em->getRepository(Study::class)->findOneBy(['date' => $date]);
             if (!$study) {
@@ -688,8 +688,10 @@ class StudyBuilder
             }
 
             $studyParams = $this->getScoreTableParams($study, $SPY, $interval);
-            $studyParams['date'] = clone $date;
+            $studyParams['date'] = $date;
             $scoreTableMTD['table'][] = $studyParams;
+
+            $this->tradeDayIterator->next();
         }
 
         if (count($scoreTableMTD['table']) > 0) {
