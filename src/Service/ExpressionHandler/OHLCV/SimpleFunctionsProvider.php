@@ -146,7 +146,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             $query->setParameter('id', $instrument->getId());
             $query->setParameter('date', $offsetDate->format('Y-m-d'));
             $query->setParameter('interval', $interval);
-            $query->useResultCache(true, $this->resultCacheLifetime);
+//            $query->useResultCache(true, $this->resultCacheLifetime);
 
             // to ignore dates use a limit statement
 //            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h
@@ -220,7 +220,7 @@ class SimpleFunctionsProvider implements ExpressionFunctionProviderInterface
             $query->setParameter('id', $instrument->getId());
             $query->setParameter('date', $offsetDate->format('Y-m-d'));
             $query->setParameter('interval', $interval);
-            $query->useResultCache(true, $this->resultCacheLifetime);
+//            $query->useResultCache(true, $this->resultCacheLifetime);
 
             // to ignore dates use limit statement:
 //            $dql = sprintf('select h.%s from \App\Entity\OHLCV\History h

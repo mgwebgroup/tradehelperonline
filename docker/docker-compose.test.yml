@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 networks:
   app_net:
     ipam:
@@ -20,21 +20,22 @@ services:
       - MARIADB_USER=user
       - MARIADB_PASSWORD=mypassword
     volumes:
-      - mariadb_test:/bitnami/mariadb
+      - mariadb_stage:/bitnami/mariadb
     networks:
       app_net:
         ipv4_address: 172.24.1.3
 
   apache:
-    image: 'tradehelperonline:test'
     container_name: apache
-#    environment:
-#      APP_ENV: 'dev'
+    image: tradehelperonline:test
+    volumes:
+      - '../.env.test:/var/www/html/.env'
+    working_dir: /var/www/html
     networks:
       app_net:
         ipv4_address: 172.24.1.2
 
 volumes:
-  mariadb_test:
+  mariadb_stage:
     driver: local
 

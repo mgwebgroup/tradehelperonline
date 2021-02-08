@@ -17,7 +17,15 @@
 
     <testsuites>
         <testsuite name="App Services">
-            <directory>tests/Service</directory>
+            <file>tests/Service/Exchange/DailyIteratorTest.php</file>
+            <file>tests/Service/Exchange/WeeklyIteratorTest.php</file>
+            <file>tests/Service/Exchange/MonthlyIteratorTest.php</file>
+            <directory>tests/Service/Exchange/Equities</directory>
+            <directory>tests/Service/PriceHistory/OHLCV</directory>
+            <directory>tests/Service/ExpressionHandler/OHLCV</directory>
+            <directory>tests/Service/Scanner/OHLCV</directory>
+            <directory>tests/Service/Charts</directory>
+            <directory>tests/Command</directory>
         </testsuite>
     </testsuites>
 
