@@ -335,7 +335,7 @@ trait Formulas
         ;
         $query = $queryBuilder->getQuery();
         $resultCacheLifetime = self::$container->getParameter('result_cache_lifetime');
-        $query->useResultCache(true, $resultCacheLifetime);
+//        $query->useResultCache(true, $resultCacheLifetime);
         $results = $query->execute();
 
         if (empty($results)) {
