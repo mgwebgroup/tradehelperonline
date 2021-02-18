@@ -84,7 +84,12 @@ while (( "$#" > 0 )) ; do
     tests)
       if [ "$APP_ENV" == 'test' ]; then
         echo 'will run unit tests'
-        bin/phpunit --testsuite 'App Services'
+        bin/phpunit --testsuite 'Date Iterators'
+        bin/phpunit --testsuite 'Exchange Calendars'
+        bin/phpunit --testsuite 'Price History'
+        bin/phpunit --testsuite 'Scanner'
+        bin/phpunit --testsuite 'Charts'
+        bin/phpunit --testsuite 'Commands'
       else
         echo 'Application is not in test or dev environment. Testing will not be performed'
         exit 1

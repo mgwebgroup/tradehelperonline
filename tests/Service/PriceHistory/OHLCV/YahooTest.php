@@ -77,7 +77,7 @@ class YahooTest extends KernelTestCase
         $fromDate = new \DateTime('1 week ago');
         $options = ['interval' => 'P1D'];
         $history = $this->SUT->downloadHistory($this->instrument, $fromDate, $toDate, $options);
-        $this->assertGreaterThanOrEqual(4, count($history));
+        $this->assertGreaterThanOrEqual(3, count($history));
         foreach ($history as $item) {
             $this->assertInstanceOf(History::class, $item);
         }

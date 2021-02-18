@@ -7,27 +7,36 @@
          colors="true"
          bootstrap="config/bootstrap.php"
 >
+    <testsuites>
+        <testsuite name="Date Iterators">
+            <file>tests/Service/Exchange/DailyIteratorTest.php</file>
+            <file>tests/Service/Exchange/WeeklyIteratorTest.php</file>
+            <file>tests/Service/Exchange/MonthlyIteratorTest.php</file>
+        </testsuite>
+        <testsuite name="Exchange Calendars">
+            <directory>tests/Service/Exchange/Equities</directory>
+        </testsuite>
+        <testsuite name="Price History">
+            <directory>tests/Service/PriceHistory/OHLCV</directory>
+        </testsuite>
+        <testsuite name="Scanner">
+            <directory>tests/Service/ExpressionHandler/OHLCV</directory>
+            <directory>tests/Service/Scanner/OHLCV</directory>
+        </testsuite>
+        <testsuite name="Charts">
+            <directory>tests/Service/Charts</directory>
+        </testsuite>
+        <testsuite name="Commands">
+            <directory>tests/Command</directory>
+        </testsuite>
+    </testsuites>
     <php>
         <ini name="error_reporting" value="-1" />
-        <server name="APP_ENV" value="test" force="true" />
+        <server name="APP_ENV" value="test" force="false" />
         <server name="SHELL_VERBOSITY" value="-1" />
         <server name="SYMFONY_PHPUNIT_REMOVE" value="" />
         <server name="SYMFONY_PHPUNIT_VERSION" value="6.5" />
     </php>
-
-    <testsuites>
-        <testsuite name="App Services">
-            <file>tests/Service/Exchange/DailyIteratorTest.php</file>
-            <file>tests/Service/Exchange/WeeklyIteratorTest.php</file>
-            <file>tests/Service/Exchange/MonthlyIteratorTest.php</file>
-            <directory>tests/Service/Exchange/Equities</directory>
-            <directory>tests/Service/PriceHistory/OHLCV</directory>
-            <directory>tests/Service/ExpressionHandler/OHLCV</directory>
-            <directory>tests/Service/Scanner/OHLCV</directory>
-            <directory>tests/Service/Charts</directory>
-            <directory>tests/Command</directory>
-        </testsuite>
-    </testsuites>
 
     <filter>
         <whitelist>
