@@ -25,7 +25,7 @@ RUN --mount=type=secret,id=datastore ./deploy_app data
 
 
 ##################################################################
-## This stage deploys application assets and data
+## This stage deploys code base for prod or staging environment
 ##################################################################
 FROM amazonlinux:2.0.20201218.1 AS base
 
