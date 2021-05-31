@@ -214,7 +214,7 @@ Some symbols may contain characters incompatible with price provider. For exampl
 sed -i -e 's/^\([A-Z]\+\)\.\+\([A-Z]*\),/\1-\2,/' y_universe.csv
 ```
 
-Note what new symbols have been added and removed and how many lines you have after you done. In BASH:
+Note what new symbols have been added and removed and how many lines you have after you done. At this point directory data/source/ still contains old *y_universe.csv*.
 ```bash
 diff -y --suppress-common-lines y_universe.csv source | tee symbol_diff.txt
 wc y_universe.csv
@@ -286,7 +286,6 @@ rclone copy otherlisted.csv aws-mgwebgroup:tradehelperonline/data/source
 mv nasdaqlisted.csv source/ \
 mv otherlisted.csv source/ \
 mv y_universe.csv source/ \
-rm *.bak *.csv *.txt
 ```
 
 
@@ -300,6 +299,16 @@ Do not delete instruments before import! If you delete them, all of your watch l
 
 
 8. Remove old instruments from the y_universe watchlist and add new ones
+You should still have file *symbol_diff.txt* in data/ directory. If not, come back to step 4.
+Make sure you are in the root project directory. Run this command:
 
+```bash
+# Add new instruments to the y_universe watch list
+sed -n -e 's/^\([-A-Z]\+\),.\+</\1 y_universe/p' data/symbol_diff.txt | xargs -n2 bin/console th:watchlist:add
 
+# Remove old instruments from the y_universe watch list.
+sed -n -e 's/^.\+>\s\([-A-Z]\+\),.\+$/\1 y_universe/p' data/symbol_diff.txt | xargs -n2 bin/console th:watchlist:add -d
 
+# clean up
+rm data/*{.bak,.csv,.txt}
+```
