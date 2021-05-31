@@ -4,6 +4,9 @@ namespace App\Command;
 
 use App\Repository\WatchlistRepository;
 use App\Service\UtilityServices;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\ORMException;
+use Exception;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -14,29 +17,28 @@ use App\Entity\Watchlist;
 use App\Entity\Instrument;
 use App\Entity\Expression;
 
-
 class WatchlistImportCommand extends Command
 {
     protected static $defaultName = 'th:watchlist:import';
 
     /**
-     * @var Doctrine\ORM\EntityManager
+     * @var EntityManager
      */
     protected $em;
 
     /**
-     * @var App\Service\Utilities
+     * @var UtilityServices
      */
     protected $utilities;
 
     /**
-     * @var League/Csv/Reader
+     * @var Reader
      */
     protected $csvReader;
 
     public function __construct(
-      RegistryInterface $doctrine,
-      UtilityServices $utilities
+        RegistryInterface $doctrine,
+        UtilityServices $utilities
     ) {
         $this->em = $doctrine->getManager();
         $this->utilities = $utilities;
@@ -49,16 +51,7 @@ class WatchlistImportCommand extends Command
         $this->setDescription('Imports a list of symbols from a csv file into a watchlist');
 
         $this->setHelp(
-          <<<EOT
-Takes a csv file and imports all symbols into a watchlist under NAME. All symbols must be already imported into the 
-system via `th:instruments:import` command. If a watchlist is missing, it will be created. If symbol already exists in a 
-watchlist, it will be overwritten with new expressions from the csv file. 
-The watchlist file must have the following columns: Symbol, Expression Names.
-Note the case on the columns and use of space in `Expression Names`. It must match exactly as shown here.
-Column `expression_names` can be null or can be a column-delimited list of expression_names to evaluate against 
-the symbol. If expressions are already associated in a given watchlist with a symbol, new expressions will be added, 
-and old ones will remain.
-EOT
+            "Takes a csv file and imports all symbols into a watchlist under NAME. All symbols must be already imported into the system via `th:instruments:import` command. If a watchlist is missing, it will be created. If symbol already exists in a watchlist, it will be overwritten with new expressions from the csv file. The watchlist file must have the following columns: Symbol, Expression Names. Note the case on the columns and use of space in `Expression Names`. It must match exactly as shown here. Column `expression_names` can be null or can be a column-delimited list of expression_names to evaluate against the symbol. If expressions are already associated in a given watchlist with a symbol, new expressions will be added, and old ones will remain."
         );
 
         $this
@@ -70,15 +63,15 @@ EOT
     public function initialize(InputInterface $input, OutputInterface $output)
     {
         try {
-            $this->csvReader = Reader::createFromPath($input->getArgument('file'), 'r');
+            $this->csvReader = Reader::createFromPath($input->getArgument('file'));
             $this->csvReader->setHeaderOffset(0);
-        } catch(\Exception $e) {
+        } catch (Exception $e) {
             $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
             exit(1);
         }
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
         $this->utilities->pronounceStart($this, $output);
 
@@ -93,7 +86,7 @@ EOT
         foreach ($records as $value) {
             // find instrument
             $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $value['Symbol']]);
-            if($instrument) {
+            if ($instrument) {
                 $watchlist->addInstrument($instrument);
                 // determine if expressions exist
                 if (!empty($value['Expression Names'])) {
@@ -103,19 +96,32 @@ EOT
                         if ($expression) {
                             $watchlist->addExpression($expression);
                         } else {
-                            $output->writeln(sprintf('<error>ERROR: </error>Expression `%s` was not added to the watchlist because it is missing from the system', $exprName));
+                            $output->writeln(
+                                sprintf(
+                                    '<error>ERROR: </error>Expression `%s` was not added to the watchlist because it is missing from the system',
+                                    $exprName
+                                )
+                            );
                         }
                     }
                 }
             } else {
-                $output->writeln(sprintf('<error>ERROR: </error>Instrument `%s` was not added to the watchlist because it is missing from the system',
-                                         $value['symbol']));
+                $output->writeln(sprintf(
+                    '<error>ERROR: </error>Instrument `%s` was not added to the watchlist because it is missing from the system',
+                    $value['symbol']
+                ));
             }
         }
 
-        $this->em->persist($watchlist);
-        $this->em->flush();
+        try {
+            $this->em->persist($watchlist);
+            $this->em->flush();
+        } catch (ORMException $e) {
+            $output->writeln('<error>ERROR: </error>%s', $e->getMessage());
+        }
 
         $this->utilities->pronounceEnd($this, $output);
+
+        return 0;
     }
 }

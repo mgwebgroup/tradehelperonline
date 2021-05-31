@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnhandledExceptionInspection */
 
 /**
  * This file is part of the Trade Helper Online package.
@@ -169,12 +169,20 @@ class DailyIterator implements Iterator
     {
         if ($date->getTimestamp() < $this->lowerLimit) {
             throw new Exception(
-                sprintf('Date is below (older than) lower boundary of %s', date('c', $this->lowerLimit))
+                sprintf(
+                    'Date %s is below (older than) lower boundary of %s',
+                    $date->format('c'),
+                    date('c', $this->lowerLimit)
+                )
             );
         }
         if ($date->getTimestamp() > $this->upperLimit) {
             throw new Exception(
-                sprintf('Date is above (newer than) upper boundary of %s', date('c', $this->upperLimit))
+                sprintf(
+                    'Date %s is above (newer than) upper boundary of %s',
+                    $date->format('c'),
+                    date('c', $this->upperLimit)
+                )
             );
         }
 

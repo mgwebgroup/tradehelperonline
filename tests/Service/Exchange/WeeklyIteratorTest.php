@@ -280,7 +280,6 @@ class WeeklyIteratorTest extends KernelTestCase
         $dailyIterator->setStartDate($startDate)->setDirection(-1);
         $counter = 0;
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Date is below (older than) lower boundary of 2000-01-01T00:00:00+00:00');
         foreach ($this->SUT as $value) {
             if ($counter > 2) {
                 break;
@@ -301,7 +300,6 @@ class WeeklyIteratorTest extends KernelTestCase
         $dailyIterator->setStartDate($startDate)->setDirection(1);
         $counter = 0;
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Date is above (newer than) upper boundary of 2100-12-31T00:00:00+00:00');
         foreach ($this->SUT as $value) {
             if ($counter > 2) {
                 break;
