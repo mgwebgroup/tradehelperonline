@@ -54,7 +54,7 @@ class WatchlistShow extends Command
 
     protected function configure()
     {
-        $this->setDescription('Lists instruments and expressions associated with a watchlist');
+        $this->setDescription('Lists instruments and expressions. Recalculates expressions and saves results');
 
         $this->setHelp(
             "Lists instruments and optionally results of calculated expressions associated with a watchlist as a comma-separated list. Calculated expressions will always be output if saved in database in the watchlist even if the --calc option is absent. Caveat is that the saved expressions for the watchlist and expressions pre-calculated (stored in database) sometimes may not match. This may happen if you update expressions, but do not recalculate anything, keeping old calculations. In this case, no values will be displayed and you would need to use the --calc option to update the calcs. If you set the --calc option, all expressions will be recalculated (but not saved) and output to screen."
@@ -63,9 +63,10 @@ class WatchlistShow extends Command
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'Name of the Watchlist')
             ->addOption('calc', 'c', InputOption::VALUE_REQUIRED, 'Calculate values of associated expressions using date')
+            ->addOption('save', 's', InputOption::VALUE_NONE, 'Saves recalculated results')
         ;
 
-        $this->addUsage('[--calc=DATE] watchlist_name');
+        $this->addUsage('[--calc=DATE [-s]] watchlist_name');
     }
 
     public function initialize(InputInterface $input, OutputInterface $output)
@@ -81,6 +82,11 @@ class WatchlistShow extends Command
             if ($input->getOption('calc')) {
                 $date = new DateTime($input->getOption('calc'));
                 $this->watchlist->update($this->calculator, $date);
+
+                if ($input->getOption('save')) {
+                    $this->em->persist($this->watchlist);
+                    $this->em->flush();
+                }
             }
         } catch (Exception $e) {
             $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
