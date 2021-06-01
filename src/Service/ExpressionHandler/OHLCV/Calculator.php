@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Trade Helper Online package.
  *
@@ -16,7 +17,7 @@ use App\Service\Exchange\Catalog;
 
 /**
  * Class Calculator
- * Registers simple functions used in scanners and watchlists, like Close, High, etc.
+ * Registers simple functions used in scanners and watch lists, like Close, High, etc.
  * @package App\Service\Scanner\OHLCV
  */
 class Calculator extends ExpressionLanguage
@@ -32,11 +33,10 @@ class Calculator extends ExpressionLanguage
     protected $catalog;
 
     public function __construct(
-      RegistryInterface $registry,
-      Catalog $catalog,
-      $resultCacheLifetime = 0
-    )
-    {
+        RegistryInterface $registry,
+        Catalog $catalog,
+        $resultCacheLifetime = 0
+    ) {
         $this->em = $registry->getManager();
         $this->catalog = $catalog;
         $this->registerProvider(new SimpleFunctionsProvider($this->em, $catalog, $resultCacheLifetime));

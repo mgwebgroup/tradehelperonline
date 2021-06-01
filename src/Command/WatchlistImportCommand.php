@@ -37,7 +37,7 @@ class WatchlistImportCommand extends Command
     protected $csvReader;
 
     /**
-     * @var App\Entity\Watchlist
+     * @var Watchlist
      */
     protected $watchlist;
 

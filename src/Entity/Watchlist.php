@@ -213,8 +213,11 @@ class Watchlist
         }
     }
 
-    public function getCalculatedFormulas()
+    /**
+     * @return array
+     */
+    public function getCalculatedFormulas(): array
     {
-        return $this->calculated_formulas;
+        return (null === $this->calculated_formulas) ? [] : $this->calculated_formulas;
     }
 }
