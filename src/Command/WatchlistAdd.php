@@ -11,6 +11,7 @@
 
 namespace App\Command;
 
+use App\Entity\Expression;
 use App\Entity\Instrument;
 use App\Entity\Watchlist;
 use App\Service\UtilityServices;
@@ -49,25 +50,25 @@ class WatchlistAdd extends Command
 
     protected function configure()
     {
-        $this->setDescription('Adds or deletes an instrument from a watchlist');
+        $this->setDescription('Adds or deletes an instrument or an expression from a watchlist');
 
         $this->setHelp(
-            "Adds or deletes one instrument from a watchlist"
+            "Adds or deletes one instrument to/from a watchlist, and/or one expression to/from watchlist. Instrument or expression must already be imported into the system. To add/delete an expression only, use a known instrument in the system, i.e. 'SPY' - it will be used as a placeholder argument."
         );
 
         $this
           ->addArgument('symbol', InputArgument::REQUIRED, 'Symbol to add or delete')
           ->addArgument('name', InputArgument::REQUIRED, 'Name of the Watchlist')
-          ->addOption('delete', 'd', InputOption::VALUE_NONE, 'symbol')
+          ->addOption('delete', 'd', InputOption::VALUE_NONE, 'Delete flag to delete a symbol')
+          ->addOption('addExpr', null, InputOption::VALUE_REQUIRED, 'Expression to Add')
+          ->addOption('remExpr', null, InputOption::VALUE_REQUIRED, 'Expression to Remove')
         ;
 
-        $this->addUsage('TST my_watchlist');
-        $this->addUsage('-d TST my_watchlist');
-    }
-
-    protected function initialize(InputInterface $input, OutputInterface $output)
-    {
-        //TO DO: Initialize content goes here
+        $this
+          ->addUsage('TST my_watchlist')
+          ->addUsage('-d TST my_watchlist')
+          ->addUsage("--addExpr='Pos on D' --remExpr='Neg on D' SPY my_watchlist")
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -90,6 +91,8 @@ class WatchlistAdd extends Command
                 throw new Exception(sprintf('Instrument `%s` was not found in the system.', $symbol));
             }
 
+            $message = null;
+
             if ($input->getOption('delete')) {
                 $watchlist->removeInstrument($instrument);
                 $message = sprintf(
@@ -97,13 +100,35 @@ class WatchlistAdd extends Command
                     $instrument->getSymbol(),
                     $watchlist->getName()
                 );
-            } else {
+            } elseif (!$watchlist->getInstruments()->contains($instrument)) {
                 $watchlist->addInstrument($instrument);
                 $message = sprintf(
                     '<info>Instrument `%s` was added to watchlist `%s`.</info>',
                     $instrument->getSymbol(),
                     $watchlist->getName()
                 );
+            }
+
+            $addExprName = $input->getOption('addExpr');
+            if ($addExprName) {
+                $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $addExprName]);
+                if ($expression) {
+                    $watchlist->addExpression($expression);
+                    $message .= sprintf('<info> Added expression `%s`</info>', $expression->getName());
+                } else {
+                    throw new Exception(sprintf('Expression `%s` was not found in the system.', $addExprName));
+                }
+            }
+
+            $remExprName = $input->getOption('remExpr');
+            if ($remExprName) {
+                $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $remExprName]);
+                if ($expression) {
+                    $watchlist->removeExpression($expression);
+                    $message .= sprintf('<info> Removed expression `%s`</info>', $expression->getName());
+                } else {
+                    throw new Exception(sprintf('Expression `%s` was not found in the system.', $addExprName));
+                }
             }
 
             $this->em->persist($watchlist);
