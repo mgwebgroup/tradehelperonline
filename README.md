@@ -207,6 +207,10 @@ Some ETF's share same stocks between each other. However, we only want one occur
 ```bash
 tail -n +2 y_universe.csv | sort -fdu -t , -k 1,1 | sed -e '1i Symbol,Name,Industry,SPDR Fund' > y_universe-uniq-sorted.csv
 mv y_universe-uniq-sorted.csv y_universe.csv
+
+# Do the same for the old source/y_universe.csv to prevent mistakes when preparing a diff file later
+tail -n +2 source/y_universe.csv | sort -fdu -t , -k 1,1 | sed -e '1i Symbol,Name,Industry,SPDR Fund' > y_universe-uniq-sorted.csv
+mv y_universe-uniq-sorted.csv source/y_universe.csv
 ```
 
 Some symbols may contain characters incompatible with price provider. For example Brown-Forman Corporation Class B comes as symbol *BF.B* from SPDR's, but is *BF-B* in Yahoo Finance. This functionality must be built in into the price provider API, but is not yet, so symbols like these must be resolved manually.
@@ -299,9 +303,8 @@ Do not delete instruments before import! If you delete them, all of your watch l
 
 
 8. Remove old instruments from the y_universe watchlist and add new ones
-You should still have file *symbol_diff.txt* in data/ directory. If not, come back to step 4.
+You should still have file *symbol_diff.txt* in data/ directory. If not, then you may need to start over with the old *y_universe.csv* file.
 Make sure you are in the root project directory. Run this command:
-
 ```bash
 # Add new instruments to the y_universe watch list
 sed -n -e 's/^\([-A-Z]\+\),.\+</\1 y_universe/p' data/symbol_diff.txt | xargs -n2 bin/console th:watchlist:add

@@ -6,14 +6,14 @@ while (( "$#" > 0 )) ; do
       if [ ! -f  .env ]; then
         cp .env.dist .env;
       fi
-      echo "APP_ENV=$APP_ENV" >> .env
-      echo "APP_SECRET=$(openssl rand -base64 12)" >> .env
+#      echo "APP_ENV=$APP_ENV" >> .env
+#      echo "APP_SECRET=$(openssl rand -base64 12)" >> .env
 #      echo "DATABASE_URL=\"$DATABASE_CONNECTOR\"" >> .env
       composer install
       npm install --unsafe-perm
+#      bin/console cache:clear
       chown -R :${APACHE_GROUP} var/cache
-      chmod -R g+w var/cache
-      chmod -R g+w var/log
+      chmod -R g+w var/cache var/log
       chown -R :${APACHE_GROUP} public
       chmod -R g+w public/charts
       bin/console cache:clear
@@ -22,9 +22,12 @@ while (( "$#" > 0 )) ; do
       echo 'will copy application assets from aws'
       mkdir -p /var/www/html/assets
       rclone --config=/run/secrets/datastore copy $DATA_REMOTE:$BUCKET_NAME/assets /var/www/html/assets
-      bin/console cache:clear
+      bin/console assets:install public --symlink --relative
       npm run build
       chown -R $INSTANCE_USER:$APACHE_GROUP assets
+      if [ -f /var/www/html/src/Studies/MGWebGroup/MarketSurvey/webpack.config.js ]; then
+         npx encore prod --config src/Studies/MGWebGroup/MarketSurvey/webpack.config.js;
+      fi
       ;;
     settings)
 #      echo 'will transfer application settings'
