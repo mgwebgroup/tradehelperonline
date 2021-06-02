@@ -20,7 +20,7 @@ Entire application code and data consists of the following components:
 * Application Data - data that needs to be stored in database (AWS S3 bucket);
 * Test Fixtures - (Github)
 
-*Dockerfile* is designed to work with script *deploy_app*. It has all necessary functionality for various stages of the deployment. Both files are committed to the repository. Parts of the *deploy_app* script are invoked for each deployment environment within the *Dockerfile*. In this way, you should only be able to configure deployment variables and build the application using one *Dockerfile*.
+Instructions in *Dockerfile* rely on script *deploy_app*. It has necessary functionality for various stages of the deployment. Both files are committed to the repository. You should only be able to configure deployment variables and build the application using one *Dockerfile*.
 
 When building app image, all secret info is passed through the *--secret* flag to the docker builder. This flag contains reference to the rclone configuration, which has access credentials to AWS S3 storage.
 
@@ -37,21 +37,89 @@ location_constraint = <region>
 acl = bucket-owner-full-control
 ```
 
-Parent image in *Dockerfile* does not contain database, which is necessary for operation of entire application. In this way, whole application is deployed using two containers or *services*:
+Whole application is deployed using two containers or *services*:
 * MariaDB service
 * Apache service
 
 There are also several *docker-compose* files, which will launch application services configured for each environment:
 * docker-compose.yml - Local developoment;
-* docker-compose.test.yml - Testing environment
-* docker-compose.prod.yml - Production environment
+* docker-compose.prod.yml - Production
+* docker-compose.stage.yml - Staging
+* docker-compose.test.yml - Testing
 
-Separation into several docker-compose files is necessary for convenience of storage of all app data on dedicated volumes within the docker framework.  
+Separation into several docker-compose files is necessary for convenience of storage of app data on dedicated volumes within the docker framework as well as credentials.
 
 
-#### Deployment to test environment
-1. Create test app image using current files in the project root:
-```shell script
+### Automated builds to prod and stage environments.
+
+These instructions were developed with Docker Client (docker-ce-cli) version 20.10.2, and Docker Server (dockerd) version 20.10.2. If you are using earlier versions, you may need special syntax notations as first line in Dockerfile. See [Build images with buildkit](https://docs.docker.com/develop/develop-images/build_enhancements/).
+
+Overall deployment philosophy is 1) run containers for staging environment, 2) Check functionality, 3) Transfer all application files to a clean prod instance, 4) Post-deploy prod instance (supply correct .env file).
+
+1. Build Application Server image
+Section of the *Dockerfile* named *apache* has additional packages installed for the prod server.
+```bash
+docker build \
+-f docker/Dockerfile \
+--target=apache \
+--progress=plain \
+-t tradehelperonline:apache \
+.
+```
+
+2. Build application image.
+
+File in $HOME/.config/rclone/rclone.conf holds rclone configuration to access AWS S3 buckets, which store application assets and data. They are maintained separately, and are not committed to version control.
+Note the value of BRANCH. Make sure it is either "master", or the one available for a study.
+
+```bash
+DOCKER_BUILDKIT=1 \
+docker build \
+-f docker/Dockerfile \
+--no-cache \
+--target=app \
+--progress=plain \
+--build-arg=DATA_REMOTE=aws-mgwebgroup \
+--build-arg=BUCKET_NAME=tradehelperonline \
+--build-arg=BRANCH=bundle/marketscore \
+-t tradehelperonline:app \
+--secret id=datastore,src=$HOME/.config/rclone/rclone.conf \
+--secret id=repo,src=$HOME/.ssh/github_MGWEBGROUP \
+.
+```
+
+3. Deploy app to AWS EC2 instance
+
+Below script uses appropriate docker-compose.yml file for the *stage* deployment. All sensitive credentials are stored in .env.prod|stage files, which are read as environment variables in docker-compose files.
+
+```bash
+# Launch application containers:
+docker-compose -f docker-compose.stage.yml up -d
+
+# Skip this step if database is already setup. This will create new database, perform migrations and import basic data
+# docker-compose -f docker-compose.stage.yml exec apache sh -c './deploy_app database migrations import-data'
+
+# Clear all files on TARGET_INSTANCE and copy entire app:
+docker-compose -f docker-compose.stage.yml exec apache sh -c 'echo APP_SECRET=$(openssl rand -base64 12) >> .env ; eval "$(ssh-agent -s)" ; ssh-add /root/.ssh/tradehelper-stage.pem ; rsync -plogrvz  --delete-before --chown=$INSTANCE_USER:$APACHE_GROUP /var/www/html/ $INSTANCE_USER@$TARGET_INSTANCE:/var/www/html/'
+```
+
+Alternative to the docker composer is to run one application container and execute the above shell commands from there:
+```bash
+docker run --name apache --privileged --rm -it --mount type=bind,src=/home/alex/.ssh/tradehelper-stage.pem,dst=/root/.ssh/tradehelper-stage.pem -w /var/www/html/ --env-file=.env.stage -P tradehelperonline:app bash
+```
+
+If application is functional on staging, you will be able to deploy to production server from it using same rsync command and changing TARGET_INSTANCE as well as credentials to prod in the .env file.
+
+
+### Automated build to test environment.
+
+Application image for the test environment is based on a custom upstream image based on Debian. This is the same image used for the development. Reason for this is to have all facilities available for debugging in the test environment as opposed to prod, where number of packaged utilities is minimized.
+
+1. Build application image using same operating system as in development.
+
+File in $HOME/.config/rclone/rclone.conf holds rclone configuration to access AWS S3 buckets. The buckets store application assets and data. They are maintained separately, and are not committed to version control.
+
+```bash
 DOCKER_BUILDKIT=1 \
 docker build \
 -f docker/Dockerfile \
@@ -59,80 +127,22 @@ docker build \
 --progress=plain \
 --build-arg=DATA_REMOTE=aws-mgwebgroup \
 --build-arg=BUCKET_NAME=tradehelperonline \
---build-arg=DB_USER=user \
---build-arg=DB_PASSWORD=mypassword \
---build-arg=DB_HOST=172.24.1.3 \
 -t tradehelperonline:test \
 --secret id=datastore,src=$HOME/.config/rclone/rclone.conf \
 .
 ```
+This will create application image from files currently present on your machine. If you were able to check out any proprietary branches, i.e. the ones that contain studies, they will be copied as well.
 
-2. Create container cluster:
-```shell script
-docker-compose -f docker/docker-compose.test.yml up -d
-docker-compose -f docker/docker-compose.test.yml exec apache /var/www/html/deploy_app migrations
-docker-compose -f docker/docker-compose.test.yml exec apache /var/www/html/deploy_app fixtures
-docker-compose -f docker/docker-compose.test.yml exec apache /var/www/html/deploy_app tests
-```
 
-#### Deployment to prod environment
-Production database must be set up separately.
-
-1. Create prod app image.
-1.1 Using current files in the project root:
-```shell script
-DOCKER_BUILDKIT=1 \
-docker build \
--f docker/Dockerfile \
---target=prod \
---progress=plain \
---build-arg=DATA_REMOTE=aws-mgwebgroup \
---build-arg=BUCKET_NAME=tradehelperonline \
---build-arg=DB_NAME=TRADEHELPERONLINE_PROD \
---build-arg=DB_USER=user \
---build-arg=DB_PASSWORD=mypassword \
---build-arg=DB_HOST=172.24.1.3 \
--t tradehelperonline:prod \
---secret id=datastore,src=$HOME/.config/rclone/rclone.conf \
-.
-```
-
-1.2 Using files in git repository's master branch:
-You will need to generate access token on Github first.
-```shell script
-DOCKER_BUILDKIT=1 \
-docker build \
--f docker/Dockerfile \
---target=prod \
---progress=plain \
---build-arg=DATA_REMOTE=aws-mgwebgroup \
---build-arg=BUCKET_NAME=tradehelperonline \
---build-arg=DB_NAME=TRADEHELPERONLINE_PROD \
---build-arg=DB_USER=user \
---build-arg=DB_PASSWORD=mypassword \
---build-arg=DB_HOST=172.24.1.3 \
--t tradehelperonline:prod \
---secret id=datastore,src=$HOME/.config/rclone/rclone.conf \
-https://github.com/mgwebgroup/tradehelperonline.git
-```
-
-The above commands will copy application code, will run composer install, copy all assets from AWS S3 storage and install them using __npm run build__ command and will copy application data from AWS S3 storage.
-Production database must already exist, with data import used in building test images.
-
-2. Run the prod image, and sync all files to the prod:
 ```bash
-docker run --name apache --privileged --rm -it \
---mount type=bind,src=/home/alex/.ssh/tradehelper-prod.pem,dst=/root/tradehelper-prod.pem \
--w /var/www/html/ tradehelperonline:prod \
-sh -c 'eval "$(ssh-agent -s)"; ssh-add /root/tradehelper-prod.pem; rsync -plogrv  --delete-before --chown=ec2-user:apache /var/www/html/ ec2-user@54.70.88.233:/var/www/html/'
-```
+# Launch application containers:
+docker-compose -f docker-compose.test.yml up -d
 
-The following step is optional:
-3. Import production database and create container cluster:
-This script will map copy of your production database saved as *backups/TO_BE_PROD_DB.sql* to the *apache* service. Run it and use symfony's __doctrine:database:import__ command to import copy of the production database. After that you can bring up all containers normally.
-```shell script
-docker-compose -f docker/docker-compose.prod.yml run --rm -v $(pwd)/backups:/var/www/html/akay -w /var/www/html apache dockerize -wait tcp4://mariadb:3306 bin/console doctrine:database:import backups/TO_BE_PROD_DB.sql 
-docker-compose -f docker/docker-compose.prod.yml up -d
+# Create new database, perform migrations and import test fixtures
+docker-compose -f docker-compose.test.yml exec apache sh -c './deploy_app database migrations fixtures'
+
+# Perform tests
+docker-compose -f docker-compose.test.yml exec apache sh -c './deploy_app tests'
 ```
 
 

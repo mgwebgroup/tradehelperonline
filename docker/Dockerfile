@@ -32,7 +32,7 @@ sed -i -n -e 'a Host *' -e 'a StrictHostKeyChecking no' /root/.ssh/config
 
 
 ##################################################################
-## Deploy code for stage environemnt
+## Deploy code for stage or prod environemnt
 ##################################################################
 FROM tradehelperonline:apache AS app
 
