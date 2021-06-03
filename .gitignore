@@ -6,8 +6,10 @@
 /data/source/ohlcv/*.csv
 /data/source/ohlcv/*.tar
 /data/source/*.csv
+/data/*
 /assets/scripts/db_mngmnt.sh
-/public/charts
+/public/charts/*
+!/public/charts/.gitignore
 
 ###> symfony/framework-bundle ###
 .env

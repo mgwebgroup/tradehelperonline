@@ -195,12 +195,14 @@ curl -o XHB.xlsx -GL https://www.ssga.com/us/en/individual/etfs/library-content/
 
 2. Produce comma separated files for each ETF.
 In this example ETF instruments will be arranged as needed by the Market Survey study for its file *y_universe.csv*.
-Open each downloaded Excel file and create a new csv file with the following columns: Symbol,Name,Industry,SPDR Fund. Cut and paste data from Excel to csv manually. Ignore lines that do not contain stock symbols. Save results as a comma separated file named after each ETF in lower case. For example: xhb.csv, xrt.csv, etc.
+Open each downloaded Excel file and create a new csv file for it with the following columns:
+  - Symbol,Name,Industry,SPDR Fund.
+Cut and paste data from Excel to csv manually. Ignore lines that do not contain stock symbols. Save results as a comma separated file named after each ETF in lower case. For example: xhb.csv, xrt.csv, etc.
 
-3. Combine all sector files into one file titled *y_universe.csv*.
-Use heading from each sector ETF files. See previous item.
+3. Combine stock listings in each sector into one file titled *y_universe.csv*.
 Note how many lines you have after you done. In BASH:
 ```bash
+tail -q -n +2 *.csv | sed -e '1i Symbol,Name,Industry,SPDR Fund' > y_universe.csv
 wc y_universe.csv
 ```
 
@@ -228,7 +230,7 @@ Some symbols may contain characters incompatible with price provider. For exampl
 sed -i -e 's/^\([A-Z]\+\)\.\+\([A-Z]*\),/\1-\2,/' y_universe.csv
 ```
 
-Note what new symbols have been added and removed and how many lines you have after you done. At this point directory data/source/ still contains old *y_universe.csv*.
+Note what new symbols have been added and removed and how many lines you have after you done. At this point directory data/source/ still contains old *y_universe.csv* and directory data/ (the one you are in) has the new *y_universe* file.
 ```bash
 diff -y --suppress-common-lines y_universe.csv source | tee symbol_diff.txt
 wc y_universe.csv
@@ -248,7 +250,6 @@ y_universe.csv market-survey-uniq-sorted.csv > temp.csv
 # make sure the resulting line count matches y_universe.csv
 wc temp.csv
 ```
-
 Paste all the lines (except header) from *temp.csv* back into your Market Survey file which is open in spreadsheet application and save.
 
 
@@ -296,7 +297,6 @@ Exchange:
 rclone copy y_universe.csv aws-mgwebgroup:tradehelperonline/data/source \
 rclone copy nasdaqlisted.csv aws-mgwebgroup:tradehelperonline/data/source \
 rclone copy otherlisted.csv aws-mgwebgroup:tradehelperonline/data/source
-# Clean up
 mv nasdaqlisted.csv source/ \
 mv otherlisted.csv source/ \
 mv y_universe.csv source/ \
@@ -308,7 +308,7 @@ Change into the main project directory and run:
 ```bash
 bin/console th:instruments:import -v
 ```
-Instruments that are already imported will be skipped. This command will print its output to *std_out*.
+Command uses *data/source/y_universe.csv* file by default. Instruments that are already imported will be skipped. This command will print its output to *std_out*.
 Do not delete instruments before import! If you delete them, all of your watch lists and price data will loose references. Only delete instruments when you know exactly what you are doing.
 
 
