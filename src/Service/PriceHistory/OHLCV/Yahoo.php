@@ -1,11 +1,9 @@
 <?php
-/**
- * This file is part of the Trade Helper package.
+/*
+ * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
- * (c) Alex Kay <alex110504@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+ * For the full copyright and licence information, please view the LICENSE
+ *  file that was distributed with this source code.
  */
 
 namespace App\Service\PriceHistory\OHLCV;

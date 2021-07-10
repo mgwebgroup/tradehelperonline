@@ -1,15 +1,9 @@
-<?php /** @noinspection PhpUnhandledExceptionInspection */
-
-/**
- * This file is part of the Trade Helper Online package.
+<?php /*
+ * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
- * (c) 2019-2020  Alex Kay <alex110504@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace App\Service\Exchange;
+ * For the full copyright and licence information, please view the LICENSE
+ *  file that was distributed with this source code.
+ */ namespace App\Service\Exchange;
 
 use DateInterval;
 use DateTime;

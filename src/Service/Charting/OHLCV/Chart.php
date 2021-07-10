@@ -1,30 +1,10 @@
 <?php
-/**
-* 
-* @class Chart
-* 
-* @brief This class creates charts in .png format and saves them on disk. 
-* 
-* When adding functions to this class, all functions use array $args as input value. Use verbosely keyed elemens for public functions (possibility to be accessed from outside exists) and simple numerically indexed elements for internal private functions.
-* 
-* @version 130204
-* @author Alex Kay (MGWebGroup)
-* 
-* Contents:
-* __construct() - Overloaded construct method for the class. Checks values for $canvas property, reads axes data, draws chart background, axes, created color table
-* add_line_series() - Draws data series on chart as a polyline.
-* add_candlestick_series() - Draws candlestick price data. Takes in OHLC information as 4 separate arrays.
-* add_xbar_series() - Draws vertical bars on x_axis for the given 'values'.
-* add_ybar_series() - Draws horizontal bars on y_axis for the given 'values'.
-* add_symbol_series() - Adds annotation to the chart in the form of geometric shapes, text and values.
-* draw_rectangle() - Draws filled rectangle with coordinates specified in units (not image pixels) for the given indeces of x_- and y_axes.
-* place_text() - Places text at given axis coordinates.
-* save_chart() - Saves chart on disk.
-* units_to_pxls() - Translates values given in x- and y-coordinates into pixel coordinates on chart.
-* get_line_style() - Uses a line prototype, scale and color to build a line pattern.
-* apply_transparency() - Applies transparency to a given color name.
-* 
-*/
+/*
+ * Copyright (c) Art Kurbakov <alex110504@gmail.com>
+ *
+ * For the full copyright and licence information, please view the LICENSE
+ *  file that was distributed with this source code.
+ */
 
 namespace App\Service\Charting\OHLCV;
 

@@ -1,11 +1,9 @@
 <?php
-/**
- * This file is part of the Trade Helper package.
+/*
+ * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
- * (c) Alex Kay <alex110504@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+ * For the full copyright and licence information, please view the LICENSE
+ *  file that was distributed with this source code.
  */
 
 namespace App\Command;
@@ -142,8 +140,7 @@ EOT
 
         $this->addUsage('[-v] [--prevT-QtoH] [--stillT-saveQ] [--delay=int|random] [--offset=int] [--chunk=int] [data/source/x_universe.csv]');
 
-        $this->addArgument('path', InputArgument::OPTIONAL, 'path/to/file.csv with list of symbols to work on', self::DEFAULT_PATH);
-
+        $this->addArgument('path', InputArgument::OPTIONAL, 'list/of/symbols.csv', self::DEFAULT_PATH);
         $this->addOption('prevT-QtoH', null, InputOption::VALUE_NONE, 'If prev T in history is quote, will download history and will replace');
         $this->addOption('stillT-saveQ', null, InputOption::VALUE_NONE, 'Downloaded Quotes for today will keep replacing last P in history for today');
         $this->addOption('delay', null, InputOption::VALUE_REQUIRED, 'Delay in seconds between each query to API or word random for random delay no longer than 10 seconds.');
@@ -177,7 +174,7 @@ EOT
         }
 
         if ($symbol = $input->getOption('symbol')) {
-            $this->symbol = $symbol;
+            $this->symbol = strtoupper($symbol);
         } else {
             $this->symbol = null;
         }
