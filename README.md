@@ -1,4 +1,38 @@
+### Definitions.
+
+#### Instrument Universe.
+At the time of development, the project analyzed common stocks collected under each [SPDR fund](https://www.sectorspdr.com/sectorspdr). Overall design is agnostic to types of instruments (common stocks, options, ETFs, futures, etc.). To differentiate between sets of instruments analyzed for different purposes, idea of an _Instrument Universe_ was introduced. In other words, an _Instrument Universe_ contains instruments grouped for some analytical purpose. This universe is further split into watch lists. The term **y_universe** refers to common stocks listed under 12 SPDR ETFs:
+
+* XLC, Communication Services
+* XLY, Consumer Discretionary
+* XLP, Consumer Staples
+* XLE, Energy
+* XLF, Financials
+* XLV, Health Care
+* XLI, Industrials
+* XLB, Basic Materials
+* XHB, Home Builders
+* XLK, Technology
+* XLU, Utilities
+* XRT, Retail
+
+The term **x_universe** is a super set that includes instruments listed beyond the SPDRs.
+
+
+### Architecture
+#### Backing Services
+Each Backing Service is a resource.
+
+| Service | Vendor |
+| --- | --- |
+| Price Data | Yahoo Finance |
+| Database Storage | Amazon RDS |
+| Logs | Local:  symfony/monolog-bundle (includes logs rotation) |
+
+
+
 ### Deployment
+
 All deployment operations are container-based, with Docker as the container application and one docker file. Deployment into a container depends on environment as each environment handles database service differently. Currently three environments are recognized:
 * dev - database is a mix of production and test data as developer sees fit
 * test - database is on the same instance as the application server and only contains test fixtures.
@@ -50,7 +84,7 @@ There are also several *docker-compose* files, which will launch application ser
 Separation into several docker-compose files is necessary for convenience of storage of app data on dedicated volumes within the docker framework as well as credentials.
 
 
-### Automated builds to prod and stage environments.
+#### Automated builds to prod and stage environments.
 
 These instructions were developed with Docker Client (docker-ce-cli) version 20.10.2, and Docker Server (dockerd) version 20.10.2. If you are using earlier versions, you may need special syntax notations as first line in Dockerfile. See [Build images with buildkit](https://docs.docker.com/develop/develop-images/build_enhancements/).
 
@@ -111,7 +145,7 @@ docker run --name apache --privileged --rm -it --mount type=bind,src=/home/alex/
 If application is functional on staging, you will be able to deploy to production server from it using same rsync command and changing TARGET_INSTANCE as well as credentials to prod in the .env file.
 
 
-### Automated build to test environment.
+#### Automated build to test environment.
 
 Application image for the test environment is based on a custom upstream image based on Debian. This is the same image used for the development. Reason for this is to have all facilities available for debugging in the test environment as opposed to prod, where number of packaged utilities is minimized.
 
@@ -144,25 +178,6 @@ docker-compose -f docker-compose.test.yml exec apache sh -c './deploy_app databa
 # Perform tests
 docker-compose -f docker-compose.test.yml exec apache sh -c './deploy_app tests'
 ```
-
-
-### Definitions.
-
-#### Instrument Universe.
-At the time of development, the package worked primarily with SPDR funds (XLE, XLB, XLU, etc.) and instruments associated with them. The package can work with any stock instrument, however analytical tools developed as studies to this package, relied heavily on the SPDR funds. To differentiate between sets of instruments utilized for different purposes, idea of an Instrument Universe was introduced. Instrument Universe contains all of instruments collected for some analytical purpose. This universe is further split into watch lists. In this package the term **y_universe** refers to instruments collected under 11 SPDR funds:
-* XLC, Communication Services
-* XLY, Consumer Discretionary
-* XLP, Consumer Staples
-* XLE, Energy,1,Energy
-* XLF, Financials
-* XLV, Health Care
-* XLI, Industrials
-* XLB, Materials
-* XLRE, Real Estate
-* XLK, Technology
-* XLU, Utilities
-
-The term **x_universe** is a super set of instruments that includes instruments beyond the SPDR's.
 
 
 ### Maintenance.
