@@ -12,10 +12,10 @@ namespace App\Command;
 use App\Entity\Instrument;
 use App\Service\Exchange\Equities\NASDAQ;
 use App\Service\Exchange\Equities\NYSE;
-use App\Service\UtilityServices;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use League\Csv\Statement;
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -77,11 +77,6 @@ class ImportInstruments extends Command
     private $NYSE;
 
     /**
-     * @var UtilityServices
-     */
-    private $utilities;
-
-    /**
      * @var string
      */
     private $path;
@@ -101,18 +96,20 @@ class ImportInstruments extends Command
      */
     private $filesystem;
 
+    private $logger;
+
     public function __construct(
         RegistryInterface $doctrine,
-        UtilityServices $utilities,
         NASDAQ $NASDAQ,
         NYSE $NYSE,
-        Filesystem $filesystem
+        Filesystem $filesystem,
+        LoggerInterface $logger
     ) {
-        $this->utilities = $utilities;
         $this->em = $doctrine->getManager();
         $this->NASDAQ = $NASDAQ;
         $this->NYSE = $NYSE;
         $this->filesystem = $filesystem;
+        $this->logger = $logger;
 
         parent::__construct();
     }
@@ -169,7 +166,7 @@ class ImportInstruments extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
-        $this->utilities->pronounceStart($this, $output);
+        $this->logger->info(sprintf('Command %s is starting', $this->getName()));
 
         $repository = $this->em->getRepository(Instrument::class);
 
@@ -197,8 +194,7 @@ class ImportInstruments extends Command
             $nyseReader = Reader::createFromPath(self::NYSE_FILE);
 
             foreach ($records as $key => $record) {
-                $logMsg = sprintf('%3.3d %s: ', $key, $record['Symbol']);
-                $screenMsg = $logMsg;
+                $logMsg = sprintf('%3.3d %5.5s: ', $key, $record['Symbol']);
 
                 // TODO: include check for symbol validity with the price provider here
                 // ...
@@ -257,14 +253,12 @@ class ImportInstruments extends Command
                     }
 
                     $logMsg .= $action;
-                    $screenMsg = $logMsg;
 
                     unset($instrument);
                 } else {
                     $logMsg .= 'No Exchange found! Will not be imported.';
-                    $screenMsg = $logMsg;
                 }
-                $this->utilities->logAndSay($output, $logMsg, $screenMsg);
+                $this->logger->warning($logMsg);
             }
             $this->em->flush();
 
@@ -273,11 +267,10 @@ class ImportInstruments extends Command
             }
         } catch (Exception $e) {
             $logMsg = $e->getMessage();
-            $screenMsg = $logMsg;
-            $this->utilities->logAndSay($output, $logMsg, $screenMsg);
+            $this->logger->error($logMsg);
         }
 
-        $this->utilities->pronounceEnd($this, $output);
+        $this->logger->info(sprintf('Command %s finished', $this->getName()));
 
         return 0;
     }

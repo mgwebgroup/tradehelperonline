@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
@@ -9,9 +10,13 @@
 namespace App\Command;
 
 use App\Entity\OHLCV\History;
-use App\Service\UtilityServices;
+use DateInterval;
+use DateTime;
 use League\Csv\Reader;
 use League\Csv\Statement;
+use Exception;
+use League\Csv\Exception as CsvException;
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -23,18 +28,10 @@ use App\Entity\Instrument;
 
 class ImportOHLCV extends Command
 {
-    const MAIN_FILE = 'data/source/x_universe.csv';
-    const OHLCV_PATH = 'data/source/ohlcv';
+    public const MAIN_FILE = 'data/source/x_universe.csv';
+    public const OHLCV_PATH = 'data/source/ohlcv';
 
-    /**
-     * @var Doctrine\ORM\EntityManager
-     */
     protected $em;
-
-    /**
-     * @var App\Service\Utilities
-     */
-    protected $utilities;
 
     /**
      * Full path to symbols list, which includes file name
@@ -60,9 +57,6 @@ class ImportOHLCV extends Command
      */
     protected $chunk;
 
-    /**
-     * @var Symfony\Component\Filesystem\Filesystem
-     */
     private $fileSystem;
 
     /**
@@ -75,15 +69,17 @@ class ImportOHLCV extends Command
      */
     protected $provider;
 
+    private $logger;
+
     public function __construct(
         RegistryInterface $doctrine,
-        UtilityServices $utilities,
+        LoggerInterface $logger,
         Filesystem $fileSystem
     ) {
         $this->em = $doctrine->getManager();
-        $this->utilities = $utilities;
+        $this->logger = $logger;
         $this->fileSystem = $fileSystem;
-        
+
         parent::__construct();
     }
 
@@ -92,11 +88,11 @@ class ImportOHLCV extends Command
         $this->setName('th:price:import');
 
         $this->setDescription(
-          'Imports daily and weekly OHLCV price data from .csv files into database'
+            'Imports daily and weekly OHLCV price data from .csv files into database'
         );
 
         $this->setHelp(
-          <<<'EOT'
+            <<<'EOT'
 In the first form, uses symbols list to import OHLCV data into database. Symbols list is usually a file named 
 y_universe and saved in data/source directory. Other file may be used and must have symbols listed in its first column
 titled 'Symbol'. Order of columns not important and other columns may be present. The command will go through symbols in
@@ -132,8 +128,7 @@ EOT
     {
         if (!$this->fileSystem->exists($input->getArgument('list-file'))) {
             $logMsg = sprintf('File with symbols list was not found. Looked for `%s`', $input->getArgument('list-file'));
-            $screenMsg = $logMsg;
-            $this->utilities->logAndSay($output, $logMsg, $screenMsg);
+            $this->logger->error($logMsg);
             exit(1);
         } else {
             $this->listFile = $input->getArgument('list-file');
@@ -141,8 +136,7 @@ EOT
 
         if (!$this->fileSystem->exists($input->getArgument('ohlcv-path'))) {
             $logMsg = sprintf('Path to ohlcv price data does not exist. Looked in `%s`', $input->getArgument('ohlcv-path'));
-            $screenMsg = $logMsg;
-            $this->utilities->logAndSay($output, $logMsg, $screenMsg);
+            $this->logger->error($logMsg);
             exit(1);
         } else {
             $this->ohlcvPath = trim($input->getArgument('ohlcv-path'), '/');
@@ -173,82 +167,82 @@ EOT
         }
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
-        $this->utilities->pronounceStart($this, $output);
+        $this->logger->info(sprintf('Command %s is starting', $this->getName()));
 
         $repository = $this->em->getRepository(Instrument::class);
 
-        $csvMainReader = Reader::createFromPath($this->listFile, 'r');
-        $csvMainReader->setHeaderOffset(0);
-        $statement = new Statement();
-        if ($this->symbol) {
-            $statement = $statement->where(function($v) { return $v['Symbol'] == $this->symbol; });
-        } else {
-            if ($this->offset > 0) {
-                $statement = $statement->offset($this->offset - 1);
-            }
-            if ($this->chunk > 0) {
-                $statement = $statement->limit($this->chunk);
-            }
-        }
-
-        $records = $statement->process($csvMainReader);
-
-        foreach ($records as $key => $record) {
-            $logMsg = sprintf('%4d %5s: ', $key, $record['Symbol']);
-            $screenMsg = $logMsg;
-
-            $instrument = $repository->findOneBySymbol($record['Symbol']);
-
-            if ($instrument) {
-                $dailyFile = sprintf('%s/%s_d.csv', $this->ohlcvPath, $record['Symbol']);
-                if ($this->fileSystem->exists($dailyFile)) {
-                    $importedLines = $this->importPrices($dailyFile, $instrument, new \DateInterval('P1D'), $this->provider);
-                    $logMsg .= sprintf('%d daily price records imported ', $importedLines);
-                    $screenMsg = $logMsg;
-                } else {
-                    $logMsg .= 'no daily file ';
-                    $screenMsg = $logMsg;
-                }
-
-                $weeklyFile = sprintf('%s/%s_w.csv', $this->ohlcvPath, $record['Symbol']);
-                if ($this->fileSystem->exists($weeklyFile)) {
-                    $importedLines = $this->importPrices($weeklyFile, $instrument, new \DateInterval('P1W'), $this->provider);
-                    $logMsg .= sprintf('%d weekly price records imported ', $importedLines);
-                    $screenMsg = $logMsg;
-                } else {
-                    $logMsg .= 'no weekly file ';
-                    $screenMsg = $logMsg;
-                }
+        try {
+            $csvMainReader = Reader::createFromPath($this->listFile);
+            $csvMainReader->setHeaderOffset(0);
+            $statement = new Statement();
+            if ($this->symbol) {
+                $statement = $statement->where(function ($v) {
+                    return $v['Symbol'] == $this->symbol;
+                });
             } else {
-                $logMsg .= 'instrument not imported ';
-                $screenMsg = $logMsg;
+                if ($this->offset > 0) {
+                    $statement = $statement->offset($this->offset - 1);
+                }
+                if ($this->chunk > 0) {
+                    $statement = $statement->limit($this->chunk);
+                }
             }
 
-            $this->utilities->logAndSay($output, $logMsg, $screenMsg);
+            $records = $statement->process($csvMainReader);
+
+            foreach ($records as $key => $record) {
+                $logMsg = sprintf('%4d %5.5s: ', $key, $record['Symbol']);
+
+                $instrument = $repository->findOneBySymbol($record['Symbol']);
+
+                if ($instrument) {
+                    $dailyFile = sprintf('%s/%s_d.csv', $this->ohlcvPath, $record['Symbol']);
+                    if ($this->fileSystem->exists($dailyFile)) {
+                        $importedLines = $this->importPrices($dailyFile, $instrument, new DateInterval('P1D'), $this->provider);
+                        $logMsg .= sprintf('%d daily price records imported ', $importedLines);
+                    } else {
+                        $logMsg .= 'no daily file ';
+                    }
+
+                    $weeklyFile = sprintf('%s/%s_w.csv', $this->ohlcvPath, $record['Symbol']);
+                    if ($this->fileSystem->exists($weeklyFile)) {
+                        $importedLines = $this->importPrices($weeklyFile, $instrument, new DateInterval('P1W'), $this->provider);
+                        $logMsg .= sprintf('%d weekly price records imported ', $importedLines);
+                    } else {
+                        $logMsg .= 'no weekly file ';
+                    }
+                } else {
+                    $logMsg .= 'instrument not imported ';
+                }
+
+                $this->logger->notice($logMsg);
+            }
+        } catch (Exception | CsvException $e) {
+            $logMsg = $e->getMessage();
+            $this->logger->error($logMsg);
+            return 1;
         }
 
-        $this->utilities->pronounceEnd($this, $output);
+        $this->logger->info(sprintf('Command %s finished', $this->getName()));
+
+        return 0;
     }
 
     /**
-     * @param string $file
-     * @param \App\Entity\Instrument $instrument
-     * @param \DateInterval $period
-     * @param string $provider
-     * @return int $number
-     * @throws \Exception
+     * @throws Exception | CsvException
      */
-    private function importPrices($file, $instrument, $period, $provider)
+    private function importPrices(string $file, Instrument $instrument, DateInterval $period, string $provider): int
     {
-        $ohlcvReader = Reader::createFromPath($file, 'r');
+        $ohlcvReader = Reader::createFromPath($file);
         $ohlcvReader->setHeaderOffset(0);
         $lines = $ohlcvReader->getRecords();
 
+        $number = 0;
         foreach ($lines as $number => $line) {
             $History = new History();
-            $History->setTimestamp(new \DateTime($line['Date']));
+            $History->setTimestamp(new DateTime($line['Date']));
             $History->setOpen($line['Open']);
             $History->setHigh($line['High']);
             $History->setLow($line['Low']);
