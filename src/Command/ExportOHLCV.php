@@ -71,7 +71,7 @@ class ExportOHLCV extends Command
 
         $this->addUsage(
             '[--from-date] [--to-date] [--offset=int] [--chunk=int] [--interval=P1D] [--provider=YAHOO]
-          --list=data/source/x_universe.csv data/source/ohlcv'
+          --list-file=data/source/x_universe.csv data/source/ohlcv'
         );
         $this->addUsage(
             '[--from-date] [--to-date] [--interval=P1D] [--provider=YAHOO] --symbol=FB [data/source/ohlcv]'
