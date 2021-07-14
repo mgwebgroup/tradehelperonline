@@ -12,9 +12,8 @@ namespace App\Command;
 use App\Entity\Expression;
 use App\Entity\Instrument;
 use App\Entity\Watchlist;
-use App\Service\UtilityServices;
-use Doctrine\ORM\EntityManager;
 use Exception;
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -25,23 +24,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 class WatchlistAdd extends Command
 {
     protected static $defaultName = 'th:watchlist:add';
-
-    /**
-     * @var EntityManager
-     */
     protected $em;
-
-    /**
-     * @var UtilityServices
-     */
-    protected $utilities;
+    private $logger;
 
     public function __construct(
         RegistryInterface $doctrine,
-        UtilityServices $utilities
+        LoggerInterface $logger
     ) {
         $this->em = $doctrine->getManager();
-        $this->utilities = $utilities;
+        $this->logger = $logger;
 
         parent::__construct();
     }
@@ -71,10 +62,11 @@ class WatchlistAdd extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->utilities->pronounceStart($this, $output);
+        $this->logger->info(sprintf('Command %s is starting', $this->getName()));
 
         $name = $input->getArgument('name');
 
+        /** @var Watchlist $watchlist */
         $watchlist = $this->em->getRepository(Watchlist::class)->findOneBy(['name' => $name]);
 
         try {
@@ -94,14 +86,14 @@ class WatchlistAdd extends Command
             if ($input->getOption('delete')) {
                 $watchlist->removeInstrument($instrument);
                 $message = sprintf(
-                    '<comment>Instrument `%s` was removed from watchlist `%s`.</comment>',
+                    'Instrument `%s` was removed from watchlist `%s`',
                     $instrument->getSymbol(),
                     $watchlist->getName()
                 );
             } elseif (!$watchlist->getInstruments()->contains($instrument)) {
                 $watchlist->addInstrument($instrument);
                 $message = sprintf(
-                    '<info>Instrument `%s` was added to watchlist `%s`.</info>',
+                    'Instrument `%s` was added to watchlist `%s`.',
                     $instrument->getSymbol(),
                     $watchlist->getName()
                 );
@@ -112,7 +104,7 @@ class WatchlistAdd extends Command
                 $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $addExprName]);
                 if ($expression) {
                     $watchlist->addExpression($expression);
-                    $message .= sprintf('<info> Added expression `%s`</info>', $expression->getName());
+                    $message .= sprintf(' Added expression `%s`', $expression->getName());
                 } else {
                     throw new Exception(sprintf('Expression `%s` was not found in the system.', $addExprName));
                 }
@@ -123,7 +115,7 @@ class WatchlistAdd extends Command
                 $expression = $this->em->getRepository(Expression::class)->findOneBy(['name' => $remExprName]);
                 if ($expression) {
                     $watchlist->removeExpression($expression);
-                    $message .= sprintf('<info> Removed expression `%s`</info>', $expression->getName());
+                    $message .= sprintf(' Removed expression `%s`', $expression->getName());
                 } else {
                     throw new Exception(sprintf('Expression `%s` was not found in the system.', $addExprName));
                 }
@@ -132,13 +124,13 @@ class WatchlistAdd extends Command
             $this->em->persist($watchlist);
             $this->em->flush();
 
-            $output->writeln($message);
+            $this->logger->notice($message);
         } catch (Exception $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
+            $this->logger->error($e->getMessage());
             return 1;
         }
 
-        $this->utilities->pronounceEnd($this, $output);
+        $this->logger->info(sprintf('Command %s finished', $this->getName()));
 
         return 0;
     }
