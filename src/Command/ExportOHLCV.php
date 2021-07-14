@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
@@ -12,7 +13,6 @@ use App\Entity\Instrument;
 use App\Entity\OHLCV\History;
 use App\Exception\PriceHistoryException;
 use DateTime;
-use Doctrine\ORM\EntityManager;
 use Exception;
 use League\Csv\Reader;
 use League\Csv\Statement;
@@ -25,63 +25,38 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
-use App\Service\UtilityServices;
+use Psr\Log\LoggerInterface;
 
 class ExportOHLCV extends Command
 {
     public $listPath = 'data/source/x_universe.csv';
     public $exportPath = 'data/source/ohlcv';
 
-    /**
-     * @var EntityManager
-     */
     protected $em;
-
-    /**
-     * @var Filesystem
-     */
     protected $filesystem;
-
-    /**
-     * @var UtilityServices
-     */
-    protected $utilities;
-
-    /**
-     * @var string
-     */
     protected $provider;
-
     /**
      * Offset in list file to start from. Header offset = 0
      * @var integer
      */
     protected $offset;
-
     /**
      * Number of records to go over in the list file
      * @var integer
      */
     protected $chunk;
-
-    /**
-     * @var Instrument
-     */
     protected $instrument;
-
-    /**
-     * @var Reader
-     */
     protected $csvReader;
+    private $logger;
 
     public function __construct(
         Filesystem $filesystem,
         RegistryInterface $doctrine,
-        UtilityServices $utilities
+        LoggerInterface $logger
     ) {
         $this->filesystem = $filesystem;
         $this->em = $doctrine;
-        $this->utilities = $utilities;
+        $this->logger = $logger;
 
         parent::__construct();
     }
@@ -150,15 +125,18 @@ class ExportOHLCV extends Command
         if ($symbol = $input->getOption('symbol')) {
             $this->instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol($symbol);
             if (empty($this->instrument)) {
-                $output->writeln(sprintf('<error>ERROR: </error>Instrument for symbol %s is not imported', $symbol));
+                $this->logger->error(sprintf(
+                    '<error>ERROR:</error> Instrument for symbol %s is not imported',
+                    $symbol
+                ));
                 exit(1);
             }
         }
 
         if ($listFile = $input->getOption('list-file')) {
             if (false === $this->filesystem->exists($listFile)) {
-                $output->writeln(sprintf(
-                    '<error>ERROR: </error>File for the symbols list could not be found. Looked for: %s',
+                $this->logger->error(sprintf(
+                    '<error>ERROR:</error> File for the symbols list could not be found. Looked for: %s',
                     $listFile
                 ));
                 exit(1);
@@ -169,7 +147,7 @@ class ExportOHLCV extends Command
 
         $exportPath = $input->getArgument('export-path');
         if (false === $this->filesystem->exists($exportPath)) {
-            $output->writeln(sprintf('Could not find export path %s', $exportPath));
+            $this->logger->error(sprintf('<error>ERROR:</error> Could not find export path %s', $exportPath));
             exit(1);
         }
 
@@ -177,20 +155,20 @@ class ExportOHLCV extends Command
             $tempFile = $this->filesystem->tempnam($exportPath, 'mgweb');
             $this->filesystem->remove($tempFile);
         } catch (IOException $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
+            $this->logger->error(sprintf('<error>ERROR:</error> %s', $e->getMessage()));
             exit(1);
         }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
-        $this->utilities->pronounceStart($this, $output);
+        $this->logger->info(sprintf('Command %s is starting', $this->getName()));
 
         try {
             $fromDate = $input->getOption('from-date') ? new DateTime($input->getOption('from-date')) : null;
             $toDate = $input->getOption('to-date') ? new DateTime($input->getOption('to-date')) : null;
         } catch (Exception $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
+            $this->logger->error(sprintf('<error>ERROR:</error> %s', $e->getMessage()));
             exit(1);
         }
 
@@ -198,7 +176,7 @@ class ExportOHLCV extends Command
             $intervalRaw = strtolower($input->getOption('interval'));
             $interval = History::getOHLCVInterval($intervalRaw);
         } catch (PriceHistoryException $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
+            $this->logger->error(sprintf('<error>ERROR:</error> %s', $e->getMessage()));
             exit(1);
         }
 
@@ -206,84 +184,90 @@ class ExportOHLCV extends Command
         $exportPath = $input->getArgument('export-path');
         $period = substr($intervalRaw, 0, 1);
 
-        if ($this->instrument) {
-            $records[] = ['Symbol' => $this->instrument->getSymbol()];
-        } else {
-            $this->csvReader->setHeaderOffset(0);
-            $statement = new Statement();
-            $offset = $input->getOption('offset');
-            $chunk = $input->getOption('chunk');
-            if ($offset > 0) {
-                $statement = $statement->offset($offset - 1);
-            }
-            if ($chunk > 0) {
-                $statement = $statement->limit($chunk);
+        try {
+            if ($this->instrument) {
+                $records[] = ['Symbol' => $this->instrument->getSymbol()];
+            } else {
+                $this->csvReader->setHeaderOffset(0);
+                $statement = new Statement();
+                $offset = $input->getOption('offset');
+                $chunk = $input->getOption('chunk');
+                if ($offset > 0) {
+                    $statement = $statement->offset($offset - 1);
+                }
+                if ($chunk > 0) {
+                    $statement = $statement->limit($chunk);
+                }
+
+                $records = $statement->process($this->csvReader);
             }
 
-            $records = $statement->process($this->csvReader);
-        }
+            foreach ($records as $record) {
+                /** @var Instrument $instrument */
+                $instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol($record['Symbol']);
+                $symbol = $instrument->getSymbol();
+                if (empty($instrument)) {
+                    $this->logger->warning(sprintf(
+                        '<warning>WARNING:</warning> Could not find instrument for symbol %s',
+                        $record['Symbol']
+                    ));
+                    continue;
+                }
 
-        foreach ($records as $record) {
-            /** @var Instrument $instrument */
-            $instrument = $this->em->getRepository(Instrument::class)->findOneBySymbol($record['Symbol']);
-            $symbol = $instrument->getSymbol();
-            if (empty($instrument)) {
-                $output->writeln(
-                    '<warning>WARNING: </warning>Could not find instrument for symbol %s',
-                    $record['Symbol']
+                $history = $this->em->getRepository(History::class)->retrieveHistory(
+                    $instrument,
+                    $interval,
+                    $fromDate,
+                    $toDate,
+                    $provider
                 );
-                continue;
-            }
+                if (empty($history)) {
+                    $this->logger->warning(sprintf(
+                        '<warning>WARNING:</warning> Could not find price history for symbol %s, interval = %s',
+                        $record['Symbol'],
+                        $intervalRaw
+                    ));
+                    continue;
+                }
 
-            $history = $this->em->getRepository(History::class)->retrieveHistory(
-                $instrument,
-                $interval,
-                $fromDate,
-                $toDate,
-                $provider
-            );
-            if (empty($history)) {
-                $output->writeln(sprintf(
-                    '<warning>WARNING: </warning> Could not find price history for symbol %s, interval = %s',
-                    $record['Symbol'],
-                    $intervalRaw
+                $exportFileName = sprintf('%s_%s.csv', $symbol, $period);
+                $exportFile = $exportPath . '/' . $exportFileName;
+
+                if ($this->filesystem->exists($exportFile)) {
+                    $backupFileName = $exportFile . '.bak';
+                    $this->filesystem->copy($exportFile, $backupFileName);
+                }
+
+                $csvWriter = Writer::createFromPath($exportFile, 'w');
+                $header = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume'];
+                $csvWriter->insertOne($header);
+                $csvWriter->insertAll(array_map(function ($v) {
+                    return [
+                      $v->getTimestamp()->format('Y-m-d'),
+                      $v->getOpen(),
+                      $v->getHigh(),
+                      $v->getLow(),
+                      $v->getClose(),
+                      $v->getVolume()
+                    ];
+                }, $history));
+
+                unset($history);
+
+                $this->logger->info(sprintf(
+                    '%5.5s: Exported %s price history into file %s ',
+                    $symbol,
+                    $intervalRaw,
+                    $exportFileName
                 ));
-                continue;
             }
-
-            $exportFileName = sprintf('%s_%s.csv', $symbol, $period);
-            $exportFile = $exportPath . '/' . $exportFileName;
-
-            if ($this->filesystem->exists($exportFile)) {
-                $backupFileName = $exportFile . '.bak';
-                $this->filesystem->copy($exportFile, $backupFileName);
-            }
-
-            $csvWriter = Writer::createFromPath($exportFile, 'w');
-            $header = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume'];
-            $csvWriter->insertOne($header);
-            $csvWriter->insertAll(array_map(function ($v) {
-                return [
-                  $v->getTimestamp()->format('Y-m-d'),
-                  $v->getOpen(),
-                  $v->getHigh(),
-                  $v->getLow(),
-                  $v->getClose(),
-                  $v->getVolume()
-                ];
-            }, $history));
-
-            unset($history);
-
-            $output->writeln(sprintf(
-                '%5.5s: Exported %s price history into file %s ',
-                $symbol,
-                $intervalRaw,
-                $exportFileName
-            ));
+        } catch (Exception $e) {
+            $logMsg = $e->getMessage();
+            $this->logger->error($logMsg);
+            exit(1);
         }
 
-        $this->utilities->pronounceEnd($this, $output);
+        $this->logger->info(sprintf('Command %s finished', $this->getName()));
 
         return 0;
     }

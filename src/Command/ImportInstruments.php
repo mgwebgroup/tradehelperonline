@@ -268,6 +268,7 @@ class ImportInstruments extends Command
         } catch (Exception $e) {
             $logMsg = $e->getMessage();
             $this->logger->error($logMsg);
+            exit(1);
         }
 
         $this->logger->info(sprintf('Command %s finished', $this->getName()));
