@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Expression;
 use App\Exception\ExpressionException;
+use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
@@ -20,10 +21,22 @@ class ExpressionRepository extends ServiceEntityRepository
         parent::__construct($registry, Expression::class);
     }
 
-    public static function createExpression($interval, $name, $formula, $criterion, $description = null)
-    {
+    /**
+     * @param string $interval daily | weekly | monthly
+     * @param string $name
+     * @param string $formula i.e: Close(0)-Low(1)
+     * @param array $criterion i.e.: ['=', true]
+     * @param string|null $description
+     */
+    public static function createExpression(
+        string $interval,
+        string $name,
+        string $formula,
+        array $criterion,
+        string $description = null
+    ): Expression {
         $expression = new Expression();
-        $expression->setCreatedAt(new \DateTime())
+        $expression->setCreatedAt(new DateTime())
           ->setTimeinterval($interval)
           ->setName($name)
           ->setFormula($formula)

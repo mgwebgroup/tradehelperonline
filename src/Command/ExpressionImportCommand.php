@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
@@ -8,8 +9,9 @@
 
 namespace App\Command;
 
-use App\Service\UtilityServices;
+use Exception;
 use League\Csv\Reader;
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -26,51 +28,22 @@ class ExpressionImportCommand extends Command
 {
     protected static $defaultName = 'th:expression:import';
 
-    /**
-     * @var Doctrine\ORM\EntityManager
-     */
     protected $em;
-
-    /**
-     * @var App\Service\Utilities
-     */
-    protected $utilities;
-
-    /**
-     * @var League/Csv/Reader
-     */
     protected $csvReader;
-
-    /**
-     * @var \App\Entity\Expression
-     */
     protected $expression;
-
-    /**
-     * @var Symfony\Component\Validator\Validator\ValidatorInterface
-     */
     protected $validator;
-
-    /**
-     * @var App\Service\ExpressionHandler\OHLCV\Calculator
-     */
     protected $calculator;
-
-    /**
-     * @var array
-     */
     protected $validationOptions;
-
+    private $logger;
 
     public function __construct(
-      RegistryInterface $doctrine,
-      UtilityServices $utilities,
-      Calculator $calculator,
-      ValidatorInterface $validator
-
+        RegistryInterface $doctrine,
+        LoggerInterface $logger,
+        Calculator $calculator,
+        ValidatorInterface $validator
     ) {
         $this->em = $doctrine->getManager();
-        $this->utilities = $utilities;
+        $this->logger = $logger;
         $this->calculator = $calculator;
         $this->validator = $validator;
 
@@ -82,7 +55,7 @@ class ExpressionImportCommand extends Command
         $this->setDescription('Imports a list of expressions from a csv file or one expression.');
 
         $this->setHelp(
-          <<<EOT
+            <<<EOT
 In the second form the csv file must have the following columns (heading included): Interval, Name, Formula, 
 Criterion, Description.
 Criterion field must have a comparison operator and a value separated by space, like '> 0'. Same convention applies 
@@ -102,10 +75,11 @@ EOT
         $this->addUsage('daily|weekly|monthly \'name\' \'formula\' \'criterion\'');
 
         $this->addOption('file', null, InputOption::VALUE_REQUIRED, 'csv file to read expressions from');
+        //TODO: replace this option to 'test'
         $this->addOption('symbol', 's', InputOption::VALUE_REQUIRED, 'instrument to test the expression on');
 
         $this->addArgument('interval', InputArgument::OPTIONAL, 'Time Interval to apply the expression for')
-          ->addArgument('name', InputArgument::OPTIONAL, 'Criterion for the formula')
+          ->addArgument('name', InputArgument::OPTIONAL, 'Expression name')
           ->addArgument('formula', InputArgument::OPTIONAL, 'Formula to evaluate')
           ->addArgument('criterion', InputArgument::IS_ARRAY | InputArgument::OPTIONAL, 'Criterion for the formula')
         ;
@@ -119,29 +93,29 @@ EOT
                 if ($instrument) {
                     $this->validationOptions = ['payload' => $instrument];
                 } else {
-                    throw new \Exception(sprintf('Specified instrument `%s` in --symbol option was not found', $input->getOption('symbol')));
+                    throw new Exception(sprintf('Specified instrument `%s` in --symbol option was not found', $input->getOption('symbol')));
                 }
             }
             if ($input->getOption('file')) {
-                $this->csvReader = Reader::createFromPath($input->getOption('file'), 'r');
+                $this->csvReader = Reader::createFromPath($input->getOption('file'));
                 $this->csvReader->setHeaderOffset(0);
             } else {
                 if ($input->getArgument('interval')) {
                     $interval = $input->getArgument('interval');
                 } else {
-                    throw new \Exception(sprintf('Interval must be specified.'));
+                    throw new Exception(sprintf('Interval must be specified.'));
                 }
 
                 if ($input->getArgument('name')) {
                     $name = $input->getArgument('name');
                 } else {
-                    throw new \Exception(sprintf('Name for the expression must be specified.'));
+                    throw new Exception(sprintf('Name for the expression must be specified.'));
                 }
 
                 if ($input->getArgument('formula')) {
                     $formula = $input->getArgument('formula');
                 } else {
-                    throw new \Exception(sprintf('Formula for the expression must be specified.'));
+                    throw new Exception(sprintf('Formula for the expression must be specified.'));
                 }
 
                 if (is_array($input->getArgument('criterion'))) {
@@ -153,53 +127,60 @@ EOT
 
                 $this->expression = ExpressionRepository::createExpression($interval, $name, $formula, $criterion);
             }
-        } catch(\Exception $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
+        } catch (Exception $e) {
+            $logMsg = $e->getMessage();
+            $this->logger->error($logMsg);
             exit(1);
         }
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
-        $this->utilities->pronounceStart($this, $output);
+        $this->logger->info(sprintf('Command %s is starting', $this->getName()));
 
         $counter = 0;
+        //TODO: Check if expression name already exists!
         if ($this->csvReader) {
             $records = $this->csvReader->getRecords();
             foreach ($records as $value) {
                 $this->expression = ExpressionRepository::createExpression(
-                  $value['Interval'],
-                  $value['Name'],
-                  $value['Formula'],
-                  explode(' ', $value['Criterion']),
-                  $value['Description']
+                    $value['Interval'],
+                    $value['Name'],
+                    $value['Formula'],
+                    explode(' ', $value['Criterion']),
+                    $value['Description']
                 );
-                if ($this->isValidExpression($this->expression, $output, $this->validationOptions)) {
+                if ($this->isValidExpression($this->expression, $this->validationOptions)) {
                     $this->em->persist($this->expression);
                     $counter++;
                 }
             }
         } else {
-            if ($this->isValidExpression($this->expression, $output, $this->validationOptions)) {
+            if ($this->isValidExpression($this->expression, $this->validationOptions)) {
                 $this->em->persist($this->expression);
                 $counter++;
             }
         }
 
         $this->em->flush();
-        $output->writeln(sprintf('Persisted %d expressions', $counter));
+        $this->logger->notice(sprintf('Persisted %d expressions', $counter));
         $this->expression = null;
 
-        $this->utilities->pronounceEnd($this, $output);
+        $this->logger->info(sprintf('Command %s finished', $this->getName()));
+
+        return 0;
     }
 
-    protected function isValidExpression($expression, $output, $options = null)
+    protected function isValidExpression($expression, $options = null): bool
     {
         $violations = $this->validator->validate($expression, new ExpressionConstraint($options));
         if ($violations->count() > 0) {
             foreach ($violations as $violation) {
-                $output->writeln(sprintf('<error>ERROR: </error>%s: %s', $expression->getName(),
-                                         $violation->getMessage()));
+                $this->logger->error(sprintf(
+                    '<error>ERROR:</error> %s: %s',
+                    $expression->getName(),
+                    $violation->getMessage()
+                ));
             }
             return false;
         }
