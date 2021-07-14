@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
@@ -10,10 +11,11 @@ namespace App\Command;
 
 use App\Entity\Instrument;
 use App\Entity\OHLCV\History;
-use App\Service\UtilityServices;
 use DateInterval;
+use Exception;
 use League\Csv\Reader;
 use League\Csv\Statement;
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -22,7 +24,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use App\Service\Exchange\Catalog;
-use Doctrine\ORM\EntityManager;
 use DateTime;
 
 class PriceAudit extends Command
@@ -35,14 +36,7 @@ class PriceAudit extends Command
 //    public const INTERVAL_YEARLY = 'yearly';
     public const DAILY_BEGINNING = '2011-01-03';
 
-    /**
-     * @var EntityManager
-     */
     protected $em;
-
-    /**
-     * @var string
-     */
     protected $symbol;
 
     /**
@@ -58,59 +52,28 @@ class PriceAudit extends Command
     protected $chunk;
 
     /**
-     * @var UtilityServices
-     */
-    protected $utilities;
-
-    /**
      * Full path to symbols list, which includes file name
      * @var string
      */
     protected $listFile;
 
-    /**
-     * @var Filesystem
-     */
     private $fileSystem;
-
-
-    /**
-     * @var DateInterval
-     */
     private $interval;
-
-    /**
-     * @var string
-     */
     private $intervalNormalized;
-
-    /**
-     * Price provider
-     * @var string
-     */
     private $provider;
-
-    /** @var Catalog */
     private $catalog;
-
-    /**
-     * @var DateTime
-     */
     private $fromDate;
-
-    /**
-     * @var DateTime
-     */
     private $toDate;
+    private $logger;
 
     public function __construct(
         RegistryInterface $doctrine,
-        UtilityServices $utilities,
+        LoggerInterface $logger,
         Filesystem $fileSystem,
         Catalog $catalog
     ) {
         $this->em = $doctrine->getManager();
-        $this->utilities = $utilities;
+        $this->logger = $logger;
         $this->fileSystem = $fileSystem;
         $this->catalog = $catalog;
 
@@ -157,195 +120,200 @@ class PriceAudit extends Command
 
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->fileSystem->exists($input->getArgument('list-file'))) {
-            $logMsg = sprintf(
-                'File with symbols list was not found. Looked for `%s`',
-                $input->getArgument('list-file')
-            );
-            $screenMsg = $logMsg;
-            $this->utilities->logAndSay($output, $logMsg, $screenMsg);
-            exit(1);
-        } else {
-            $this->listFile = $input->getArgument('list-file');
-        }
-
-        if ($input->getOption('offset')) {
-            $this->offset = $input->getOption('offset');
-        } else {
-            $this->offset = 0;
-        }
-
-        if ($input->getOption('chunk')) {
-            $this->chunk = $input->getOption('chunk');
-        } else {
-            $this->chunk = -1;
-        }
-
-        if ($input->getOption('symbol')) {
-            $this->symbol = $input->getOption('symbol');
-        } else {
-            $this->symbol = null;
-        }
-
-        if ($interval = $input->getOption('interval')) {
-            switch ($interval) {
-                case self::INTERVAL_DAILY:
-                    $this->interval = new DateInterval('P1D');
-                    $this->intervalNormalized = self::INTERVAL_DAILY;
-                    break;
-                default:
-                    $this->interval = new DateInterval('P1D');
-                    $this->intervalNormalized = self::INTERVAL_DAILY;
+        try {
+            if (!$this->fileSystem->exists($input->getArgument('list-file'))) {
+                $logMsg = sprintf(
+                    'File with symbols list was not found. Looked for `%s`',
+                    $input->getArgument('list-file')
+                );
+                throw new Exception($logMsg);
+            } else {
+                $this->listFile = $input->getArgument('list-file');
             }
-        } else {
-            $this->interval = new DateInterval('P1D');
-            $this->intervalNormalized = self::INTERVAL_DAILY;
-        }
 
-        if ($provider = $input->getOption('provider')) {
-            $this->provider = strtoupper($provider);
-        } else {
-            $this->provider = null;
-        }
+            if ($input->getOption('offset')) {
+                $this->offset = $input->getOption('offset');
+            } else {
+                $this->offset = 0;
+            }
 
-        if ($date = $input->getOption('from')) {
-            $this->fromDate = new DateTime($date);
-        } else {
-            $this->fromDate = null;
-        }
+            if ($input->getOption('chunk')) {
+                $this->chunk = $input->getOption('chunk');
+            } else {
+                $this->chunk = -1;
+            }
 
-        if ($date = $input->getOption('to')) {
-            $this->toDate = new DateTime($date);
-        } else {
-            $this->toDate = null;
+            if ($input->getOption('symbol')) {
+                $this->symbol = $input->getOption('symbol');
+            } else {
+                $this->symbol = null;
+            }
+
+            if ($interval = $input->getOption('interval')) {
+                switch ($interval) {
+                    case self::INTERVAL_DAILY:
+                        $this->interval = new DateInterval('P1D');
+                        $this->intervalNormalized = self::INTERVAL_DAILY;
+                        break;
+                    default:
+                        $this->interval = new DateInterval('P1D');
+                        $this->intervalNormalized = self::INTERVAL_DAILY;
+                }
+            } else {
+                $this->interval = new DateInterval('P1D');
+                $this->intervalNormalized = self::INTERVAL_DAILY;
+            }
+
+            if ($provider = $input->getOption('provider')) {
+                $this->provider = strtoupper($provider);
+            } else {
+                $this->provider = null;
+            }
+
+            if ($date = $input->getOption('from')) {
+                $this->fromDate = new DateTime($date);
+            } else {
+                $this->fromDate = null;
+            }
+
+            if ($date = $input->getOption('to')) {
+                $this->toDate = new DateTime($date);
+            } else {
+                $this->toDate = null;
+            }
+        } catch (Exception $e) {
+            $logMsg = $e->getMessage();
+            $this->logger->error($logMsg);
+            exit(1);
         }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
-        $this->utilities->pronounceStart($this, $output);
+        $this->logger->info(sprintf('Command %s is starting', $this->getName()));
 
         $instrumentRepository = $this->em->getRepository(Instrument::class);
         $priceRepository = $this->em->getRepository(History::class);
 
-        $csv = Reader::createFromPath($this->listFile);
-        $csv->setHeaderOffset(0);
-        $statement = new Statement();
-        if ($this->symbol) {
-            $statement = $statement->where(function ($v) {
-                return $v['Symbol'] == $this->symbol;
-            });
-        } else {
-            if ($this->offset > 0) {
-                $statement = $statement->offset($this->offset - 1);
+        try {
+            $csv = Reader::createFromPath($this->listFile);
+            $csv->setHeaderOffset(0);
+            $statement = new Statement();
+            if ($this->symbol) {
+                $statement = $statement->where(function ($v) {
+                    return $v['Symbol'] == $this->symbol;
+                });
+            } else {
+                if ($this->offset > 0) {
+                    $statement = $statement->offset($this->offset - 1);
+                }
+                if ($this->chunk > 0) {
+                    $statement = $statement->limit($this->chunk);
+                }
             }
-            if ($this->chunk > 0) {
-                $statement = $statement->limit($this->chunk);
-            }
-        }
 
-        $records = $statement->process($csv);
+            $records = $statement->process($csv);
 
-        foreach ($records as $key => $line) {
-            $logMsg = sprintf('%4d %5s: ', $key, $line['Symbol']);
-            $screenMsg = $logMsg;
+            foreach ($records as $key => $line) {
+                $logMsg = sprintf('%4d %5s: ', $key, $line['Symbol']);
 
-            $instrument = $instrumentRepository->findOneBySymbol($line['Symbol']);
+                $instrument = $instrumentRepository->findOneBySymbol($line['Symbol']);
 
-            if ($instrument) {
-                $priceHistory = $priceRepository->retrieveHistory(
-                    $instrument,
-                    $this->interval,
-                    $this->fromDate,
-                    $this->toDate,
-                    $this->provider
-                );
-                if ($priceHistory) {
-                    $exchange = $this->catalog->getExchangeFor($instrument);
-                    $status = [];
-                    // daily interval
-                    switch ($this->intervalNormalized) {
-                        case self::INTERVAL_DAILY:
-                            $firstRecord = $priceHistory[0];
-                            if ($this->fromDate) {
-                                $beginningDate = $this->fromDate->format('Y-m-d');
-                            } else {
-                                $beginningDate = self::DAILY_BEGINNING;
-                            }
-
-                            // check beginning date matches first date from history
-                            if ($firstRecord->getTimestamp()->format('Y-m-d') != $beginningDate) {
-                                $status['daily_start'] = sprintf(
-                                    'daily_start=%s ',
-                                    $firstRecord->getTimestamp()->format('Y-m-d')
-                                );
-                                $beginningDate = $firstRecord->getTimestamp()->format('Y-m-d');
-                            }
-
-                            // check for gaps within history
-                            $tradingCalendar = $exchange->getTradingCalendar();
-                            $tradingCalendar->getInnerIterator()
-                              ->setStartDate(new DateTime($beginningDate))
-                              ->setDirection(1)
-                            ;
-                            $tradingCalendar->rewind();
-                            $id = [];
-                            foreach ($priceHistory as $record) {
-                                $datePriceHistory = $record->getTimestamp()->format('Y-m-d');
-                                $dateTradingCalendar = $tradingCalendar->current()->format('Y-m-d');
-                                if ($datePriceHistory != $dateTradingCalendar) {
-                                    $id[] = $record->getId();
-                                    break;
+                if ($instrument) {
+                    $priceHistory = $priceRepository->retrieveHistory(
+                        $instrument,
+                        $this->interval,
+                        $this->fromDate,
+                        $this->toDate,
+                        $this->provider
+                    );
+                    if ($priceHistory) {
+                        $exchange = $this->catalog->getExchangeFor($instrument);
+                        $status = [];
+                        // daily interval
+                        switch ($this->intervalNormalized) {
+                            case self::INTERVAL_DAILY:
+                                $firstRecord = $priceHistory[0];
+                                if ($this->fromDate) {
+                                    $beginningDate = $this->fromDate->format('Y-m-d');
+                                } else {
+                                    $beginningDate = self::DAILY_BEGINNING;
                                 }
-                                $tradingCalendar->next();
-                            }
-                            if (!empty($id)) {
-                                $status['p_sync'] = sprintf('P date error at id=%s ', implode(',', $id));
-                            }
 
-                            // check if last date matches last T relative to today
-                            $lastRecord = array_pop($priceHistory);
-                            $datePriceHistory = $lastRecord->getTimestamp()->format('Y-m-d');
-                            if ($this->toDate === null) {
-                                $prevT = $exchange->calcPreviousTradingDay(new DateTime());
-                                if ($datePriceHistory != $prevT->format('Y-m-d')) {
-                                    $status['last_T'] = sprintf('Last P date=%s ', $datePriceHistory);
+                                // check beginning date matches first date from history
+                                if ($firstRecord->getTimestamp()->format('Y-m-d') != $beginningDate) {
+                                    $status['daily_start'] = sprintf(
+                                        'daily_start=%s ',
+                                        $firstRecord->getTimestamp()->format('Y-m-d')
+                                    );
+                                    $beginningDate = $firstRecord->getTimestamp()->format('Y-m-d');
                                 }
-                            }
 
-                            break;
-                        // TODO: weekly interval
-                        // ...
+                                // check for gaps within history
+                                $tradingCalendar = $exchange->getTradingCalendar();
+                                $tradingCalendar->getInnerIterator()
+                                  ->setStartDate(new DateTime($beginningDate))
+                                  ->setDirection(1)
+                                ;
+                                $tradingCalendar->rewind();
+                                $id = [];
+                                foreach ($priceHistory as $record) {
+                                    $datePriceHistory = $record->getTimestamp()->format('Y-m-d');
+                                    $dateTradingCalendar = $tradingCalendar->current()->format('Y-m-d');
+                                    if ($datePriceHistory != $dateTradingCalendar) {
+                                        $id[] = $record->getId();
+                                        break;
+                                    }
+                                    $tradingCalendar->next();
+                                }
+                                if (!empty($id)) {
+                                    $status['p_sync'] = sprintf('P date error at id=%s ', implode(',', $id));
+                                }
 
-                        // TODO: monthly interval
-                        //...
+                                // check if last date matches last T relative to today
+                                $lastRecord = array_pop($priceHistory);
+                                $datePriceHistory = $lastRecord->getTimestamp()->format('Y-m-d');
+                                if ($this->toDate === null) {
+                                    $prevT = $exchange->calcPreviousTradingDay(new DateTime());
+                                    if ($datePriceHistory != $prevT->format('Y-m-d')) {
+                                        $status['last_T'] = sprintf('Last P date=%s ', $datePriceHistory);
+                                    }
+                                }
 
-                        // TODO: quarterly interval
-                        //...
-                        default:
-                    }
+                                break;
+                            // TODO: weekly interval
+                            // ...
 
-                    if (empty($status)) {
-                        $logMsg .= 'ok';
-                        $screenMsg = $logMsg;
-                    } else {
-                        foreach ($status as $message) {
-                            $logMsg .= $message;
+                            // TODO: monthly interval
+                            //...
+
+                            // TODO: quarterly interval
+                            //...
+                            default:
                         }
-                        $screenMsg = $logMsg;
+
+                        if (empty($status)) {
+                            $logMsg .= 'ok';
+                        } else {
+                            foreach ($status as $message) {
+                                $logMsg .= $message;
+                            }
+                        }
+                    } else {
+                        $logMsg .= sprintf('no %s PH', $this->intervalNormalized);
                     }
                 } else {
-                    $logMsg .= sprintf('no %s PH', $this->intervalNormalized);
-                    $screenMsg = $logMsg;
+                    $logMsg .= 'instrument not imported ';
                 }
-            } else {
-                $logMsg .= 'instrument not imported ';
-                $screenMsg = $logMsg;
+                $this->logger->notice($logMsg);
             }
-            $this->utilities->logAndSay($output, $logMsg, $screenMsg);
+        } catch (Exception $e) {
+            $logMsg = $e->getMessage();
+            $this->logger->error($logMsg);
+            exit(1);
         }
 
-        $this->utilities->pronounceEnd($this, $output);
+        $this->logger->info(sprintf('Command %s finished', $this->getName()));
 
         return 0;
     }
