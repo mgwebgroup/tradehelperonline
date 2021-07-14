@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
@@ -9,8 +10,8 @@
 namespace App\Command;
 
 use App\Exception\PriceHistoryException;
-use App\Service\UtilityServices;
 use Exception;
+use Psr\Log\LoggerInterface;
 use League\Csv\Reader;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
@@ -21,35 +22,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 use App\Entity\OHLCV\History;
 use App\Entity\Instrument;
 use League\Csv\Statement;
-use Doctrine\ORM\EntityManager;
 
 class ConvertOhlcvCommand extends Command
 {
     protected static $defaultName = 'th:convert-ohlcv';
 
-    /**
-     * @var EntityManager
-     */
     protected $em;
-
-    /**
-     * @var UtilityServices
-     */
-    protected $utilities;
-
-    /**
-     * @var Reader
-     */
     protected $csvReader;
-
-    /**
-     * @var Instrument
-     */
     protected $instrument;
-
-    /**
-     * @var array
-     */
     protected $targetFrames;
 
     /**
@@ -64,13 +44,14 @@ class ConvertOhlcvCommand extends Command
      */
     protected $chunk;
 
+    private $logger;
 
     public function __construct(
         RegistryInterface $doctrine,
-        UtilityServices $utilities
+        LoggerInterface $logger
     ) {
         $this->em = $doctrine->getManager();
-        $this->utilities = $utilities;
+        $this->logger = $logger;
 
         parent::__construct();
     }
@@ -100,7 +81,8 @@ class ConvertOhlcvCommand extends Command
 
     public function initialize(InputInterface $input, OutputInterface $output)
     {
-        $this->utilities->pronounceStart($this, $output);
+        $this->logger->info(sprintf('Command %s is starting', $this->getName()));
+
         try {
             if ($input->getArgument('file')) {
                 $this->csvReader = Reader::createFromPath($input->getArgument('file'));
@@ -139,44 +121,55 @@ class ConvertOhlcvCommand extends Command
                 $this->chunk = -1;
             }
         } catch (Exception $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
+            $logMsg = $e->getMessage();
+            $this->logger->error($logMsg);
             exit(1);
         }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
-        if ($this->csvReader) {
-            $statement = new Statement();
-            if ($this->offset > 0) {
-                $statement = $statement->offset($this->offset - 1);
-            }
-            if ($this->chunk > 0) {
-                $statement = $statement->limit($this->chunk);
-            }
-            $records = $statement->process($this->csvReader);
-            foreach ($records as $value) {
-                $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $value['Symbol']]);
-                if ($instrument) {
-                    $this->instrument = $instrument;
-                    $logMsg = $this->convert();
-                    $this->utilities->logAndSay($output, $logMsg, $logMsg);
-                } else {
-                    $output->writeln(sprintf(
-                        '<error>ERROR: </error>Instrument `%s` was not found under imported symbols',
-                        $value['Symbol']
-                    ));
+        try {
+            if ($this->csvReader) {
+                $statement = new Statement();
+                if ($this->offset > 0) {
+                    $statement = $statement->offset($this->offset - 1);
                 }
+                if ($this->chunk > 0) {
+                    $statement = $statement->limit($this->chunk);
+                }
+                $records = $statement->process($this->csvReader);
+                foreach ($records as $value) {
+                    $instrument = $this->em->getRepository(Instrument::class)->findOneBy(['symbol' => $value['Symbol']]);
+                    if ($instrument) {
+                        $this->instrument = $instrument;
+                        $logMsg = $this->convert();
+                        $this->logger->notice($logMsg);
+                    } else {
+                        $this->logger->error(sprintf(
+                            '<error>ERROR:</error> Instrument `%s` was not found under imported symbols',
+                            $value['Symbol']
+                        ));
+                    }
+                }
+            } else {
+                $logMsg = $this->convert();
+                $this->logger->notice($logMsg);
             }
-        } else {
-            $logMsg = $this->convert();
-            $this->utilities->logAndSay($output, $logMsg, $logMsg);
+        } catch (Exception $e) {
+            $logMsg = $e->getMessage();
+            $this->logger->error($logMsg);
+            exit(1);
         }
-        $this->utilities->pronounceEnd($this, $output);
+
+        $this->logger->info(sprintf('Command %s finished', $this->getName()));
 
         return 0;
     }
 
+    /**
+     * @throws PriceHistoryException
+     */
     protected function convert(): string
     {
         // find the latest date present for the superlative time frame
