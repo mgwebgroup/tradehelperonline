@@ -1,8 +1,3 @@
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
     application_log: 'var/log/tradehelper.log'
     # minimum level from which commands will have on-screen output (Refer to Symfony\Component\Console\Output\OutputInterface)
@@ -24,28 +19,39 @@ services:
     App\:
         resource: '../src/*'
         exclude: '../src/{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
-
     # controllers are imported separately to make sure services can be injected
     # as action arguments even if you don't extend any base controller class
     App\Controller\:
         resource: '../src/Controller'
         tags: ['controller.service_arguments']
+    # Inject Monolog service that logs into channel 'th' into console commands.
+    # Channel 'th' is specified in config/packages/{dev,prod}/monolog.yaml
+    App\Command\:
+        resource: '../src/Command/*'
+        bind:
+            Psr\Log\LoggerInterface: '@monolog.logger.th'
 
     Scheb\YahooFinanceApi\ApiClient:
         factory: ['Scheb\YahooFinanceApi\ApiClientFactory', 'createApiClient']
+    app.price_provider:
+        class: App\Service\PriceHistory\OHLCV\Yahoo
 
     app.logging_service:
         class: Symfony\Component\HttpKernel\Log\Logger
         arguments:
             $minLevel: 'debug'
-            $output: '%application_log%'
-    app.price_provider:
-        class: App\Service\PriceHistory\OHLCV\Yahoo
-
+            #            $output: '%application_log%'
     App\Service\UtilityServices:
         arguments:
             $logger: '@app.logging_service'
             $chatter: '%on_screen_chatter%'
+
+    custom.formatter.line:
+        class: Monolog\Formatter\LineFormatter
+        arguments:
+            - "[%%datetime%%] %%channel%%.%%level_name%%: %%message%%\n"
+
+
     App\Service\Exchange\DailyIterator:
         arguments:
             $start: '%dates_begin%'

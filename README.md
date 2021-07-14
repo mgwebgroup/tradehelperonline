@@ -20,8 +20,8 @@ The term **x_universe** is a super set that includes instruments listed beyond t
 
 
 ### Architecture
-#### Backing Services
-Each Backing Service is a resource.
+#### Backing Services.
+Each Backing Service is a resource which is consumed by the application via network or locally.
 
 | Service | Vendor |
 | --- | --- |
@@ -29,6 +29,30 @@ Each Backing Service is a resource.
 | Database Storage | Amazon RDS |
 | Logs | Local:  symfony/monolog-bundle (includes logs rotation) |
 
+
+### Logging Service.
+Is configured to be rotated via application code. No Linux services are required.
+
+Relation of verbosity to log levels:
+| SHELL_VERBOSITY | Min Log Level (RFC5424 Code) | Severity |
+| --- | --- | --- |
+| -1 | 0 | Emergency: system is unusable
+| -1 | 1 | Alert: action must be taken immediately
+| -1 | 2 | Critical: critical conditions
+| -1 | 3 | Error: error conditions
+|  1 | 4 | Warning: warning conditions
+|  1 | 5 | Notice: normal but significant condition
+|  2 | 6 | Informational: informational messages
+|  3 | 7 | Debug: debug-level messages
+
+Log settings are stored in: config/packages/{Environment}/monolog.yaml
+Logs are output to var/logs/{Environment}.log
+
+To display log messages on screen, increase verbosity of commands, i.e.:
+```bash
+./bin/console th:instrument:import -vv
+```
+You can also set the SHELL_VERBOSITY environment variable.
 
 
 ### Deployment
