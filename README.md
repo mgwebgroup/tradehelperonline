@@ -40,15 +40,15 @@ Relation of verbosity to log levels:
 | -1 | 1 | Alert: action must be taken immediately
 | -1 | 2 | Critical: critical conditions
 | -1 | 3 | Error: error conditions
-|  1 | 4 | Warning: warning conditions
-|  1 | 5 | Notice: normal but significant condition
-|  2 | 6 | Informational: informational messages
-|  3 | 7 | Debug: debug-level messages
+|  0 | 4 | Warning: warning conditions
+|  1 (-v) | 5 | Notice: normal but significant condition
+|  2 (-vv) | 6 | Informational: informational messages
+|  3 (-vvv) | 7 | Debug: debug-level messages
 
 Log settings are stored in: config/packages/{Environment}/monolog.yaml
 Logs are output to var/logs/{Environment}.log
 
-To display log messages on screen, increase verbosity of commands, i.e.:
+To display log messages on screen, increase verbosity of commands. For example, to display log messages starting from level INFO:
 ```bash
 ./bin/console th:instrument:import -vv
 ```

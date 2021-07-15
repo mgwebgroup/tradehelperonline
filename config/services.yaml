@@ -1,13 +1,12 @@
 parameters:
-    application_log: 'var/log/tradehelper.log'
-    # minimum level from which commands will have on-screen output (Refer to Symfony\Component\Console\Output\OutputInterface)
-    on_screen_chatter: 64
+    # Dates for price history
     # '2000-01-01 Saturday'
     dates_begin: 946684800
     # '2100-12-31 Friday'
     dates_end: 4133894400
-    # 22 days
+    # Doctrine cache validity
     result_cache_lifetime: 0
+
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -24,44 +23,37 @@ services:
     App\Controller\:
         resource: '../src/Controller'
         tags: ['controller.service_arguments']
-    # Inject Monolog service that logs into channel 'th' into console commands.
+
+    # Inject into console commands Monolog service that logs into channel 'th'.
     # Channel 'th' is specified in config/packages/{dev,prod}/monolog.yaml
     App\Command\:
         resource: '../src/Command/*'
         bind:
             Psr\Log\LoggerInterface: '@monolog.logger.th'
+    # Drop %context% and %extra% fields from console onscreen output
+    custom.formatter.line:
+        class: Monolog\Formatter\LineFormatter
+        arguments:
+            - "[%%datetime%%] %%channel%%.%%level_name%%: %%message%%\n"
 
     Scheb\YahooFinanceApi\ApiClient:
         factory: ['Scheb\YahooFinanceApi\ApiClientFactory', 'createApiClient']
     app.price_provider:
         class: App\Service\PriceHistory\OHLCV\Yahoo
 
-    app.logging_service:
-        class: Symfony\Component\HttpKernel\Log\Logger
-        arguments:
-            $minLevel: 'debug'
-            #            $output: '%application_log%'
-    App\Service\UtilityServices:
-        arguments:
-            $logger: '@app.logging_service'
-            $chatter: '%on_screen_chatter%'
-
-    custom.formatter.line:
-        class: Monolog\Formatter\LineFormatter
-        arguments:
-            - "[%%datetime%%] %%channel%%.%%level_name%%: %%message%%\n"
-
-
     App\Service\Exchange\DailyIterator:
         arguments:
             $start: '%dates_begin%'
             $end: '%dates_end%'
+
     App\Command\SyncPrice:
         arguments:
             $priceProvider: '@app.price_provider'
+
     App\Service\ExpressionHandler\OHLCV\Calculator:
         arguments:
             $resultCacheLifetime: '%result_cache_lifetime%'
+
     App\Service\Charting\OHLCV\StyleLibrary:
         arguments:
             $projectRootDir: '%kernel.project_dir%'
