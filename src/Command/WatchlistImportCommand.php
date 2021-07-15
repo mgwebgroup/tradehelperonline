@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
@@ -9,9 +10,8 @@
 namespace App\Command;
 
 use App\Repository\WatchlistRepository;
-use App\Service\UtilityServices;
-use Doctrine\ORM\EntityManager;
 use Exception;
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -27,25 +27,10 @@ class WatchlistImportCommand extends Command
 {
     protected static $defaultName = 'th:watchlist:import';
 
-    /**
-     * @var EntityManager
-     */
     protected $em;
-
-    /**
-     * @var UtilityServices
-     */
-    protected $utilities;
-
-    /**
-     * @var Reader
-     */
     protected $csvReader;
-
-    /**
-     * @var Watchlist
-     */
     protected $watchlist;
+    private $logger;
 
     /**
      * @array [App\Entity\Expression]
@@ -54,10 +39,10 @@ class WatchlistImportCommand extends Command
 
     public function __construct(
         RegistryInterface $doctrine,
-        UtilityServices $utilities
+        LoggerInterface $logger
     ) {
         $this->em = $doctrine->getManager();
-        $this->utilities = $utilities;
+        $this->logger = $logger;
 
         parent::__construct();
     }
@@ -118,19 +103,20 @@ class WatchlistImportCommand extends Command
                 }
             } else {
                 if (!$this->watchlist) {
-                    $output->writeln(sprintf('<comment>Watch list named `%s` does not exist</comment>', $name));
+                    $this->logger->error(sprintf('Watch list named `%s` does not exist', $name));
                     exit(2);
                 }
             }
         } catch (Exception $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
+            $logMsg = $e->getMessage();
+            $this->logger->error($logMsg);
             exit(1);
         }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
-        $this->utilities->pronounceStart($this, $output);
+        $this->logger->info(sprintf('Command %s is starting', $this->getName()));
 
         try {
             if ($input->getOption('delete')) {
@@ -179,11 +165,12 @@ class WatchlistImportCommand extends Command
 
             $output->writeln($message);
         } catch (Exception $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
-            return 1;
+            $logMsg = $e->getMessage();
+            $this->logger->error($logMsg);
+            exit(1);
         }
 
-        $this->utilities->pronounceEnd($this, $output);
+        $this->logger->info(sprintf('Command %s finished', $this->getName()));
 
         return 0;
     }
