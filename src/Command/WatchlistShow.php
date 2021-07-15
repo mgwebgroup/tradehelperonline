@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright (c) Art Kurbakov <alex110504@gmail.com>
  *
@@ -9,10 +10,9 @@
 namespace App\Command;
 
 use App\Service\ExpressionHandler\OHLCV\Calculator;
-use App\Service\UtilityServices;
 use DateTime;
-use Doctrine\ORM\EntityManager;
 use Exception;
+use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -24,35 +24,19 @@ use App\Entity\Watchlist;
 class WatchlistShow extends Command
 {
     protected static $defaultName = 'th:watchlist:show';
-
-    /**
-     * @var EntityManager
-     */
     protected $em;
-
-    /**
-     * @var UtilityServices
-     */
-    protected $utilities;
-
-    /**
-     * @var Watchlist
-     */
     protected $watchlist;
-
-    /**
-     * @var Calculator
-     */
     protected $calculator;
+    private $logger;
 
 
     public function __construct(
         RegistryInterface $doctrine,
-        UtilityServices $utilities,
+        LoggerInterface $logger,
         Calculator $calculator
     ) {
         $this->em = $doctrine->getManager();
-        $this->utilities = $utilities;
+        $this->logger = $logger;
         $this->calculator = $calculator;
 
         parent::__construct();
@@ -95,14 +79,14 @@ class WatchlistShow extends Command
                 }
             }
         } catch (Exception $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
+            $this->logger->error($e->getMessage());
             exit(1);
         }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
-        $this->utilities->pronounceStart($this, $output);
+        $this->logger->info(sprintf('Command %s is starting', $this->getName()));
 
         $header = ['id', 'instrument'];
         try {
@@ -137,11 +121,11 @@ class WatchlistShow extends Command
                 $output->writeln(implode(',', $line));
             }
         } catch (Exception $e) {
-            $output->writeln(sprintf('<error>ERROR: </error>%s', $e->getMessage()));
+            $this->logger->error($e->getMessage());
             return 1;
         }
 
-        $this->utilities->pronounceEnd($this, $output);
+        $this->logger->info(sprintf('Command %s finished', $this->getName()));
 
         return 0;
     }
