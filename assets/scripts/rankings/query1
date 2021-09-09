@@ -1,0 +1,2 @@
+select i.symbol, open, high, low, close, volume from ohlcvhistory h join instruments i on i.id=h.instrument_id where timestamp=<timestamp> and timeinterval="+P00Y00M01DT00H00M00S" and
+i.symbol in ('XLC', 'XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU', 'XRT', 'XHB') order by i.symbol asc;

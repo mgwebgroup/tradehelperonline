@@ -1,0 +1,4 @@
+# Private configuration values
+prod_key_location=~/.ssh/tradehelper-prod.pem
+prod_server_ip=54.70.88.233
+prod_user=ec2-user

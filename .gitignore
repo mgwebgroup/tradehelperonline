@@ -10,6 +10,8 @@
 /assets/scripts/db_mngmnt.sh
 /public/charts/*
 !/public/charts/.gitignore
+/assets/scripts/rankings/data
+/assets/scripts/rankings/*.swp
 
 ###> symfony/framework-bundle ###
 .env
