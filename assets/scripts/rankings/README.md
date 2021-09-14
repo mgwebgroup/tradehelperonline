@@ -1,6 +1,6 @@
-## Usage
+## General
 
-### How it works:
+### Description:
 
 This script uses php file *trading_calendar.php*, which creates a list of trading days (T's) for a given year. Make sure there is a symbolic link to that script present in this script's directory. Candlestick (OHLCV) data files are needed for this script to work and do its analysis. All source and output data files are stored in the default *data/* directory. The script will download the price files from the prod server using its private key. The directory where it will look for the private key is: ~/.ssh/tradehelper-prod.pem. You can override this by specifying *-k PRIVATE_KEY* option. The script will connect to the prod database via SSH tunnel and will download price files for 13 days. You can specify a date with *-d YYYY-MM-DD* option, today's date is used if no date is specified.
 ```
@@ -24,17 +24,54 @@ Summary files are then analyzed for trends. The following trend situations are r
  * CONFIRMED LEADER/LAGGER/IN_TRANSIT: previous category, but the token is also present in at least 3 consecuitive summary files: T, T1, T2
 
 
-### Examples:
+## Usage
 
-1. For symbols in watchlist 'y_universe' defined in file 'query0' download price files, create ranks using default ranking algorithm, summarize them and determine trends. Use 'data/y_universe' directory. Default ranking algorithm compares daily closing deltas for the stock to that of the SPY.
+### Creation of Reports:
+
+1. For symbols in watchlist 'y_universe' defined in 'query0' download price files, create ranks using default ranking algorithm, summarize them and determine trends. Use 'data/y_universe' directory. Default ranking algorithm compares daily closing deltas for the stock to that of the SPY.
 ```
 ./main.sh -d 2021-08-31 -l data/y_universe -q query0 > data/y_universe/report_2021-08-31
 
 ```
 
-2. For symbols in watchlist 'sectors' defined in file 'query1' perform same actions as in the previous example using ranking algorithm 'self'. Use 'data/sectors' directory. Ranking algorithm 'self' compares prices to tthemselves 5 T days ago.
+2. For symbols in watchlist 'sectors' defined in 'query1' perform same actions as in the previous example using ranking algorithm 'self'. Use 'data/sectors' directory. Ranking algorithm 'self' compares prices to themselves 5 T days ago.
 ```
 ./main.sh -d 2021-08-31 -l data/sectors -q query1 -c self > data/sectors/report_2021-08-31
 ```
 
+### Back Tests.
 
+1. Calculate min max price percentage that occurred after 2021-08-02 over 10 days for symbol SPY:
+```
+DATE_BACKTEST=2021-08-02
+./backtest.sh -l data/y_universe -d $DATE_BACKTEST -n 10 -s SPY 
+# Output:
+SPY,2.14,0.00
+# second field is percent up, last field percent down from the report date (2021-08-02).
+```
+
+2. Same as above, but calculate for symbols in file data/source/y_universe.csv (data directory for this file is relative to project root directory, not this script's directory)
+```
+awk -F, 'NR > 1 {print $1}' /var/www/html/tradehelperonline/data/source/y_universe.csv | xargs -n1 ./backtest.sh -l data/y_universe -d ${DATE_BACKTEST} -s > backtests/y_universe/${DATE_BACKTEST}.csv
+```
+
+
+3. Using report for 2021-08-02 stored in data/y_universe/ directory, print out price percentages for PERSISTING X_UP symbols. Use default assessment span n of 10 trading days. Save results in file 'backtests/PERSISTING_X_UP/${DATE_BACKTEST}.csv':
+```
+DATE_BACKTEST=2021-08-02
+awk -F, '/{{{ PERSISTING X_UP/,/}}}/ {print $1}' data/y_universe/report_${DATE_BACKTEST} | sed -e '/\({{{\)\|\(}}}\)/d' | xargs -n1 ./backtest.sh -l data/y_universe -d ${DATE_BACKTEST} -s > backtests/PERSISTING_X_UP/${DATE_BACKTEST}.csv
+```
+
+4. Same as above, but narrow the test base to PERSISTING X_UP CONFIRMED symbols.
+```
+DATE_BACKTEST=2021-08-02
+awk -F, '/{{{ PERSISTING X_UP/,/}}}/ { if ($4 == "YES" ) print $1 }' data/y_universe/report_${DATE_BACKTEST} | sed -e '/\({{{\)\|\(}}}\)/d' | xargs -n1 ./backtest.sh -l data/y_universe -d ${DATE_BACKTEST} -s > backtests/PERSISTING_X_UP_CONF/${DATE_BACKTEST}.csv
+```
+
+5. Using report for 2021-08-02 stored in data/y_universe/ directory, print out price percentages for NASCENT UP symbols. Other conditions same.
+```
+DATE_BACKTEST=2021-08-02
+awk -F, '/{{{ NASCENT UP/,/}}}/ {print $1}' data/y_universe/report_${DATE_BACKTEST} | sed -e '/\({{{\)\|\(}}}\)/d' | xargs -n1 ./backtest.sh -l data/y_universe -d ${DATE_BACKTEST} -s > backtests/NASCENT_UP/${DATE_BACKTEST}.csv
+```
+
+6. PERSISTING_LDR

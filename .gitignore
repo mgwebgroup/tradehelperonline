@@ -12,6 +12,7 @@
 !/public/charts/.gitignore
 /assets/scripts/rankings/data
 /assets/scripts/rankings/*.swp
+assets/scripts/rankings/backtests/*
 
 ###> symfony/framework-bundle ###
 .env
