@@ -55,7 +55,7 @@ fi
 
 handleCalendar
 
-# download ohlcv data for 18 Ts, get missing files only
+# download ohlcv data for 18 past Ts, get missing files only
 mapfile -t lines < <(sort -r -n -k1,1 -t, $t_calendar_file | sed -n -e "/^$i/,+17p" )
 for line in ${lines[@]} ; do 
   n=${line%,*}

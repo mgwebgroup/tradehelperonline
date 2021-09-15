@@ -30,13 +30,14 @@ Summary files are then analyzed for trends. The following trend situations are r
 
 1. For symbols in watchlist 'y_universe' defined in 'query0' download price files, create ranks using default ranking algorithm, summarize them and determine trends. Use 'data/y_universe' directory. Default ranking algorithm compares daily closing deltas for the stock to that of the SPY.
 ```
-./main.sh -d 2021-08-31 -l data/y_universe -q query0 > data/y_universe/report_2021-08-31
+DATE_REPORT=2021-08-31
+./main.sh -d ${DATE_REPORT} -l data/y_universe -q query0 > data/y_universe/report_${DATE_REPORT}
 
 ```
 
 2. For symbols in watchlist 'sectors' defined in 'query1' perform same actions as in the previous example using ranking algorithm 'self'. Use 'data/sectors' directory. Ranking algorithm 'self' compares prices to themselves 5 T days ago.
 ```
-./main.sh -d 2021-08-31 -l data/sectors -q query1 -c self > data/sectors/report_2021-08-31
+./main.sh -d ${DATE_REPORT} -l data/sectors -q query1 -c self > data/sectors/report_${DATE_REPORT}
 ```
 
 ### Back Tests.
