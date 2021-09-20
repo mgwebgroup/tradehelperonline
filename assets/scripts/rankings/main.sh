@@ -1,7 +1,7 @@
 #! /bin/bash 
 data_dir=data
 query_file=query0
-comp_var="comp=SPY"
+comp_dir="SPYabs-1d"
 config_file=./config
 
 if [ ! -f $config_file ] ; then
@@ -35,7 +35,7 @@ while getopts "d:k:l:q:c:" option ; do
       fi
     ;;
     c)
-      if (( c == "self" )) ; then comp_var="comp=self" ; fi
+      comp_dir=$OPTARG
     ;;
     \?)
     ;;
@@ -50,6 +50,11 @@ query_template=$(sed -e "/^#/d" $query_file)
 
 if [ ! -f $prod_key_location ] ; then
   echo "Could not find private key to access production server" > /dev/stderr
+  exit 1
+fi
+
+if [ ! -d $data_dir/$comp_dir ] ; then 
+  echo "Please create directory $data_dir/$comp_dir"
   exit 1
 fi
 
@@ -88,12 +93,12 @@ tunnel=
 n=$i
 echo -n "Ranking..." > /dev/stderr
 while (( n > ( i - 12 ) )) ; do 
-  case $comp_var in 
-    comp=SPY)
-      awk -F, -f get_ranks.awk -v $comp_var "$data_dir/${T[$n]}.csv" "$data_dir/${T[(( n-1 ))]}.csv" > "$data_dir/rank_${T[$n]}.csv"
+  case $comp_dir in 
+    SPYabs-1d)
+      awk -F, -f get_ranks.awk -v 'comp=SPYabs' "$data_dir/${T[$n]}.csv" "$data_dir/${T[(( n-1 ))]}.csv" > "$data_dir/$comp_dir/rank_${T[$n]}.csv"
     ;;
-    comp=self)
-      awk -F, -f get_ranks.awk -v $comp_var "$data_dir/${T[$n]}.csv" "$data_dir/${T[(( n-5 ))]}.csv" > "$data_dir/rank_${T[$n]}.csv"
+    SELFprcnt-5d)
+      awk -F, -f get_ranks.awk -v 'comp=SELFprcnt' "$data_dir/${T[$n]}.csv" "$data_dir/${T[(( n-5 ))]}.csv" > "$data_dir/$comp_dir/rank_${T[$n]}.csv"
     ;;
   esac
 
@@ -106,12 +111,12 @@ n=$i
 echo -n "Creating summaries..." > /dev/stderr
 while (( n > ( i-8 ) )) ; do
   awk -F, -f tokenize_ranks.awk \
-    "$data_dir/rank_${T[(( n ))]}.csv" \
-    "$data_dir/rank_${T[(( n-1 ))]}.csv" \
-    "$data_dir/rank_${T[(( n-2 ))]}.csv" \
-    "$data_dir/rank_${T[(( n-3 ))]}.csv" \
-    "$data_dir/rank_${T[(( n-4 ))]}.csv" \
-      > "$data_dir/summary_${T[(( n ))]}.csv"
+    "$data_dir/$comp_dir/rank_${T[(( n ))]}.csv" \
+    "$data_dir/$comp_dir/rank_${T[(( n-1 ))]}.csv" \
+    "$data_dir/$comp_dir/rank_${T[(( n-2 ))]}.csv" \
+    "$data_dir/$comp_dir/rank_${T[(( n-3 ))]}.csv" \
+    "$data_dir/$comp_dir/rank_${T[(( n-4 ))]}.csv" \
+      > "$data_dir/$comp_dir/summary_${T[(( n ))]}.csv"
   (( n-- ))
 done
 echo "done" > /dev/stderr
@@ -120,50 +125,50 @@ echo "done" > /dev/stderr
 n=$i
 echo -n "Identifying trends..." > /dev/stderr
 awk -F, -f get_trends.awk \
-  "$data_dir/summary_${T[(( n ))]}.csv" \
-  "$data_dir/summary_${T[(( n-1 ))]}.csv" \
-  "$data_dir/summary_${T[(( n-2 ))]}.csv" \
-  "$data_dir/summary_${T[(( n-3 ))]}.csv" \
-  "$data_dir/summary_${T[(( n-4 ))]}.csv" \
-  "$data_dir/summary_${T[(( n-5 ))]}.csv" \
-  "$data_dir/summary_${T[(( n-6 ))]}.csv" \
-  "$data_dir/summary_${T[(( n-7 ))]}.csv" \
-    > "$data_dir/trends_${T[(( n ))]}.csv"
+  "$data_dir/$comp_dir/summary_${T[(( n ))]}.csv" \
+  "$data_dir/$comp_dir/summary_${T[(( n-1 ))]}.csv" \
+  "$data_dir/$comp_dir/summary_${T[(( n-2 ))]}.csv" \
+  "$data_dir/$comp_dir/summary_${T[(( n-3 ))]}.csv" \
+  "$data_dir/$comp_dir/summary_${T[(( n-4 ))]}.csv" \
+  "$data_dir/$comp_dir/summary_${T[(( n-5 ))]}.csv" \
+  "$data_dir/$comp_dir/summary_${T[(( n-6 ))]}.csv" \
+  "$data_dir/$comp_dir/summary_${T[(( n-7 ))]}.csv" \
+    > "$data_dir/$comp_dir/trends_${T[(( n ))]}.csv"
 echo "done" > /dev/stderr
 
 # Print results
 echo
-sed -n -e "/^\([A-Z]\{1,5\}\),UP/p" "$data_dir/trends_${T[(( n ))]}.csv" > temp
+sed -n -e "/^\([A-Z]\{1,5\}\),UP/p" "$data_dir/$comp_dir/trends_${T[(( n ))]}.csv" > temp
 echo "{{{ NASCENT UP ($(sed -ne '$=' temp )): ***"
 cat temp
 echo }}}
 echo
 
-sed -n -e "/^\([A-Z]\{1,5\}\),[UPDWN/A]*,\(LDR\)/p" "$data_dir/trends_${T[(( n ))]}.csv" > temp
+sed -n -e "/^\([A-Z]\{1,5\}\),[UPDWN/A]*,\(LDR\)/p" "$data_dir/$comp_dir/trends_${T[(( n ))]}.csv" > temp
 echo "{{{ PERSISTING LDR 5/8 ($(sed -ne '$=' temp )): ***"
 cat temp
 echo }}}
 echo
 
-sed -n -e "/^\([A-Z]\{1,5\}\),[UPDWN/A]*,\(X_UP\)/p" "$data_dir/trends_${T[(( n ))]}.csv" > temp
+sed -n -e "/^\([A-Z]\{1,5\}\),[UPDWN/A]*,\(X_UP\)/p" "$data_dir/$comp_dir/trends_${T[(( n ))]}.csv" > temp
 echo "{{{ PERSISTING X_UP 5/8 ($(sed -ne '$=' temp )): ***"
 cat temp
 echo }}}
 echo
 
-sed -n -e "/^\([A-Z]\{1,5\}\),[UPDWN/A]*,\(X_DWN\)/p" "$data_dir/trends_${T[(( n ))]}.csv" > temp
+sed -n -e "/^\([A-Z]\{1,5\}\),[UPDWN/A]*,\(X_DWN\)/p" "$data_dir/$comp_dir/trends_${T[(( n ))]}.csv" > temp
 echo "{{{ PERSISTING X_DWN 5/8 ($(sed -ne '$=' temp )): ***"
 cat temp
 echo }}}
 echo
 
-sed -n -e "/^\([A-Z]\{1,5\}\),[UPDWN/A]*,\(LGR\)/p" "$data_dir/trends_${T[(( n ))]}.csv" > temp
+sed -n -e "/^\([A-Z]\{1,5\}\),[UPDWN/A]*,\(LGR\)/p" "$data_dir/$comp_dir/trends_${T[(( n ))]}.csv" > temp
 echo "{{{ PERSISTING LGR 5/8 ($(sed -ne '$=' temp )): ***"
 cat temp
 echo }}}
 echo
 
-sed -n -e "/^\([A-Z]\{1,5\}\),DWN/p" "$data_dir/trends_${T[(( n ))]}.csv" > temp
+sed -n -e "/^\([A-Z]\{1,5\}\),DWN/p" "$data_dir/$comp_dir/trends_${T[(( n ))]}.csv" > temp
 echo "{{{ NASCENT DWN ($(sed -ne '$=' temp )): ***"
 cat temp
 echo }}}

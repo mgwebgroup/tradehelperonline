@@ -22,12 +22,12 @@ BEGIN {
 
 END {
   switch ( comp ) {
-    case "self":
+    case "SELFprcnt":
       diff_itself(T_p, T1_p)
       break  
-    case "SPY":
+    case "SPYabs":
     default:
-      diff_SPY(T_p, T1_p)
+      diff_Abs_SPY(T_p, T1_p)
       break
   }
 
@@ -62,7 +62,7 @@ function computeDeltaPrcnt(new, old) {
   return ( new - old ) / old * 100
 }
 
-function diff_SPY(T_p, T1_p) {
+function diff_Abs_SPY(T_p, T1_p) {
   if ( T_p["SPY"] == 0 ) { 
     print "No closing price for SPY in file for T" > "/dev/stderr"
     exit 1
