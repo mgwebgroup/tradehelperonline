@@ -19,6 +19,7 @@ Analysis list (description):
 In the formulas below *C* without index stands for a Closing price for trading day *T*. *C1* is a closing price for previous trading day *T-1*, and so on.
 * For comparison method *SPYabs-1d* each stock symbol will be ranked according to absolute difference with SPY: C-C1 for a stock minus C-C1 for SPY. Each stock will then be ranked according to its absolute perfomance (in dollars) relative to the S&P Spider ETF.
 * For comparison method *SELFprcnt-5d* each stock symbol will be ranked according to percent difference in closing price: delta = ( C - C4 ) / C4 * 100%. 
+* For comparison method *SPYprcnt-1d* first, percent change in SPY over 1 T is calculated. Let's call it delta (SPY). Same is done for each stock symbol. Let's call it delta(symbol). Result is calculated as delta(symbol) - delta(SPY), and represents percent difference in price for a symbol over same for SPY. 
 
 Ranks will be summarized and tokenized, resulting in *summary__YYYY-MM-DD.csv* files. Summary files show how ranks change over 5 T's and contain sum of ranks and their delta (direction) along with a token which relates sum to direction. Sum of ranks shows if a symbol is remaining among leaders/laggers consistentlyand is simply a sum of ranks over 5 T's. Consistent positive leading ranks will tend to give positive sums and vice versa. Delta (direction) takes rank for T and starting rank T-4 to determine direction. For example, if a symbol starts out in high ranks during T-4 and ends up in low ranks for T, direction will be negative. And finally, token characterizes relation of the sum to direction, i.e:
 
@@ -39,18 +40,23 @@ Eight (8) summary files are then analyzed for trends. The following trend situat
 
 ### Creation of Reports:
 
-1. For symbols in watchlist 'y_universe' defined in 'query0' download price files, create ranks using default ranking algorithm, summarize them and determine trends. Use 'data/y_universe/SPYabs-1d/' directory. Default ranking algorithm compares daily closing deltas for the stock to that of the SPY.
-```
-DATE_REPORT=2021-08-31
-./main.sh -d ${DATE_REPORT} -l data/y_universe -q query0 > data/y_universe/SPYabs-1d/report_${DATE_REPORT}
+All methods described here utilize *SPYabs-1d* calculation. If you want to change it, supply option -c SPYprcnt-1d and replace the SPYabs-1d directory to SPYprcnt-1d.
 
+1. For the month of August 2021, for symbols in watchlist 'y_universe' defined in 'query0' download price files, create ranks using default ranking algorithm, summarize them and determine trends. Use 'data/y_universe/SPYabs-1d/' directory. Default ranking algorithm compares daily closing deltas for the stock to that of the SPY.
 ```
+for DATE_REPORT in $(awk -F, '$0 ~ /^[[:digit:]]+,2021-08-[[:digit:]]+/ {print $2}' data/y_universe/trading_days_2021.csv) ; do \
+echo ${DATE_REPORT} ; \
+./main.sh -d ${DATE_REPORT} -l data/y_universe -q query0 > data/y_universe/SPYabs-1d/report_${DATE_REPORT} ; \
+done
+```
+
 
 2. For symbols in watchlist 'sectors' defined in 'query1' perform same actions as in the previous example using ranking algorithm 'SELFprcnt-5d'. Use 'data/sectors/SELFprcnt-5d' directory. Ranking algorithm 'self' compares prices to themselves 5 T days ago.
 ```
 DATE_REPORT:=2021-08-31
 ./main.sh -d ${DATE_REPORT} -l data/sectors -q query1 -c SELFprcnt-5d > data/sectors/SELFprcnt-5d/report_${DATE_REPORT}
 ```
+
 
 ### Back Tests.
 
@@ -67,21 +73,19 @@ done
 2021-08-31: SPY,0.36,-1.64
 ```
 
-
 2. Same as above, but save results to file ${DATE_BACKTEST}.csv. For each symbol in file
-*tradehelperonline/data/source/y_universe.csv*
+'tradehelperonline/data/source/y_universe.csv'
 using price data in:
-*data/y_universe/*.csv*
+'data/y_universe/YYYY-MM-DD.csv'
 save results to directory 
-*backtests/y_universe/*
+'backtests/y_universe/'
 ```
 for DATE_BACKTEST in $(awk -F, '$0 ~ /^[[:digit:]]+,2021-08-[[:digit:]]+/ {print $2}' data/y_universe/trading_days_2021.csv) ; do \
 awk -F, 'NR > 1 {print $1}' /var/www/html/tradehelperonline/data/source/y_universe.csv | xargs -n1 ./backtest.sh -l data/y_universe -d ${DATE_BACKTEST} -s > backtests/y_universe/${DATE_BACKTEST}.csv ; \
 done
 ```
 
-
-3. Same as above, but figure min/max price fluctuations over 10 T's for symbols categorized as PERSISTING X_UP in data/y_universe/SPYabs-1d/report\* file. 
+3. Same as above, but figure min/max price fluctuations over 10 T's for symbols categorized as PERSISTING X_UP in data/y_universe/SPYabs-1d/report_YYYY-MM-DD file. 
 Save results in 'backtests/SPYabs-1d/PERSISTING_X_UP/${DATE_BACKTEST}.csv':
 ```
 for DATE_BACKTEST in $(awk -F, '$0 ~ /^[[:digit:]]+,2021-08-[[:digit:]]+/ {print $2}' data/y_universe/trading_days_2021.csv) ; do \

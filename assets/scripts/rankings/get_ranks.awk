@@ -22,6 +22,9 @@ BEGIN {
 
 END {
   switch ( comp ) {
+    case "SPYprcnt":
+      diff_Prcnt_SPY(T_p, T1_p)
+      break 
     case "SELFprcnt":
       diff_itself(T_p, T1_p)
       break  
@@ -60,6 +63,25 @@ function computeDeltaAbs(new, old) {
 
 function computeDeltaPrcnt(new, old) {
   return ( new - old ) / old * 100
+}
+
+function diff_Prcnt_SPY(T_p, T1_p) {
+  if ( T_p["SPY"] == 0 ) { 
+    print "No closing price for SPY in file for T" > "/dev/stderr"
+    exit 1
+  }
+  if ( T1_p["SPY"] == 0 ) {
+    print "No closing price for SPY in file for T-1" > "/dev/stderr"
+    exit 1
+  }
+  delta["SPY"] = computeDeltaPrcnt( T_p["SPY"], T1_p["SPY"] )
+  delete T_p["SPY"]
+  delete T1_p["SPY"]
+  for ( symbol in T_p ) {
+    delta[symbol] = computeDeltaPrcnt( T_p[symbol], T1_p[symbol] )
+    diff[symbol] = delta[symbol] - delta["SPY"]
+##    printf "%s: delta %5.2f diff %5.2f\n", symbol, delta[symbol], diff[symbol]
+  }
 }
 
 function diff_Abs_SPY(T_p, T1_p) {

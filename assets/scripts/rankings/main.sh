@@ -100,6 +100,9 @@ while (( n > ( i - 12 ) )) ; do
     SELFprcnt-5d)
       awk -F, -f get_ranks.awk -v 'comp=SELFprcnt' "$data_dir/${T[$n]}.csv" "$data_dir/${T[(( n-5 ))]}.csv" > "$data_dir/$comp_dir/rank_${T[$n]}.csv"
     ;;
+    SPYprcnt-1d)
+      awk -F, -f get_ranks.awk -v 'comp=SPYprcnt' "$data_dir/${T[$n]}.csv" "$data_dir/${T[(( n-1 ))]}.csv" > "$data_dir/$comp_dir/rank_${T[$n]}.csv"
+    ;;
   esac
 
   (( n-- ))
