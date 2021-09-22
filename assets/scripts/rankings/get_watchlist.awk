@@ -1,7 +1,17 @@
+BEGIN {
+  # This is for future improvement to convert into cycles. Source reports for stock and sectors
+  # would be horizontal: {{{ PERSISTING X_DWN,DHI,N/A,X_UP,N/A,EL,N/A,X_UP,N/A,... ,}}}
+  # You would look for marker fields in each record
+  # group[1] = "PERSISTING X_DWN"
+  # group[2] = "PERSISTING LGR"
+  # group[3] = "PERSISTING X_UP"
+  # group[4] = "PERSISTING LDR"
+}
+
 # Load symbols from y_universe and their associated sectors
 ARGIND == 2 && FNR > 2 && /^[-A-Z]+/ {
-#  print $1,$4
   sector_lookup[$1] = $4
+
 }
 
 # Load symbols from report for stocks
@@ -55,12 +65,8 @@ END {
   for (i in sector_PERSISTING_LDR) {
     sector_symbol = sector_PERSISTING_LDR[i]
     printf "HED,%s\n", sector_symbol
-    for (j in stock_PERSISTING_LDR) {
-      stock_symbol = stock_PERSISTING_LDR[j]
-      if (sector_lookup[stock_symbol] == sector_symbol ) {
-	printf "DES,%s,STK,SMART/AMEX\n", stock_symbol 
-      }
-    }
+    print_stock(stock_PERSISTING_LDR)
+    print_stock(stock_PERSISTING_X_UP)
   }
 
   print "COLUMN,1"
@@ -68,12 +74,8 @@ END {
   for (i in sector_PERSISTING_X_UP) {
     sector_symbol = sector_PERSISTING_X_UP[i]
     printf "HED,%s\n", sector_symbol
-    for (j in stock_PERSISTING_X_UP) {
-      stock_symbol = stock_PERSISTING_X_UP[j]
-      if (sector_lookup[stock_symbol] == sector_symbol ) {
-	printf "DES,%s,STK,SMART/AMEX\n", stock_symbol 
-      }
-    }
+    print_stock(stock_PERSISTING_X_UP)
+    print_stock(stock_PERSISTING_LDR)
   }
 
   print "COLUMN,2"
@@ -81,12 +83,8 @@ END {
   for (i in sector_PERSISTING_X_DWN) {
     sector_symbol = sector_PERSISTING_X_DWN[i]
     printf "HED,%s\n", sector_symbol
-    for (j in stock_PERSISTING_X_DWN) {
-      stock_symbol = stock_PERSISTING_X_DWN[j]
-      if (sector_lookup[stock_symbol] == sector_symbol ) {
-	printf "DES,%s,STK,SMART/AMEX\n", stock_symbol 
-      }
-    }
+    print_stock(stock_PERSISTING_X_DWN)
+    print_stock(stock_PERSISTING_LGR)
   }
 
   print "COLUMN,3"
@@ -94,12 +92,16 @@ END {
   for (i in sector_PERSISTING_LGR) {
     sector_symbol = sector_PERSISTING_LGR[i]
     printf "HED,%s\n", sector_symbol
-    for (j in stock_PERSISTING_LGR) {
-      stock_symbol = stock_PERSISTING_LGR[j]
-      if (sector_lookup[stock_symbol] == sector_symbol ) {
-	printf "DES,%s,STK,SMART/AMEX\n", stock_symbol 
-      }
-    }
+    print_stock(stock_PERSISTING_LGR)
+    print_stock(stock_PERSISTING_X_DWN)
   }
 }
 
+function print_stock(list,    j) {
+  for (j in list) {
+    stock_symbol = list[j]
+    if (sector_lookup[stock_symbol] == sector_symbol ) {
+      printf "DES,%s,STK,SMART/AMEX\n", stock_symbol 
+    }
+  }
+}
