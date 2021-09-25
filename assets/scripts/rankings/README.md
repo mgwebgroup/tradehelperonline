@@ -3,12 +3,12 @@
 ### Description:
 
 Script titled *main.sh* uses php file *trading_calendar.php*, which creates a list of trading days (T's) for a given year. Make sure a symbolic link to the php script is present in this script's directory. 
-Script *main.sh* takes candlestick (OHLCV) csv files as its source data to perform analyses. These files are stored in the *data/* subdirectory. Results are stored in *data/ANALYSIS_METHOD/* subdirectory, i.e. *data/SPYabs-1d/*. If a price file, which is needed for analysis is missing, it will be created by downloading the price data from prod server using its private key. Configuration settins on where to look for the private key file are stored in the *config* file. You can override this by specifying *-k path/to/PRIVATE_KEY* option. The script will connect to the prod database via SSH tunnel.
+Script *main.sh* takes candlestick (OHLCV) csv files as its source data to perform analyses. These files are stored in the *data/* subdirectory. Results are stored in *data/ANALYSIS_METHOD/* subdirectory, i.e. *data/SPYabs-1d/*. If a price file, which is needed for analysis is missing, it will be created by downloading the price data from prod server using its private key. All configuration settings are stored in the *config* file, including where to look for the private key. You can override this by specifying *-k path/to/PRIVATE_KEY* option. The script will connect to the prod database via SSH tunnel.
 
 Analysis Methods:
 In the formulas below *C* without index stands for a Closing price for trading day *T*. *C1* is a closing price for previous trading day *T-1*, and so on. Cursive values below are substitued for the ANALYSIS_METHOD:
 * *SPYabs-1d*: each stock symbol will be ranked according to absolute difference with SPY: C-C1 for a stock minus C-C1 for SPY. Each stock will then be ranked according to its absolute perfomance (in dollars) relative to the S&P Spider ETF.
-* *SELFprcnt-5d*: each stock symbol will be ranked according to percent difference in closing price: delta = ( C - C4 ) / C4 * 100%. 
+* *SELFprcnt-5d* (default): each stock symbol will be ranked according to percent difference in closing price: delta = ( C - C4 ) / C4 * 100%. 
 * *SPYprcnt-1d*: first, percent change in SPY over 1 T is calculated. Let's call it delta (SPY). Same is done for each stock symbol. Let's call it delta(symbol). Result is calculated as delta(symbol) - delta(SPY), and represents percent difference in price for a symbol over same for SPY. 
 
 Results of analysis methods are ranked and stored in file *data/ANALYSIS_METHOD/rank_YYYY-MM-DD*. All of the methods require price files for at least 2 T's. 
@@ -34,13 +34,15 @@ Eight (8) summary files are then analyzed for trends. The following trend situat
 
 All methods described here utilize *SPYabs-1d* calculation. If you want to change it, supply option -c SPYprcnt-1d and replace the SPYabs-1d directory to SPYprcnt-1d. For daily application of these commands, just use the portions inside the for loops to avoid recalculation for entire month.
 
-1. For the month of August 2021, for symbols in watchlist 'y_universe' defined in 'query0' download price files, create ranks using default ranking algorithm, summarize them and determine trends. Use 'data/y_universe/SPYabs-1d/' directory. Default ranking algorithm compares daily closing deltas for the stock to that of the SPY.
+1. For the month of August 2021, for symbols in watchlist 'y_universe' defined in default 'query0' download price files, create ranks using default ranking algorithm, summarize them and determine trends. Use 'data/y_universe/SPYabs-1d/' directory. Default ranking algorithm compares daily closing deltas for the stock to that of the SPY.
 ```
 for DATE_REPORT in $(awk -F, '$0 ~ /^[[:digit:]]+,2021-08-[[:digit:]]+/ {print $2}' data/y_universe/trading_days_2021.csv) ; do \
 echo ${DATE_REPORT} ; \
-./main.sh -d ${DATE_REPORT} -l data/y_universe -q query0 > data/y_universe/SPYabs-1d/report_${DATE_REPORT} ; \
+./main.sh -d ${DATE_REPORT} -l data/y_universe > data/y_universe/SPYabs-1d/report_${DATE_REPORT} ; \
 done
 ```
+
+Note default ranking algorithm is stored in the *config* file and can be changed via -c option. See next example.
 
 2. For symbols in watchlist 'sectors' defined in 'query1' perform same actions as in the previous example using ranking algorithm 'SELFprcnt-5d'. Use 'data/sectors/SELFprcnt-5d' directory. Ranking algorithm 'self' compares prices to themselves 5 T days ago.
 ```

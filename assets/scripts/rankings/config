@@ -1,3 +1,9 @@
+# Default symbols to download price data for using this query
+query_file=query0
+
+# Default analysis method
+comp_dir="SPYprcnt-1d"
+
 # Private configuration values
 prod_key_location=~/.ssh/tradehelper-prod.pem
 prod_server_ip=54.70.88.233

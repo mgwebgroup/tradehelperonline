@@ -1,15 +1,13 @@
 #! /bin/bash 
 data_dir=data
-query_file=query0
-comp_dir="SPYabs-1d"
 config_file=./config
 
 if [ ! -f $config_file ] ; then
   echo "Missing config file"
   exit 1
 fi
-. $config_file
 
+. $config_file
 . ./functions.sh
 
 printf -v today "%(%F)T" -1
@@ -101,7 +99,9 @@ while (( n > ( i - 12 ) )) ; do
       awk -F, -f get_ranks.awk -v 'comp=SELFprcnt' "$data_dir/${T[$n]}.csv" "$data_dir/${T[(( n-5 ))]}.csv" > "$data_dir/$comp_dir/rank_${T[$n]}.csv"
     ;;
     SPYprcnt-1d)
+##	echo -n "P files: $data_dir/${T[$n]}.csv $data_dir/${T[(( n-1 ))]}.csv" > /dev/stderr
       awk -F, -f get_ranks.awk -v 'comp=SPYprcnt' "$data_dir/${T[$n]}.csv" "$data_dir/${T[(( n-1 ))]}.csv" > "$data_dir/$comp_dir/rank_${T[$n]}.csv"
+##	echo "$data_dir/$comp_dir/rank_${T[$n]}.csv" > /dev/stderr
     ;;
   esac
 
